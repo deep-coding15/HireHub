@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Nouvelle offre</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container" style="max-width: 720px;">
+        <h1 class="page-hero-title">Nouvelle offre</h1>
+        <p class="page-hero-sub">Creation et publication vers offre-service.</p>
+        <form class="hh-card">
+            <div class="mb-3">
+                <label class="hh-form-label" for="titre">Intitule</label>
+                <input type="text" id="titre" class="form-control rounded-3 border-0 shadow-sm"/>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6">
+                    <label class="hh-form-label" for="ville">Ville</label>
+                    <input type="text" id="ville" class="form-control rounded-3 border-0 shadow-sm"/>
+                </div>
+                <div class="col-md-6">
+                    <label class="hh-form-label" for="contrat">Contrat</label>
+                    <select id="contrat" class="form-select rounded-3 border-0 shadow-sm">
+                        <option>CDI</option>
+                        <option>CDD</option>
+                        <option>Stage</option>
+                    </select>
+                </div>
+            </div>
+            <div class="mb-3">
+                <label class="hh-form-label" for="desc">Description</label>
+                <textarea id="desc" class="form-control rounded-3 border-0 shadow-sm" rows="6"></textarea>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <button type="button" class="btn hh-btn-primary rounded-pill">Publier</button>
+                <a class="btn btn-link" th:href="@{/recruteur/offres}">Annuler</a>
+            </div>
+        </form>
+    </div>
+</section>
+</body>
+</html>

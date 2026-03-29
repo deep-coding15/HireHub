@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Espace recruteur</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container">
+        <h1 class="page-hero-title">Tableau de bord recruteur</h1>
+        <p class="page-hero-sub">Indicateurs de votre activité sur HireHub.</p>
+
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="hh-kpi">
+                    <div class="hh-kpi-value">12</div>
+                    <div class="hh-kpi-label">Offres actives</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="hh-kpi">
+                    <div class="hh-kpi-value">48</div>
+                    <div class="hh-kpi-label">Candidatures</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="hh-kpi">
+                    <div class="hh-kpi-value">15</div>
+                    <div class="hh-kpi-label">Entretiens</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="hh-kpi">
+                    <div class="hh-kpi-value">22%</div>
+                    <div class="hh-kpi-label">Taux conversion</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="hh-card">
+                    <h2 class="h5 mb-3" style="color: var(--hh-violet-900);">Candidatures récentes</h2>
+                    <div class="hh-table-wrap">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                            <tr>
+                                <th>Candidat</th>
+                                <th>Offre</th>
+                                <th>Statut</th>
+                                <th></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr>
+                                <td>Jean Dupont</td>
+                                <td>Java / Spring</td>
+                                <td><span class="badge badge-statut-encours">En cours</span></td>
+                                <td><a th:href="@{/recruteur/offres/1/pipeline}">Pipeline</a></td>
+                            </tr>
+                            <tr>
+                                <td>Sara Alami</td>
+                                <td>DevOps</td>
+                                <td><span class="badge badge-statut-soumise">Soumise</span></td>
+                                <td><a th:href="@{/recruteur/offres/2/pipeline}">Pipeline</a></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="hh-card">
+                    <h2 class="h5 mb-3" style="color: var(--hh-violet-900);">Actions</h2>
+                    <div class="d-grid gap-2">
+                        <a class="btn hh-btn-primary rounded-pill" th:href="@{/recruteur/offres/nouvelle}">Nouvelle offre</a>
+                        <a class="btn btn-outline-primary rounded-pill" th:href="@{/recruteur/offres}">Gérer les offres</a>
+                        <a class="btn btn-outline-primary rounded-pill" th:href="@{/recruteur/statistiques}">Statistiques</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

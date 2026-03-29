@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Mes offres</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+            <div>
+                <h1 class="page-hero-title mb-0">Mes offres</h1>
+                <p class="page-hero-sub mb-0">CRUD et publication — <code>offre-service</code>.</p>
+            </div>
+            <a class="hh-btn-primary" th:href="@{/recruteur/offres/nouvelle}">+ Nouvelle offre</a>
+        </div>
+
+        <div class="hh-table-wrap">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>Intitulé</th>
+                    <th>Ville</th>
+                    <th>Statut</th>
+                    <th>Candidatures</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td class="fw-medium">Développeur Java / Spring</td>
+                    <td>Tétouan</td>
+                    <td><span class="badge bg-success rounded-pill">Publiée</span></td>
+                    <td>18</td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary rounded-pill" th:href="@{/recruteur/offres/1/pipeline}">Pipeline</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="fw-medium">Ingénieur DevOps</td>
+                    <td>Tanger</td>
+                    <td><span class="badge bg-success rounded-pill">Publiée</span></td>
+                    <td>9</td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary rounded-pill" th:href="@{/recruteur/offres/2/pipeline}">Pipeline</a>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="fw-medium">Stage PFE</td>
+                    <td>Rabat</td>
+                    <td><span class="badge bg-warning text-dark rounded-pill">Brouillon</span></td>
+                    <td>0</td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-secondary rounded-pill" href="#">Modifier</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+</body>
+</html>

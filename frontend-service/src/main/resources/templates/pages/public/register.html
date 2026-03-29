@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Inscription</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container" style="max-width: 480px;">
+        <h1 class="page-hero-title text-center">Créer un compte</h1>
+        <p class="page-hero-sub text-center">Choisissez votre rôle. Le compte <strong>admin</strong> est créé par l’administrateur.</p>
+
+        <div class="hh-card">
+            <form method="post" th:action="@{/register}">
+                <div class="mb-3">
+                    <label class="hh-form-label" for="nom">Nom complet</label>
+                    <input type="text" id="nom" name="nom" class="form-control rounded-3 border-0 shadow-sm"/>
+                </div>
+                <div class="mb-3">
+                    <label class="hh-form-label" for="email">Email</label>
+                    <input type="email" id="email" name="email" class="form-control rounded-3 border-0 shadow-sm"/>
+                </div>
+                <div class="mb-3">
+                    <label class="hh-form-label" for="role">Rôle</label>
+                    <select id="role" name="role" class="form-select rounded-3 border-0 shadow-sm">
+                        <option value="CANDIDAT">Candidat</option>
+                        <option value="RECRUTEUR">Recruteur</option>
+                    </select>
+                </div>
+                <div class="mb-4">
+                    <label class="hh-form-label" for="password">Mot de passe</label>
+                    <input type="password" id="password" name="password" class="form-control rounded-3 border-0 shadow-sm"/>
+                </div>
+                <button type="submit" class="btn hh-btn-primary w-100 rounded-pill mb-3">S’inscrire</button>
+                <p class="text-center small text-muted mb-0">Déjà inscrit ? <a th:href="@{/login}">Connexion</a></p>
+            </form>
+        </div>
+    </div>
+</section>
+</body>
+</html>

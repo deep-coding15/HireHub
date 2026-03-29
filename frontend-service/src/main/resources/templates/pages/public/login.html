@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Connexion</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container" style="max-width: 420px;">
+        <h1 class="page-hero-title text-center">Connexion</h1>
+        <p class="page-hero-sub text-center">Accédez à votre espace candidat, recruteur ou admin.</p>
+
+        <div class="hh-card">
+            <form method="post" th:action="@{/login}">
+                <div class="mb-3">
+                    <label class="hh-form-label" for="email">Email</label>
+                    <input type="email" id="email" name="username" class="form-control rounded-3 border-0 shadow-sm" autocomplete="username"/>
+                </div>
+                <div class="mb-4">
+                    <label class="hh-form-label" for="password">Mot de passe</label>
+                    <input type="password" id="password" name="password" class="form-control rounded-3 border-0 shadow-sm" autocomplete="current-password"/>
+                </div>
+                <button type="submit" class="btn hh-btn-primary w-100 rounded-pill mb-3">Se connecter</button>
+                <p class="text-center small text-muted mb-0">
+                    Pas encore de compte ? <a th:href="@{/register}">Inscription</a>
+                </p>
+            </form>
+        </div>
+    </div>
+</section>
+</body>
+</html>

@@ -1,12 +1,104 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<html lang="fr"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
 <head>
-    <meta charset="UTF-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>HireHub</title>
+    <title>Accueil</title>
 </head>
 <body>
-<h1>HireHub</h1>
-<p>Frontend Thymeleaf — squelette d’architecture. Les pages métier viendront ici.</p>
+<section layout:fragment="content">
+    <div class="hero-section">
+        <div class="hero-bg" aria-hidden="true"></div>
+        <div class="hero-orb hero-orb--1" aria-hidden="true"></div>
+        <div class="hero-orb hero-orb--2" aria-hidden="true"></div>
+        <div class="hero-orb hero-orb--3" aria-hidden="true"></div>
+        <div class="hero-grid" aria-hidden="true"></div>
+
+        <div class="container hero-content">
+            <div class="row align-items-center g-5">
+                <div class="col-lg-7">
+                    <div class="hero-badge">
+                        <span class="d-inline-block rounded-circle bg-success" style="width:8px;height:8px;"></span>
+                        Recrutement intelligent
+                    </div>
+                    <h1 class="hero-title">
+                        Le bon talent,<br/>
+                        <span class="text-gradient">au bon moment</span>
+                    </h1>
+                    <p class="hero-lead">
+                        HireHub centralise offres, candidatures et entretiens. Une expérience fluide pour les recruteurs
+                        et les candidats — propulsée par une architecture microservices.
+                    </p>
+                    <div class="hero-cta">
+                        <a class="hh-btn-primary" th:href="@{/offres}">
+                            Voir les offres
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M5 12h14M12 5l7 7-7 7"/>
+                            </svg>
+                        </a>
+                        <a class="hh-btn-secondary" th:href="@{/recruteur/dashboard}">Espace recruteur</a>
+                        <a class="btn btn-link text-decoration-none px-2" th:href="@{/register}" style="color: var(--hh-violet-800);">Créer un compte</a>
+                    </div>
+                    <div class="hero-stats">
+                        <div class="stat-card">
+                            <div class="stat-value">100%</div>
+                            <div class="stat-label">Suivi des étapes</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">ATS</div>
+                            <div class="stat-label">Pipeline clair</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value">24/7</div>
+                            <div class="stat-label">Candidature en ligne</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-5 d-none d-lg-block hero-visual">
+                    <div class="hero-card-float">
+                        <div class="d-flex align-items-center gap-3 mb-3 pb-3 border-bottom" style="border-color: rgba(109,40,217,0.15)!important;">
+                            <span th:replace="~{fragments/logo :: logoHero}"></span>
+                            <div>
+                                <div class="fw-semibold" style="color: #4c1d95;">Tableau de bord</div>
+                                <small class="text-muted">Vue recruteur</small>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <div class="d-flex justify-content-between small mb-1">
+                                <span class="text-muted">Pipeline</span>
+                                <span class="fw-medium" style="color: #6d28d9;">+12%</span>
+                            </div>
+                            <div class="progress rounded-pill" style="height: 8px;">
+                                <div class="progress-bar rounded-pill" role="progressbar"
+                                     style="width: 72%; background: linear-gradient(90deg, #7c3aed, #a78bfa);"></div>
+                            </div>
+                        </div>
+                        <div class="row g-2 text-center small mt-3">
+                            <div class="col-4">
+                                <div class="rounded-3 p-2" style="background: rgba(109,40,217,0.08);">
+                                    <div class="fw-bold" style="color: #5b21b6;">48</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Offres</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="rounded-3 p-2" style="background: rgba(109,40,217,0.08);">
+                                    <div class="fw-bold" style="color: #5b21b6;">320</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">CV</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="rounded-3 p-2" style="background: rgba(109,40,217,0.08);">
+                                    <div class="fw-bold" style="color: #5b21b6;">94</div>
+                                    <div class="text-muted" style="font-size: 0.7rem;">Entretiens</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 </body>
 </html>

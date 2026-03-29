@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Statistiques</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container">
+        <h1 class="page-hero-title">Statistiques par offre</h1>
+        <p class="page-hero-sub">Graphiques — données agrégées via les microservices (exemple Chart.js).</p>
+
+        <div class="hh-card mb-4">
+            <h2 class="h6 text-uppercase mb-3" style="color: var(--hh-violet-800);">Candidatures par semaine</h2>
+            <div style="max-height: 420px;">
+                <canvas id="chartRecruteur"></canvas>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-4">
+                <div class="hh-kpi">
+                    <div class="hh-kpi-value">34%</div>
+                    <div class="hh-kpi-label">Passage entretien</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="hh-kpi">
+                    <div class="hh-kpi-value">12%</div>
+                    <div class="hh-kpi-label">Taux d’embauche</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="hh-kpi">
+                    <div class="hh-kpi-value">6j</div>
+                    <div class="hh-kpi-label">Délai moyen de réponse</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const el = document.getElementById('chartRecruteur');
+            if (!el || typeof Chart === 'undefined') return;
+            new Chart(el, {
+                type: 'bar',
+                data: {
+                    labels: ['S1', 'S2', 'S3', 'S4'],
+                    datasets: [{
+                        label: 'Candidatures',
+                        data: [12, 19, 15, 22],
+                        backgroundColor: 'rgba(109, 40, 217, 0.65)',
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(76,29,149,0.08)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        });
+    </script>
+</section>
+</body>
+</html>

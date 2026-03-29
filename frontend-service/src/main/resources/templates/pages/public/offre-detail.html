@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Détail de l’offre</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container">
+        <nav aria-label="fil d'Ariane" class="mb-3">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a th:href="@{/offres}">Offres</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Offre #<span th:text="${offreId}">1</span></li>
+            </ol>
+        </nav>
+
+        <div class="hh-card mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+                <div>
+                    <h1 class="h3 mb-2" style="color: var(--hh-violet-950);">Développeur Java / Spring</h1>
+                    <p class="text-muted mb-0">
+                        <span class="me-3">Tétouan</span>
+                        <span class="badge bg-primary rounded-pill">CDI</span>
+                    </p>
+                </div>
+                <a class="hh-btn-primary" th:href="@{/offres/{id}/postuler(id=${offreId})}">Postuler</a>
+            </div>
+            <hr class="my-4 opacity-25"/>
+            <h2 class="h6 text-uppercase" style="color: var(--hh-violet-800);">Description</h2>
+            <p class="text-muted mb-0">
+                Nous recherchons un profil passionné par les architectures microservices, Spring Boot et la qualité de code.
+                Vous travaillerez au sein d’une équipe agile sur une plateforme ATS moderne.
+            </p>
+            <h2 class="h6 text-uppercase mt-4" style="color: var(--hh-violet-800);">Profil recherché</h2>
+            <ul class="text-muted">
+                <li>Java 17+, Spring Boot 3</li>
+                <li>PostgreSQL, REST, bonnes pratiques Git</li>
+                <li>Autonomie et communication</li>
+            </ul>
+        </div>
+    </div>
+</section>
+</body>
+</html>

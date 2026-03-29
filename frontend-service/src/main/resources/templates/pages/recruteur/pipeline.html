@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Pipeline</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container">
+        <nav aria-label="breadcrumb" class="mb-3">
+            <ol class="breadcrumb mb-0">
+                <li class="breadcrumb-item"><a th:href="@{/recruteur/offres}">Mes offres</a></li>
+                <li class="breadcrumb-item active">Offre #<span th:text="${offreId}">1</span></li>
+            </ol>
+        </nav>
+        <h1 class="page-hero-title">Pipeline</h1>
+        <p class="page-hero-sub">Gestion des statuts et historique.</p>
+        <div class="hh-table-wrap">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>Candidat</th>
+                    <th>Date</th>
+                    <th>CV</th>
+                    <th>Statut</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td>Jean Dupont</td>
+                    <td>10/03/2026</td>
+                    <td><a href="#">PDF</a></td>
+                    <td><span class="badge badge-statut-encours">En cours</span></td>
+                    <td><a class="btn btn-sm btn-outline-primary rounded-pill" th:href="@{/recruteur/entretiens}">Entretien</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+</body>
+</html>

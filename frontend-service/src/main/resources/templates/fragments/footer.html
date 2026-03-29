@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<footer th:fragment="footer" class="hh-footer">
+    <div class="container">
+        <div class="row g-4 align-items-start">
+            <div class="col-md-4">
+                <div class="hh-footer-brand">
+                    <span th:replace="~{fragments/logo :: logoFt}"></span>
+                    <span class="fs-5 fw-bold text-white">HireHub</span>
+                </div>
+                <p class="small mb-0" style="color: rgba(250,247,242,0.65); max-width: 280px;">
+                    Plateforme ATS — recrutement, candidatures et entretiens, propulsée par Spring.
+                </p>
+            </div>
+            <div class="col-6 col-md-4">
+                <h6 class="text-white text-uppercase small fw-semibold mb-3" style="letter-spacing: .08em;">Navigation</h6>
+                <nav class="nav flex-column hh-footer-nav">
+                    <a class="nav-link px-0 py-1" th:href="@{/}">Accueil</a>
+                    <a class="nav-link px-0 py-1" th:href="@{/offres}">Offres d’emploi</a>
+                    <a class="nav-link px-0 py-1" th:href="@{/candidat/mes-candidatures}">Mes candidatures</a>
+                    <a class="nav-link px-0 py-1" th:href="@{/recruteur/dashboard}">Espace recruteur</a>
+                    <a class="nav-link px-0 py-1" th:href="@{/admin/dashboard}">Administration</a>
+                    <a class="nav-link px-0 py-1" th:href="@{/login}">Connexion</a>
+                </nav>
+            </div>
+            <div class="col-6 col-md-4">
+                <h6 class="text-white text-uppercase small fw-semibold mb-3" style="letter-spacing: .08em;">Ressources</h6>
+                <nav class="nav flex-column hh-footer-nav">
+                    <a class="nav-link px-0 py-1" href="#">Aide</a>
+                    <a class="nav-link px-0 py-1" href="#">Confidentialité</a>
+                    <a class="nav-link px-0 py-1" href="#">Contact</a>
+                </nav>
+            </div>
+        </div>
+        <div class="hh-footer-bottom text-center text-md-start d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+            <span>© <span th:text="${#dates.format(#dates.createNow(), 'yyyy')}">2026</span> HireHub — Projet JEE</span>
+            <span class="d-none d-md-inline">Microservices · PostgreSQL · Thymeleaf</span>
+        </div>
+    </div>
+</footer>
+</body>
+</html>

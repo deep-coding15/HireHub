@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Administration</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container">
+        <h1 class="page-hero-title">Dashboard administrateur</h1>
+        <p class="page-hero-sub">KPIs globaux — lecture depuis les services et logs centralises.</p>
+
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="hh-kpi">
+                    <div class="hh-kpi-value">28</div>
+                    <div class="hh-kpi-label">Offres actives</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="hh-kpi">
+                    <div class="hh-kpi-value">412</div>
+                    <div class="hh-kpi-label">Candidatures / sem.</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="hh-kpi">
+                    <div class="hh-kpi-value">18%</div>
+                    <div class="hh-kpi-label">Taux acceptation</div>
+                </div>
+            </div>
+            <div class="col-6 col-md-3">
+                <div class="hh-kpi">
+                    <div class="hh-kpi-value">124</div>
+                    <div class="hh-kpi-label">Utilisateurs</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hh-card mb-4">
+            <h2 class="h6 text-uppercase mb-3" style="color: var(--hh-violet-800);">Activite plateforme</h2>
+            <div style="max-height: 380px;">
+                <canvas id="chartAdmin"></canvas>
+            </div>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <div class="hh-card">
+                    <h2 class="h6 mb-2" style="color: var(--hh-violet-900);">Acces rapides</h2>
+                    <a class="d-block mb-2" th:href="@{/admin/utilisateurs}">Gestion des utilisateurs</a>
+                    <a class="d-block" th:href="@{/admin/logs}">Journaux systeme</a>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="hh-card">
+                    <h2 class="h6 mb-2" style="color: var(--hh-violet-900);">Sante</h2>
+                    <p class="small text-muted mb-0">Eureka, Gateway, services : branchement <code>/actuator/health</code>.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const el = document.getElementById('chartAdmin');
+            if (!el || typeof Chart === 'undefined') return;
+            new Chart(el, {
+                type: 'line',
+                data: {
+                    labels: ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'],
+                    datasets: [{
+                        label: 'Candidatures',
+                        data: [32, 45, 38, 52, 48, 20, 15],
+                        borderColor: 'rgb(109, 40, 217)',
+                        backgroundColor: 'rgba(109, 40, 217, 0.15)',
+                        fill: true,
+                        tension: 0.35
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, grid: { color: 'rgba(76,29,149,0.08)' } },
+                        x: { grid: { display: false } }
+                    }
+                }
+            });
+        });
+    </script>
+</section>
+</body>
+</html>

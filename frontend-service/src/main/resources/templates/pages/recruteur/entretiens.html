@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Entretiens</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container">
+        <h1 class="page-hero-title">Entretiens</h1>
+        <p class="page-hero-sub">Planification des créneaux — emails automatiques aux candidats.</p>
+
+        <div class="row g-4">
+            <div class="col-lg-5">
+                <div class="hh-card">
+                    <h2 class="h5 mb-3" style="color: var(--hh-violet-900);">Planifier un entretien</h2>
+                    <form>
+                        <div class="mb-3">
+                            <label class="hh-form-label">Candidat</label>
+                            <select class="form-select rounded-3 border-0 shadow-sm">
+                                <option>Jean Dupont — Java</option>
+                                <option>Sara Alami — DevOps</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="hh-form-label">Date</label>
+                            <input type="date" class="form-control rounded-3 border-0 shadow-sm"/>
+                        </div>
+                        <div class="mb-3">
+                            <label class="hh-form-label">Heure</label>
+                            <input type="time" class="form-control rounded-3 border-0 shadow-sm"/>
+                        </div>
+                        <div class="mb-3">
+                            <label class="hh-form-label">Lieu ou lien visio</label>
+                            <input type="text" class="form-control rounded-3 border-0 shadow-sm" placeholder="Teams, Meet, adresse…"/>
+                        </div>
+                        <button type="button" class="btn hh-btn-primary rounded-pill w-100">Envoyer les invitations</button>
+                    </form>
+                </div>
+            </div>
+            <div class="col-lg-7">
+                <div class="hh-table-wrap">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                        <tr>
+                            <th>Candidat</th>
+                            <th>Date</th>
+                            <th>Lieu</th>
+                            <th>Offre</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>Jean Dupont</td>
+                            <td>05/04/2026 14:00</td>
+                            <td>Teams</td>
+                            <td>Java / Spring</td>
+                        </tr>
+                        <tr>
+                            <td>Sara Alami</td>
+                            <td>12/04/2026 10:30</td>
+                            <td>Tanger</td>
+                            <td>DevOps</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>

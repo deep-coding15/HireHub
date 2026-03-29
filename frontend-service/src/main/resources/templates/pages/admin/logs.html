@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Journaux</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container">
+        <h1 class="page-hero-title">Journaux systeme</h1>
+        <p class="page-hero-sub">Agrégation des evenements (audit) — exemple statique.</p>
+
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            <select class="form-select rounded-pill border-0 shadow-sm" style="max-width: 200px;">
+                <option>Tous les services</option>
+                <option>auth-service</option>
+                <option>candidature-service</option>
+                <option>notification-service</option>
+            </select>
+            <input type="search" class="form-control rounded-pill border-0 shadow-sm" style="max-width: 280px;" placeholder="Filtrer..."/>
+        </div>
+
+        <div class="log-box">[2026-03-29T14:22:01] INFO  auth-service — Connexion réussie user=rh@entreprise.ma
+[2026-03-29T14:22:05] INFO  candidature-service — POST /api/v1/candidatures id=42
+[2026-03-29T14:22:06] INFO  notification-service — Email envoyé template=STATUS_UPDATE
+[2026-03-29T14:23:11] WARN  api-gateway — Token JWT expire route=/recruteur/offres
+[2026-03-29T14:24:00] INFO  entretien-service — Entretien créé id=17</div>
+    </div>
+</section>
+</body>
+</html>
