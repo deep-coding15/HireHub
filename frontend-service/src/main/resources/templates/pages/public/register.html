@@ -8,10 +8,15 @@
 <section layout:fragment="content" class="page-inner">
     <div class="container" style="max-width: 480px;">
         <h1 class="page-hero-title text-center">Créer un compte</h1>
-        <p class="page-hero-sub text-center">Choisissez votre rôle. Le compte <strong>admin</strong> est créé par l’administrateur.</p>
+        <p class="page-hero-sub text-center">
+            Tout le monde commence en <strong>candidat</strong>. Pour recruter, déposez ensuite une
+            <a th:href="@{/demande-recruteur}">demande recruteur</a> (validation admin + email).
+            Les comptes <strong>admin</strong> sont créés manuellement.
+        </p>
 
         <div class="hh-card">
             <form method="post" th:action="@{/register}">
+                <input type="hidden" name="role" value="CANDIDAT"/>
                 <div class="mb-3">
                     <label class="hh-form-label" for="nom">Nom complet</label>
                     <input type="text" id="nom" name="nom" class="form-control rounded-3 border-0 shadow-sm"/>
@@ -19,13 +24,6 @@
                 <div class="mb-3">
                     <label class="hh-form-label" for="email">Email</label>
                     <input type="email" id="email" name="email" class="form-control rounded-3 border-0 shadow-sm"/>
-                </div>
-                <div class="mb-3">
-                    <label class="hh-form-label" for="role">Rôle</label>
-                    <select id="role" name="role" class="form-select rounded-3 border-0 shadow-sm">
-                        <option value="CANDIDAT">Candidat</option>
-                        <option value="RECRUTEUR">Recruteur</option>
-                    </select>
                 </div>
                 <div class="mb-4">
                     <label class="hh-form-label" for="password">Mot de passe</label>

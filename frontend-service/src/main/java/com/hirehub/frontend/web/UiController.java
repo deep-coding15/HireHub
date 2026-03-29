@@ -67,6 +67,11 @@ public class UiController {
         return "pages/candidat/profil";
     }
 
+    @GetMapping("/demande-recruteur")
+    public String demandeRecruteur() {
+        return "pages/candidat/demande-recruteur";
+    }
+
     /* ---------- Recruteur ---------- */
 
     @GetMapping("/recruteur/dashboard")
@@ -115,5 +120,10 @@ public class UiController {
     @GetMapping("/admin/logs")
     public String adminLogs() {
         return "pages/admin/logs";
+    }
+
+    @GetMapping("/admin/demandes-recruteur")
+    public String adminDemandesRecruteur() {
+        return "pages/admin/demandes-recruteur";
     }
 }

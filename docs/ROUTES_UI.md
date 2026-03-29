@@ -22,6 +22,7 @@ Toutes les pages sont en **Thymeleaf** avec données de démonstration. Branchem
 | `/candidat/mes-candidatures` | Candidatures + timeline |
 | `/candidat/entretiens` | Liste des entretiens |
 | `/candidat/profil` | Profil |
+| `/demande-recruteur` | Formulaire « Devenir recruteur » (envoi admin + emails) |
 
 ## Recruteur
 
@@ -39,5 +40,10 @@ Toutes les pages sont en **Thymeleaf** avec données de démonstration. Branchem
 | URL | Page |
 |-----|------|
 | `/admin/dashboard` | KPI globaux + graphique |
+| `/admin/demandes-recruteur` | File d’attente : approuver / rejeter les demandes recruteur |
 | `/admin/utilisateurs` | Gestion des comptes |
 | `/admin/logs` | Journaux (mock) |
+
+## Démo UI (menus conditionnels)
+
+Ajoutez `?demo=` à l’URL : `visiteur` | `connecte` | `demande_attente` | `demande_rejetee` | `recruteur` | `admin`

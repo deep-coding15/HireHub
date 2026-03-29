@@ -20,25 +20,34 @@
                 <div class="col-lg-7">
                     <div class="hero-badge">
                         <span class="d-inline-block rounded-circle bg-success" style="width:8px;height:8px;"></span>
-                        Recrutement intelligent
+                        Une plateforme, deux parcours — candidats &amp; entreprises
                     </div>
                     <h1 class="hero-title">
-                        Le bon talent,<br/>
-                        <span class="text-gradient">au bon moment</span>
+                        Avancez votre carrière,<br/>
+                        <span class="text-gradient">accélérez vos recrutements</span>
                     </h1>
-                    <p class="hero-lead">
-                        HireHub centralise offres, candidatures et entretiens. Une expérience fluide pour les recruteurs
-                        et les candidats — propulsée par une architecture microservices.
+                    <p class="hero-lead mb-2">
+                        <strong>Candidats :</strong> parcourez des offres sélectionnées, postulez en un clic avec votre CV,
+                        suivez chaque étape jusqu’à l’entretien — tout depuis un espace clair et moderne.
+                    </p>
+                    <p class="hero-lead mb-0">
+                        <strong>Entreprises :</strong> créez votre compte, déposez une demande « recruteur » validée par nos équipes,
+                        puis pilotez offres, pipeline et entretiens. Le bon profil, sans friction.
                     </p>
                     <div class="hero-cta">
                         <a class="hh-btn-primary" th:href="@{/offres}">
-                            Voir les offres
+                            Explorer les offres
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M5 12h14M12 5l7 7-7 7"/>
                             </svg>
                         </a>
-                        <a class="hh-btn-secondary" th:href="@{/recruteur/dashboard}">Espace recruteur</a>
-                        <a class="btn btn-link text-decoration-none px-2" th:href="@{/register}" style="color: var(--hh-violet-800);">Créer un compte</a>
+                        <a class="hh-btn-secondary" th:href="@{/register}">Créer mon compte candidat</a>
+                        <a class="hh-btn-secondary border-2" style="background: rgba(255,255,255,.85);" th:href="@{/demande-recruteur}" th:unless="${uiEstRecruteur}">
+                            Recruter sur HireHub
+                        </a>
+                        <a class="hh-btn-primary" th:href="@{/recruteur/dashboard}" th:if="${uiEstRecruteur}">
+                            Mon espace recruteur
+                        </a>
                     </div>
                     <div class="hero-stats">
                         <div class="stat-card">
