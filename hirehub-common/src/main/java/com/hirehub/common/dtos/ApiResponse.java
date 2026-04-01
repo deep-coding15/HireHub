@@ -1,6 +1,5 @@
 package com.hirehub.common.dtos;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -8,7 +7,6 @@ import lombok.Setter;
 @Setter
 @Getter
 @NoArgsConstructor
-@AllArgsConstructor
 public class ApiResponse<T> {
 
     private boolean success;
@@ -20,21 +18,27 @@ public class ApiResponse<T> {
         this.message = message;
     }
 
+    public ApiResponse(boolean success, String message, T data) {
+        this.success = success;
+        this.message = message;
+        this.data = data;
+    }
+
     // Factories statiques — usage : ApiResponse.ok(monObjet)
     public static <T> ApiResponse<T> ok(T data) {
-        return new ApiResponse<>(true, "OK", data);
+        return new ApiResponse<T>(true, "OK", data);
     }
 
     public static <T> ApiResponse<T> ok(String message, T data) {
-        return new ApiResponse<>(true, message, data);
+        return new ApiResponse<T>(true, message, data);
     }
 
     public static <T> ApiResponse<T> error(String message) {
-        return new ApiResponse<>(false, message, null);
+        return new ApiResponse<T>(false, message, null);
     }
 
     public static <T> ApiResponse<T> error(String message, T data) {
-        return new ApiResponse<>(false, message, data);
+        return new ApiResponse<T>(false, message, data);
     }
 
 }
