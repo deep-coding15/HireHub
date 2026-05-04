@@ -1,10 +1,9 @@
 package com.hirehub.event.web;
 
-import com.hirehub.event.entity.EventLog;
+import com.hirehub.event.entity.EventAudit;
 import com.hirehub.event.service.EventLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,9 +29,9 @@ public class EventLogController {
      * Récupère tous les logs d'événements
      */
     @GetMapping
-    public ResponseEntity<List<EventLog>> getAllEventLogs() {
+    public ResponseEntity<List<EventAudit>> getAllEventLogs() {
         log.info("[EventLogController] Récupération de tous les logs");
-        List<EventLog> logs = eventLogService.getAllEventLogs();
+        List<EventAudit> logs = eventLogService.getAllEventLogs();
         return ResponseEntity.ok(logs);
     }
 
@@ -41,9 +40,9 @@ public class EventLogController {
      * Récupère un log par ID
      */
     @GetMapping("/{id}")
-    public ResponseEntity<EventLog> getEventLogById(@PathVariable Long id) {
+    public ResponseEntity<EventAudit> getEventLogById(@PathVariable Long id) {
         log.info("[EventLogController] Récupération du log: {}", id);
-        EventLog logg = eventLogService.getEventLogById(id);
+        EventAudit logg = eventLogService.getEventLogById(id);
         if (logg != null) {
             return ResponseEntity.ok(logg);
         }
@@ -56,9 +55,9 @@ public class EventLogController {
      * Récupère les logs par type d'événement
      */
     @GetMapping("/by-type/{eventType}")
-    public ResponseEntity<List<EventLog>> getEventLogsByType(@PathVariable String eventType) {
+    public ResponseEntity<List<EventAudit>> getEventLogsByType(@PathVariable String eventType) {
         log.info("[EventLogController] Récupération des logs par type: {}", eventType);
-        List<EventLog> logs = eventLogService.getEventLogsByType(eventType);
+        List<EventAudit> logs = eventLogService.getEventLogsByType(eventType);
         return ResponseEntity.ok(logs);
     }
 
@@ -67,9 +66,9 @@ public class EventLogController {
      * Récupère les logs par service source
      */
     @GetMapping("/by-source/{sourceService}")
-    public ResponseEntity<List<EventLog>> getEventLogsBySourceService(@PathVariable String sourceService) {
+    public ResponseEntity<List<EventAudit>> getEventLogsBySourceService(@PathVariable String sourceService) {
         log.info("[EventLogController] Récupération des logs par service source: {}", sourceService);
-        List<EventLog> logs = eventLogService.getEventLogsBySourceService(sourceService);
+        List<EventAudit> logs = eventLogService.getEventLogsBySourceService(sourceService);
         return ResponseEntity.ok(logs);
     }
 
@@ -78,9 +77,9 @@ public class EventLogController {
      * Récupère les logs par service destination
      */
     @GetMapping("/by-destination/{destinationService}")
-    public ResponseEntity<List<EventLog>> getEventLogsByDestinationService(@PathVariable String destinationService) {
+    public ResponseEntity<List<EventAudit>> getEventLogsByDestinationService(@PathVariable String destinationService) {
         log.info("[EventLogController] Récupération des logs par service destination: {}", destinationService);
-        List<EventLog> logs = eventLogService.getEventLogsByDestinationService(destinationService);
+        List<EventAudit> logs = eventLogService.getEventLogsByDestinationService(destinationService);
         return ResponseEntity.ok(logs);
     }
 
@@ -89,9 +88,9 @@ public class EventLogController {
      * Récupère les logs par statut
      */
     @GetMapping("/by-status/{status}")
-    public ResponseEntity<List<EventLog>> getEventLogsByStatus(@PathVariable String status) {
+    public ResponseEntity<List<EventAudit>> getEventLogsByStatus(@PathVariable String status) {
         log.info("[EventLogController] Récupération des logs par statut: {}", status);
-        List<EventLog> logs = eventLogService.getEventLogsByStatus(status);
+        List<EventAudit> logs = eventLogService.getEventLogsByStatus(status);
         return ResponseEntity.ok(logs);
     }
 
@@ -101,11 +100,11 @@ public class EventLogController {
      * Paramètres: ?eventType=XXX&status=SUCCESS
      */
     @GetMapping("/filter")
-    public ResponseEntity<List<EventLog>> filterEventLogs(
+    public ResponseEntity<List<EventAudit>> filterEventLogs(
             @RequestParam(required = false) String eventType,
             @RequestParam(required = false) String status) {
         log.info("[EventLogController] Filtrage des logs - Type: {}, Statut: {}", eventType, status);
-        List<EventLog> logs = eventLogService.filterEventLogs(eventType, status);
+        List<EventAudit> logs = eventLogService.filterEventLogs(eventType, status);
         return ResponseEntity.ok(logs);
     }
 
@@ -114,10 +113,10 @@ public class EventLogController {
      * Crée un nouveau log d'événement
      */
     @PostMapping
-    public ResponseEntity<EventLog> createEventLog(@RequestBody EventLog eventLog) {
-        log.info("[EventLogController] Création d'un nouveau log: {}", eventLog.getEventType());
+    public ResponseEntity<EventAudit> createEventLog(@RequestBody EventAudit eventAudit) {
+        log.info("[EventLogController] Création d'un nouveau log: {}", eventAudit.getEventType());
         try {
-            EventLog createdLog = eventLogService.saveEventLog(eventLog);
+            EventAudit createdLog = eventLogService.saveEventLog(eventAudit);
             return ResponseEntity.status(HttpStatus.CREATED).body(createdLog);
         } catch (Exception e) {
             log.error("[EventLogController] Erreur lors de la création du log", e);
@@ -130,10 +129,10 @@ public class EventLogController {
      * Met à jour un log d'événement
      */
     @PutMapping("/{id}")
-    public ResponseEntity<EventLog> updateEventLog(@PathVariable Long id, @RequestBody EventLog eventLog) {
+    public ResponseEntity<EventAudit> updateEventLog(@PathVariable Long id, @RequestBody EventAudit eventAudit) {
         log.info("[EventLogController] Mise à jour du log: {}", id);
         try {
-            EventLog updatedLog = eventLogService.updateEventLog(id, eventLog);
+            EventAudit updatedLog = eventLogService.updateEventLog(id, eventAudit);
             if (updatedLog != null) {
                 return ResponseEntity.ok(updatedLog);
             }

@@ -2,6 +2,9 @@ package com.hirehub.candidature.services;
 
 import com.hirehub.candidature.entities.Candidature;
 import com.hirehub.candidature.entities.HistoriqueStatus;
+import com.hirehub.candidature.exceptions.CandidatureChangedStatusException;
+import com.hirehub.candidature.exceptions.CandidatureCreatedConflitException;
+import com.hirehub.candidature.exceptions.CandidatureNotFoundException;
 import com.hirehub.candidature.repository.CandidatureRepository;
 import com.hirehub.candidature.repository.HistoriqueStatusRepository;
 import com.hirehub.common.constants.EventType;
@@ -52,7 +55,8 @@ public class CandidatureServiceImpl implements CandidatureService {
         if (existing.isPresent()) {
             log.warn("Candidat {} a déjà postulé à l'offre {}",
                     candidature.getCandidatId(), candidature.getOffreId());
-            throw new RuntimeException("Vous avez déjà postulé à cette offre");
+            throw new CandidatureCreatedConflitException(
+                    "Vous avez déjà postulé à cette offre.");
         }
 
         // Définir les valeurs par défaut
@@ -93,7 +97,7 @@ public class CandidatureServiceImpl implements CandidatureService {
         log.info("Mise à jour du statut de la candidature: {} -> {}", id, status);
 
         Candidature candidature = candidatureRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Candidature non trouvée"));
+                .orElseThrow( () -> new CandidatureNotFoundException("Candidature non trouvée"));
 
         try {
             CandidatureStatus newStatus = CandidatureStatus.valueOf(status);
@@ -121,7 +125,7 @@ public class CandidatureServiceImpl implements CandidatureService {
 
         } catch (IllegalArgumentException e) {
             log.error("Statut invalide: {}", status);
-            throw new RuntimeException("Statut invalide: " + status);
+            throw new CandidatureChangedStatusException("Statut invalide: " + status);
         }
     }
 
@@ -130,7 +134,7 @@ public class CandidatureServiceImpl implements CandidatureService {
         log.info("Mise à jour des détails de la candidature: {}", id);
 
         Candidature candidature = candidatureRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Candidature non trouvée"));
+                .orElseThrow(() -> new CandidatureNotFoundException("Candidature non trouvée"));
 
         // TODO: Vérifier que le candidat authentifié est le propriétaire
 

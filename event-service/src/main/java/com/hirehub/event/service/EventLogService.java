@@ -1,6 +1,6 @@
 package com.hirehub.event.service;
 
-import com.hirehub.event.entity.EventLog;
+import com.hirehub.event.entity.EventAudit;
 import com.hirehub.event.repository.EventLogRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -22,10 +22,10 @@ public class EventLogService {
     /**
      * Persiste un événement dans le log d'audit
      */
-    public EventLog logEvent(String eventId, String eventType, String message,
-                             String sourceService, String destinationService) {
+    public EventAudit logEvent(String eventId, String eventType, String message,
+                               String sourceService, String destinationService) {
         try {
-            EventLog eventLog = EventLog.builder()
+            EventAudit eventAudit = EventAudit.builder()
                     .eventId(eventId)
                     .eventType(eventType)
                     .message(message)
@@ -35,23 +35,23 @@ public class EventLogService {
                     .status("SUCCESS")
                     .build();
 
-            EventLog savedLog = eventLogRepository.save(eventLog);
-            log.debug("[EventLog] Événement persisté: {} ({})", eventType, eventId);
+            EventAudit savedLog = eventLogRepository.save(eventAudit);
+            log.debug("[EventAudit] Événement persisté: {} ({})", eventType, eventId);
             return savedLog;
 
         } catch (Exception e) {
-            log.error("[EventLog ERROR] Erreur lors de la persistance: {}", e.getMessage(), e);
-            throw new RuntimeException("Erreur persistance EventLog", e);
+            log.error("[EventAudit ERROR] Erreur lors de la persistance: {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur persistance EventAudit", e);
         }
     }
 
     /**
      * Persiste un événement avec un statut d'erreur
      */
-    public EventLog logEventError(String eventId, String eventType, String message,
-                                  String sourceService, String errorMessage) {
+    public EventAudit logEventError(String eventId, String eventType, String message,
+                                    String sourceService, String errorMessage) {
         try {
-            EventLog eventLog = EventLog.builder()
+            EventAudit eventAudit = EventAudit.builder()
                     .eventId(eventId)
                     .eventType(eventType)
                     .message(message)
@@ -61,10 +61,10 @@ public class EventLogService {
                     .errorMessage(errorMessage)
                     .build();
 
-            return eventLogRepository.save(eventLog);
+            return eventLogRepository.save(eventAudit);
 
         } catch (Exception e) {
-            log.error("[EventLog ERROR] Erreur lors du log d'erreur: {}", e.getMessage(), e);
+            log.error("[EventAudit ERROR] Erreur lors du log d'erreur: {}", e.getMessage(), e);
             // Ne pas relancer - on ne veut pas bloquer l'audit
             return null;
         }
@@ -73,56 +73,56 @@ public class EventLogService {
     /**
      * Récupère tous les logs d'événements
      */
-    public List<EventLog> getAllEventLogs() {
-        log.debug("[EventLog] Récupération de tous les logs");
+    public List<EventAudit> getAllEventLogs() {
+        log.debug("[EventAudit] Récupération de tous les logs");
         return eventLogRepository.findAll();
     }
 
     /**
      * Récupère un log par ID
      */
-    public EventLog getEventLogById(Long id) {
-        log.debug("[EventLog] Récupération du log: {}", id);
+    public EventAudit getEventLogById(Long id) {
+        log.debug("[EventAudit] Récupération du log: {}", id);
         return eventLogRepository.findById(id).orElse(null);
     }
 
     /**
      * Récupère les logs par type d'événement
      */
-    public List<EventLog> getEventLogsByType(String eventType) {
-        log.debug("[EventLog] Recherche des logs par type: {}", eventType);
+    public List<EventAudit> getEventLogsByType(String eventType) {
+        log.debug("[EventAudit] Recherche des logs par type: {}", eventType);
         return eventLogRepository.findByEventType(eventType);
     }
 
     /**
      * Récupère les logs par service source
      */
-    public List<EventLog> getEventLogsBySourceService(String sourceService) {
-        log.debug("[EventLog] Recherche des logs par service source: {}", sourceService);
+    public List<EventAudit> getEventLogsBySourceService(String sourceService) {
+        log.debug("[EventAudit] Recherche des logs par service source: {}", sourceService);
         return eventLogRepository.findBySourceService(sourceService);
     }
 
     /**
      * Récupère les logs par service destination
      */
-    public List<EventLog> getEventLogsByDestinationService(String destinationService) {
-        log.debug("[EventLog] Recherche des logs par service destination: {}", destinationService);
+    public List<EventAudit> getEventLogsByDestinationService(String destinationService) {
+        log.debug("[EventAudit] Recherche des logs par service destination: {}", destinationService);
         return eventLogRepository.findByDestinationService(destinationService);
     }
 
     /**
      * Récupère les logs par statut
      */
-    public List<EventLog> getEventLogsByStatus(String status) {
-        log.debug("[EventLog] Recherche des logs par statut: {}", status);
+    public List<EventAudit> getEventLogsByStatus(String status) {
+        log.debug("[EventAudit] Recherche des logs par statut: {}", status);
         return eventLogRepository.findByStatus(status);
     }
 
     /**
      * Filtre les logs par type et statut
      */
-    public List<EventLog> filterEventLogs(String eventType, String status) {
-        log.debug("[EventLog] Filtrage des logs - Type: {}, Statut: {}", eventType, status);
+    public List<EventAudit> filterEventLogs(String eventType, String status) {
+        log.debug("[EventAudit] Filtrage des logs - Type: {}, Statut: {}", eventType, status);
 
         if (eventType != null && status != null) {
             return eventLogRepository.findByEventTypeAndStatus(eventType, status);
@@ -137,47 +137,47 @@ public class EventLogService {
     /**
      * Sauvegarde un log d'événement
      */
-    public EventLog saveEventLog(EventLog eventLog) {
+    public EventAudit saveEventLog(EventAudit eventAudit) {
         try {
-            if (eventLog.getCreatedAt() == null) {
-                eventLog.setCreatedAt(LocalDateTime.now());
+            if (eventAudit.getCreatedAt() == null) {
+                eventAudit.setCreatedAt(LocalDateTime.now());
             }
-            EventLog savedLog = eventLogRepository.save(eventLog);
-            log.info("[EventLog] Log sauvegardé avec succès: {}", savedLog.getId());
+            EventAudit savedLog = eventLogRepository.save(eventAudit);
+            log.info("[EventAudit] Log sauvegardé avec succès: {}", savedLog.getId());
             return savedLog;
         } catch (Exception e) {
-            log.error("[EventLog ERROR] Erreur lors de la sauvegarde du log: {}", e.getMessage(), e);
-            throw new RuntimeException("Erreur sauvegarde EventLog", e);
+            log.error("[EventAudit ERROR] Erreur lors de la sauvegarde du log: {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur sauvegarde EventAudit", e);
         }
     }
 
     /**
      * Met à jour un log d'événement
      */
-    public EventLog updateEventLog(Long id, EventLog eventLog) {
+    public EventAudit updateEventLog(Long id, EventAudit eventAudit) {
         try {
             return eventLogRepository.findById(id)
                     .map(existingLog -> {
-                        if (eventLog.getEventType() != null) {
-                            existingLog.setEventType(eventLog.getEventType());
+                        if (eventAudit.getEventType() != null) {
+                            existingLog.setEventType(eventAudit.getEventType());
                         }
-                        if (eventLog.getMessage() != null) {
-                            existingLog.setMessage(eventLog.getMessage());
+                        if (eventAudit.getMessage() != null) {
+                            existingLog.setMessage(eventAudit.getMessage());
                         }
-                        if (eventLog.getStatus() != null) {
-                            existingLog.setStatus(eventLog.getStatus());
+                        if (eventAudit.getStatus() != null) {
+                            existingLog.setStatus(eventAudit.getStatus());
                         }
-                        if (eventLog.getErrorMessage() != null) {
-                            existingLog.setErrorMessage(eventLog.getErrorMessage());
+                        if (eventAudit.getErrorMessage() != null) {
+                            existingLog.setErrorMessage(eventAudit.getErrorMessage());
                         }
-                        EventLog updatedLog = eventLogRepository.save(existingLog);
-                        log.info("[EventLog] Log mis à jour avec succès: {}", id);
+                        EventAudit updatedLog = eventLogRepository.save(existingLog);
+                        log.info("[EventAudit] Log mis à jour avec succès: {}", id);
                         return updatedLog;
                     })
                     .orElse(null);
         } catch (Exception e) {
-            log.error("[EventLog ERROR] Erreur lors de la mise à jour du log: {}", e.getMessage(), e);
-            throw new RuntimeException("Erreur mise à jour EventLog", e);
+            log.error("[EventAudit ERROR] Erreur lors de la mise à jour du log: {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur mise à jour EventAudit", e);
         }
     }
 
@@ -187,10 +187,10 @@ public class EventLogService {
     public void deleteEventLog(Long id) {
         try {
             eventLogRepository.deleteById(id);
-            log.info("[EventLog] Log supprimé avec succès: {}", id);
+            log.info("[EventAudit] Log supprimé avec succès: {}", id);
         } catch (Exception e) {
-            log.error("[EventLog ERROR] Erreur lors de la suppression du log: {}", e.getMessage(), e);
-            throw new RuntimeException("Erreur suppression EventLog", e);
+            log.error("[EventAudit ERROR] Erreur lors de la suppression du log: {}", e.getMessage(), e);
+            throw new RuntimeException("Erreur suppression EventAudit", e);
         }
     }
 
@@ -205,7 +205,7 @@ public class EventLogService {
      * Récupère les statistiques d'événements
      */
     public Map<String, Long> getEventStatistics() {
-        log.debug("[EventLog] Calcul des statistiques d'événements");
+        log.debug("[EventAudit] Calcul des statistiques d'événements");
         return Map.of(
                 "SUCCESS", countByStatus("SUCCESS"),
                 "FAILED", countByStatus("FAILED"),
