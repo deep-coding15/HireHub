@@ -1,5 +1,6 @@
 package com.hirehub.candidature.web;
 
+import com.hirehub.candidature.config.RequireAuth;
 import com.hirehub.candidature.config.UserContext;
 import com.hirehub.candidature.entities.Candidature;
 import com.hirehub.candidature.entities.HistoriqueStatus;
@@ -27,6 +28,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/candidatures")
 @Slf4j
+@RequireAuth
 public class CandidatureController {
 
     private final CandidatureService candidatureService;
@@ -42,6 +44,7 @@ public class CandidatureController {
      * POST /candidatures
      */
     @PostMapping
+    @RequireAuth
     public ResponseEntity<ApiResponse<Candidature>> create(
             @RequestBody Candidature candidature) {
 
