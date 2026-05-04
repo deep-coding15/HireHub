@@ -15,11 +15,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * ║                                                                ║
  * ║  ⚠️  N'est PAS un point de passage obligatoire               ║
  * ║  Chaque service consomme directement les événements          ║
- * ║  qui le concernent via notification-service                  ║
+ * ║  qui le concernent via email-service                  ║
  * ║                                                                ║
  * ║  Architecture (conforme aux bonnes pratiques entreprise):     ║
  * ║  - RabbitMQ = bus d'événements partagé                       ║
- * ║  - notification-service = consommateur final des mails       ║
+ * ║  - email-service = consommateur final des mails       ║
  * ║  - event-service = audit optionnel                           ║
  * ║  - Pas de Feign inter-services pour les mails                ║
  * ╚══════════════════════════════════════════════════════════════╝

@@ -1,3 +1,4 @@
+
 -- Créer la table event_log pour l'audit
 CREATE TABLE IF NOT EXISTS event_log (
     id BIGSERIAL PRIMARY KEY,

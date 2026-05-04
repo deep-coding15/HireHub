@@ -17,4 +17,12 @@ public interface EventLogRepository extends JpaRepository<EventLog, Long> {
     List<EventLog> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
     List<EventLog> findByStatus(String status);
+
+    List<EventLog> findBySourceService(String sourceService);
+
+    List<EventLog> findByDestinationService(String destinationService);
+
+    List<EventLog> findByEventTypeAndStatus(String eventType, String status);
+
+    long countByStatus(String status);
 }
