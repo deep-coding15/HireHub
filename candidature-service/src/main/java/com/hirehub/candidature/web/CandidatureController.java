@@ -2,6 +2,8 @@ package com.hirehub.candidature.web;
 
 import com.hirehub.candidature.entities.Candidature;
 import com.hirehub.candidature.entities.HistoriqueStatus;
+import com.hirehub.candidature.exceptions.CandidatureChangedStatusException;
+import com.hirehub.candidature.exceptions.CandidatureUpdatedException;
 import com.hirehub.candidature.repository.HistoriqueStatusRepository;
 import com.hirehub.candidature.services.CandidatureService;
 import com.hirehub.common.dtos.ApiResponse;
@@ -37,16 +39,12 @@ public class CandidatureController {
      * POST /candidatures
      */
     @PostMapping
-    public ResponseEntity<ApiResponse<Candidature>> create(@RequestBody Candidature candidature) {
-        try {
-            candidatureService.createCandidatureByCandidat(candidature);
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.ok("Candidature créée", candidature));
-        } catch (Exception e) {
-            log.error("Erreur création candidature: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
-        }
+    public ResponseEntity<ApiResponse<Candidature>> create(
+            @RequestBody Candidature candidature) {
+
+        candidatureService.createCandidatureByCandidat(candidature);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.ok("Candidature créée", candidature));
     }
 
     /**
@@ -54,15 +52,11 @@ public class CandidatureController {
      */
     @GetMapping("/moi")
     public ResponseEntity<ApiResponse<List<Candidature>>> myCandidatures() {
-        try {
-            // TODO: lire le candidatId depuis le SecurityContext
-            List<Candidature> data = candidatureService.getMyCandidaturesByCandidat();
-            return ResponseEntity.ok(ApiResponse.ok("Candidatures récupérées", data));
-        } catch (Exception e) {
-            log.error("Erreur récupération candidatures: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e.getMessage()));
-        }
+
+        // TODO: lire le candidatId depuis le SecurityContext
+        List<Candidature> data = candidatureService.getMyCandidaturesByCandidat();
+        return ResponseEntity.ok(ApiResponse.ok("Candidatures récupérées", data));
+
     }
 
     /**
@@ -70,15 +64,11 @@ public class CandidatureController {
      */
     @GetMapping("/offre/{offreId}")
     public ResponseEntity<ApiResponse<List<Candidature>>> byOffer(@PathVariable String offreId) {
-        try {
-            // TODO: vérifier que le recruteur authentifié est propriétaire de l'offre
-            List<Candidature> data = candidatureService.getCandidaturesByOfferIdByRecruiter(offreId);
-            return ResponseEntity.ok(ApiResponse.ok("Candidatures récupérées", data));
-        } catch (Exception e) {
-            log.error("Erreur récupération candidatures offre {}: {}", offreId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e.getMessage()));
-        }
+
+        // TODO: vérifier que le recruteur authentifié est propriétaire de l'offre
+        List<Candidature> data = candidatureService.getCandidaturesByOfferIdByRecruiter(offreId);
+        return ResponseEntity.ok(ApiResponse.ok("Candidatures récupérées", data));
+
     }
 
     /**
@@ -86,18 +76,14 @@ public class CandidatureController {
      */
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<Candidature>> get(@PathVariable String id) {
-        try {
-            Candidature candidature = candidatureService.getCandidatureById(id);
-            if (candidature == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("Candidature non trouvée"));
-            }
-            return ResponseEntity.ok(ApiResponse.ok("Candidature récupérée", candidature));
-        } catch (Exception e) {
-            log.error("Erreur récupération candidature {}: {}", id, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e.getMessage()));
+
+        Candidature candidature = candidatureService.getCandidatureById(id);
+        if (candidature == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(ApiResponse.error("Candidature non trouvée"));
         }
+        return ResponseEntity.ok(ApiResponse.ok("Candidature récupérée", candidature));
+
     }
 
     /**
@@ -113,8 +99,7 @@ public class CandidatureController {
             return ResponseEntity.ok(ApiResponse.ok("Statut mis à jour", updated));
         } catch (Exception e) {
             log.error("Erreur update statut candidature {}: {}", candidatureId, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
+            throw new CandidatureChangedStatusException(e.getMessage());
         }
     }
 
@@ -133,8 +118,7 @@ public class CandidatureController {
             return ResponseEntity.ok(ApiResponse.ok("Fichiers mis à jour", updated));
         } catch (Exception e) {
             log.error("Erreur update fichiers candidature {}: {}", id, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
+            throw new CandidatureUpdatedException(e.getMessage());
         }
     }
 
@@ -154,8 +138,7 @@ public class CandidatureController {
             return ResponseEntity.ok(ApiResponse.ok("Upload enregistré", updated));
         } catch (Exception e) {
             log.error("Erreur upload fichiers candidature {}: {}", id, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body(ApiResponse.error(e.getMessage()));
+            throw new CandidatureUpdatedException(e.getMessage());
         }
     }
 
@@ -163,15 +146,15 @@ public class CandidatureController {
      * GET /candidatures/{id}/historique
      */
     @GetMapping("/{id}/historique")
-    public ResponseEntity<ApiResponse<List<HistoriqueStatus>>> historique(@PathVariable String id) {
+    public ResponseEntity<ApiResponse<List<HistoriqueStatus>>> historique(@PathVariable String id)
+            throws Exception {
         try {
             // TODO: vérifier que (candidat propriétaire) OU (recruteur propriétaire de l'offre)
             List<HistoriqueStatus> data = historiqueStatusRepository.findByCandidatureIdOrderByDateChangementDesc(id);
             return ResponseEntity.ok(ApiResponse.ok("Historique récupéré", data));
         } catch (Exception e) {
             log.error("Erreur récupération historique candidature {}: {}", id, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error(e.getMessage()));
+            throw new Exception(e.getMessage());
         }
     }
 

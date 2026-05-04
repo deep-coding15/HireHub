@@ -8,12 +8,12 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "event_log")
+@Table(name = "event_audit_log")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class EventLog {
+public class EventAudit {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,6 +1,6 @@
 package com.hirehub.event.repository;
 
-import com.hirehub.event.entity.EventLog;
+import com.hirehub.event.entity.EventAudit;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -8,21 +8,21 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
-public interface EventLogRepository extends JpaRepository<EventLog, Long> {
+public interface EventLogRepository extends JpaRepository<EventAudit, Long> {
 
-    EventLog findByEventId(String eventId);
+    EventAudit findByEventId(String eventId);
 
-    List<EventLog> findByEventType(String eventType);
+    List<EventAudit> findByEventType(String eventType);
 
-    List<EventLog> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
+    List<EventAudit> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
-    List<EventLog> findByStatus(String status);
+    List<EventAudit> findByStatus(String status);
 
-    List<EventLog> findBySourceService(String sourceService);
+    List<EventAudit> findBySourceService(String sourceService);
 
-    List<EventLog> findByDestinationService(String destinationService);
+    List<EventAudit> findByDestinationService(String destinationService);
 
-    List<EventLog> findByEventTypeAndStatus(String eventType, String status);
+    List<EventAudit> findByEventTypeAndStatus(String eventType, String status);
 
     long countByStatus(String status);
 }
