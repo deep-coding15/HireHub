@@ -1,8 +1,11 @@
 package com.hirehub.candidature.web;
 
+import com.hirehub.candidature.config.InvalidTransitionException;
 import com.hirehub.candidature.exceptions.CandidatureChangedStatusException;
 import com.hirehub.candidature.exceptions.CandidatureCreatedConflitException;
+import com.hirehub.candidature.exceptions.CandidatureNotFoundException;
 import com.hirehub.candidature.exceptions.CandidatureUpdatedException;
+import com.hirehub.candidature.exceptions.OffreNotFoundException;
 import com.hirehub.candidature.exceptions.UnauthorizedException;
 import com.hirehub.common.dtos.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +22,26 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleUnauthorized(UnauthorizedException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(CandidatureNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleCandidatureNotFound(CandidatureNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error(ex.getMessage()));
+    }
+
+    @ExceptionHandler(OffreNotFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleOffreNotFound(OffreNotFoundException ex) {
+        log.warn("Offre non trouvée ou non publiée: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ApiResponse.error("L'offre n'existe pas ou n'est pas publiée"));
+    }
+
+    @ExceptionHandler(InvalidTransitionException.class)
+    public ResponseEntity<ApiResponse<Void>> handleInvalidTransition(InvalidTransitionException ex) {
+        log.warn("Transition de statut invalide: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ApiResponse.error("Transition de statut invalide: " + ex.getMessage()));
     }
 
     @ExceptionHandler(CandidatureCreatedConflitException.class)

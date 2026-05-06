@@ -1,5 +1,6 @@
 package com.hirehub.candidature.web;
 
+import com.hirehub.candidature.config.CandidatureSecurityService;
 import com.hirehub.candidature.config.RequireAuth;
 import com.hirehub.candidature.config.UserContext;
 import com.hirehub.candidature.entities.Candidature;
@@ -33,11 +34,14 @@ public class CandidatureController {
 
     private final CandidatureService candidatureService;
     private final HistoriqueStatusRepository historiqueStatusRepository;
+    private final CandidatureSecurityService securityService;
 
     public CandidatureController(CandidatureService candidatureService,
-                                 HistoriqueStatusRepository historiqueStatusRepository) {
+                                 HistoriqueStatusRepository historiqueStatusRepository,
+                                 CandidatureSecurityService securityService) {
         this.candidatureService = candidatureService;
         this.historiqueStatusRepository = historiqueStatusRepository;
+        this.securityService = securityService;
     }
 
     /**
@@ -87,17 +91,23 @@ public class CandidatureController {
     public ResponseEntity<ApiResponse<Candidature>> updateStatus(@PathVariable String candidatureId,
                                                                  @RequestParam("status") String status) {
         try {
-            UserContext.UserInfo user = UserContext.getUser();
-            if (user == null) {
-                throw new UnauthorizedException("Authentification requise");
-            }
-            if (!UserRole.RECRUTEUR.name().equals(user.role)) {
-                throw new UnauthorizedException("Accès réservé aux recruteurs");
+            // Vérifier l'authentification et les droits
+            UserContext.UserInfo user = securityService.requireAuth();
+
+            Candidature candidature = candidatureService.getCandidatureById(candidatureId);
+            if (candidature == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Candidature non trouvée"));
             }
 
+            // Vérifier que le recruteur peut changer le statut
+            securityService.requireRecruteurCanChangeStatus(user, candidature);
+
+            // Mettre à jour le statut
             candidatureService.updateCandidatureStatusByRecruiter(candidatureId, status);
             Candidature updated = candidatureService.getCandidatureById(candidatureId);
             return ResponseEntity.ok(ApiResponse.ok("Statut mis à jour", updated));
+
         } catch (UnauthorizedException e) {
             log.warn("Accès non autorisé: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
@@ -123,24 +133,29 @@ public class CandidatureController {
                                                                 @RequestParam(value = "cvPath", required = false) String cvPath,
                                                                 @RequestParam(value = "lettreMotivationPath", required = false) String lettreMotivationPath) {
         try {
-            UserContext.UserInfo user = UserContext.getUser();
-            if (user == null) {
-                throw new UnauthorizedException("Authentification requise");
+            UserContext.UserInfo user = securityService.requireAuth();
+
+            Candidature candidature = candidatureService.getCandidatureById(id);
+            if (candidature == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Candidature non trouvée"));
             }
-            if (!UserRole.CANDIDAT.name().equals(user.role)) {
-                throw new UnauthorizedException("Accès réservé aux candidats");
-            }
+
+            // Vérifier que le candidat peut mettre à jour ses fichiers
+            securityService.requireCandidatCanUpdateFiles(user, candidature);
 
             candidatureService.updateCandidatureDetailsByCandidat(id, cvPath, lettreMotivationPath);
             Candidature updated = candidatureService.getCandidatureById(id);
-            // garder les fichiers dans le volume docker
+            // TODO: garder les fichiers dans le volume docker
             return ResponseEntity.ok(ApiResponse.ok("Fichiers mis à jour", updated));
         } catch (UnauthorizedException e) {
             log.warn("Accès non autorisé: {}", e.getMessage());
-            throw e;
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             log.error("Erreur update fichiers candidature {}: {}", id, e.getMessage(), e);
-            throw new CandidatureUpdatedException(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         }
     }
 
@@ -154,23 +169,28 @@ public class CandidatureController {
                                                            @RequestParam("cvPath") String cvPath,
                                                            @RequestParam("lettreMotivationPath") String lettreMotivationPath) {
         try {
-            UserContext.UserInfo user = UserContext.getUser();
-            if (user == null) {
-                throw new UnauthorizedException("Authentification requise");
+            UserContext.UserInfo user = securityService.requireAuth();
+
+            Candidature candidature = candidatureService.getCandidatureById(id);
+            if (candidature == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Candidature non trouvée"));
             }
-            if (!UserRole.CANDIDAT.name().equals(user.role)) {
-                throw new UnauthorizedException("Accès réservé aux candidats");
-            }
+
+            // Vérifier que le candidat peut mettre à jour ses fichiers
+            securityService.requireCandidatCanUpdateFiles(user, candidature);
 
             candidatureService.uploadCVAndCoverLetter(id, cvPath, lettreMotivationPath);
             Candidature updated = candidatureService.getCandidatureById(id);
             return ResponseEntity.ok(ApiResponse.ok("Upload enregistré", updated));
         } catch (UnauthorizedException e) {
             log.warn("Accès non autorisé: {}", e.getMessage());
-            throw e;
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             log.error("Erreur upload fichiers candidature {}: {}", id, e.getMessage(), e);
-            throw new CandidatureUpdatedException(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(ApiResponse.error(e.getMessage()));
         }
     }
 
@@ -192,19 +212,15 @@ public class CandidatureController {
 
     /**
      * GET /candidatures/offre/{offreId}
+     * Pipeline du recruteur: liste de toutes les candidatures pour une offre
      */
     @GetMapping("/offre/{offreId}")
     public ResponseEntity<ApiResponse<List<Candidature>>> byOffer(@PathVariable String offreId) {
-        // TODO: vérifier que le recruteur authentifié est propriétaire de l'offre
-
         try {
-            UserContext.UserInfo user = UserContext.getUser();
-            if (user == null) {
-                throw new UnauthorizedException("Authentification requise");
-            }
-            if (!UserRole.RECRUTEUR.name().equals(user.role)) {
-                throw new UnauthorizedException("Accès réservé aux recruteurs");
-            }
+            UserContext.UserInfo user = securityService.requireAuth();
+
+            // Vérifier que le recruteur peut accéder au pipeline de cette offre
+            securityService.requireRecruteurCanViewPipeline(user, offreId);
 
             List<Candidature> data = candidatureService.getCandidaturesByOfferIdByRecruiter(offreId);
             return ResponseEntity.ok(ApiResponse.ok("Candidatures récupérées", data));
@@ -225,23 +241,84 @@ public class CandidatureController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable String id) {
         try {
-            UserContext.UserInfo user = UserContext.getUser();
-            if (user == null) {
-                throw new UnauthorizedException("Authentification requise");
+            UserContext.UserInfo user = securityService.requireAuth();
+
+            Candidature candidature = candidatureService.getCandidatureById(id);
+            if (candidature == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Candidature non trouvée"));
             }
-            if (!UserRole.CANDIDAT.name().equals(user.role)) {
-                throw new UnauthorizedException("Accès réservé aux candidats");
-            }
+
+            // Vérifier que le candidat peut supprimer sa candidature
+            securityService.requireCandidatCanDeleteCandidature(user, candidature);
 
             candidatureService.deleteCandidatureByCandidat(id);
             return ResponseEntity.ok(ApiResponse.ok("Candidature supprimée", null));
         } catch (UnauthorizedException e) {
             log.warn("Accès non autorisé: {}", e.getMessage());
-            throw e;
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             log.error("Erreur suppression candidature {}: {}", id, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(ApiResponse.error(e.getMessage()));
         }
     }
+
+    /**
+     * GET /candidatures/{id}/download?type=cv|lettre
+     *
+     * Télécharge les fichiers CV ou lettre de motivation de manière sécurisée.
+     * Vérifie que l'utilisateur est :
+     * - Le candidat propriétaire (pour son propre CV)
+     * - Un recruteur autorisé (pour voir les candidatures)
+     */
+    @GetMapping("/{id}/download")
+    public ResponseEntity<ApiResponse<String>> downloadFile(
+            @PathVariable String id,
+            @RequestParam(value = "type", defaultValue = "cv") String fileType) {
+
+        try {
+            UserContext.UserInfo user = securityService.requireAuth();
+
+            Candidature candidature = candidatureService.getCandidatureById(id);
+            if (candidature == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Candidature non trouvée"));
+            }
+
+            // Vérification des droits d'accès selon le rôle
+            if (UserRole.CANDIDAT.name().equals(user.role)) {
+                securityService.requireCandidatCanDownloadOwnFile(user, candidature);
+            } else if (UserRole.RECRUTEUR.name().equals(user.role)) {
+                securityService.requireRecruteurCanDownloadFile(user, candidature);
+            } else {
+                throw new UnauthorizedException("Rôle utilisateur non reconnu");
+            }
+
+            // Retourner le chemin du fichier
+            String filePath = fileType.equalsIgnoreCase("cv")
+                ? candidature.getCV_Path()
+                : candidature.getLettreMotivationPath();
+
+            if (filePath == null || filePath.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Fichier non trouvé"));
+            }
+
+            // TODO: Implémenter le streaming réel du fichier
+            // Actuellement, on retourne juste le chemin (pour tests)
+            return ResponseEntity.ok(ApiResponse.ok("Fichier disponible", filePath));
+
+        } catch (UnauthorizedException e) {
+            log.warn("Accès non autorisé au téléchargement: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(e.getMessage()));
+        } catch (Exception e) {
+            log.error("Erreur téléchargement fichier candidature {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ApiResponse.error("Erreur lors du téléchargement"));
+        }
+    }
+
 }
