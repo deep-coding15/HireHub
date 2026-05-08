@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Détails candidature - Recruteur</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container">
+        <div th:if="${error}" class="alert alert-danger">
+            <span th:text="${error}"></span>
+        </div>
+
+        <div th:unless="${error}">
+            <div class="mb-3">
+                <a th:href="@{/recruteur/pipeline}" class="btn btn-outline-secondary">
+                    ← Retour au pipeline
+                </a>
+            </div>
+
+            <div class="hh-card">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1 class="h3" th:text="${candidature.candidatId}"></h1>
+                        <p class="text-muted mb-0">Offre: <strong th:text="${candidature.offreId}"></strong></p>
+                    </div>
+                    <span th:class="${candidature.statusBadgeClass}"
+                          th:text="${candidature.statusLabel}"></span>
+                </div>
+
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h5 class="text-muted">Date de soumission</h5>
+                        <p th:text="${candidature.getDateSoumissionFormatted()}"></p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="text-muted">Dernière modification</h5>
+                        <p th:text="${candidature.getDateModificationFormatted()}"></p>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-top">
+                    <h5>Fichiers</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <span class="badge bg-info">CV</span>
+                            <th:block th:if="${candidature.hasCv()}">
+                                <a th:href="@{/recruteur/candidature/{id}/download(id=${candidature.id},type=cv)}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Télécharger
+                                </a>
+                            </th:block>
+                            <span th:unless="${candidature.hasCv()}" class="text-muted">Non fourni</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-top">
+                    <h5>Changer le statut</h5>
+                    <form th:action="@{/recruteur/candidature/{id}/statut(id=${candidature.id})}" method="POST" class="d-inline">
+                        <div class="input-group">
+                            <select name="status" class="form-select" required>
+                                <option value="">-- Sélectionner un statut --</option>
+                                <option value="EN_COURS">En cours</option>
+                                <option value="EN_ATTENTE">En attente</option>
+                                <option value="ACCEPTÉE">Acceptée</option>
+                                <option value="REJETÉE">Rejetée</option>
+                            </select>
+                            <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>
+
