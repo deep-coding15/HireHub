@@ -22,10 +22,10 @@ public class JwtTokenValidator {
 
     public boolean isTokenValid(String token) {
         try {
-            Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
+            Jwts.parser()
+                    .verifyWith(secretKey)
                     .build()
-                    .parseClaimsJws(token);
+                    .parseSignedClaims(token);
             return true;
         } catch (Exception e) {
             return false;
@@ -34,11 +34,11 @@ public class JwtTokenValidator {
 
     public UUID extractUserId(String token) {
         try {
-            String userId = Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
+            String userId = Jwts.parser()
+                    .verifyWith(secretKey)
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody()
+                    .parseSignedClaims(token)
+                    .getPayload()
                     .getSubject();
             return UUID.fromString(userId);
         } catch (Exception e) {
@@ -48,11 +48,11 @@ public class JwtTokenValidator {
 
     public String extractEmail(String token) {
         try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
+            return Jwts.parser()
+                    .verifyWith(secretKey)
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody()
+                    .parseSignedClaims(token)
+                    .getPayload()
                     .get("email", String.class);
         } catch (Exception e) {
             return null;
@@ -61,11 +61,11 @@ public class JwtTokenValidator {
 
     public String extractRole(String token) {
         try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
+            return Jwts.parser()
+                    .verifyWith(secretKey)
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody()
+                    .parseSignedClaims(token)
+                    .getPayload()
                     .get("role", String.class);
         } catch (Exception e) {
             return null;
@@ -74,11 +74,11 @@ public class JwtTokenValidator {
 
     public String extractFullName(String token) {
         try {
-            return Jwts.parserBuilder()
-                    .setSigningKey(secretKey)
+            return Jwts.parser()
+                    .verifyWith(secretKey)
                     .build()
-                    .parseClaimsJws(token)
-                    .getBody()
+                    .parseSignedClaims(token)
+                    .getPayload()
                     .get("fullName", String.class);
         } catch (Exception e) {
             return null;

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Détails candidature</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container">
+        <div th:if="${error}" class="alert alert-danger">
+            <span th:text="${error}"></span>
+        </div>
+
+        <div th:unless="${error}">
+            <div class="mb-3">
+                <a th:href="@{/candidat/mes-candidatures}" class="btn btn-outline-secondary">
+                    ← Retour aux candidatures
+                </a>
+            </div>
+
+            <div class="hh-card">
+                <div class="d-flex justify-content-between align-items-start mb-4">
+                    <div>
+                        <h1 class="h3" th:text="${candidature.offreId}"></h1>
+                        <p class="text-muted mb-0">ID: <code th:text="${candidature.id}"></code></p>
+                    </div>
+                    <span th:class="${candidature.statusBadgeClass}"
+                          th:text="${candidature.statusLabel}"></span>
+                </div>
+
+                <!-- Informations de candidature -->
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <h5 class="text-muted">Date de soumission</h5>
+                        <p th:text="${candidature.getDateSoumissionFormatted()}"></p>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <h5 class="text-muted">Dernière modification</h5>
+                        <p th:text="${candidature.getDateModificationFormatted()}"></p>
+                    </div>
+                </div>
+
+                <!-- Fichiers -->
+                <div class="mt-4 pt-4 border-top">
+                    <h5>Fichiers</h5>
+                    <div class="row">
+                        <div class="col-md-6 mb-2">
+                            <span class="badge bg-info">CV</span>
+                            <th:block th:if="${candidature.hasCv()}">
+                                <a th:href="@{/candidat/candidature/{id}/download(id=${candidature.id},type=cv)}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Télécharger
+                                </a>
+                            </th:block>
+                            <span th:unless="${candidature.hasCv()}" class="text-muted">Non fourni</span>
+                        </div>
+                        <div class="col-md-6 mb-2">
+                            <span class="badge bg-info">Lettre de motivation</span>
+                            <th:block th:if="${candidature.hasLettre()}">
+                                <a th:href="@{/candidat/candidature/{id}/download(id=${candidature.id},type=lettre)}"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Télécharger
+                                </a>
+                            </th:block>
+                            <span th:unless="${candidature.hasLettre()}" class="text-muted">Non fournie</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="mt-4 pt-4 border-top">
+                    <a th:href="@{/candidat/candidature/{id}/historique(id=${candidature.id})}"
+                       class="btn btn-outline-secondary me-2">
+                        Voir l'historique
+                    </a>
+                    <form th:action="@{/candidat/candidature/{id}/delete(id=${candidature.id})}"
+                          method="POST" class="d-inline">
+                        <button type="submit" class="btn btn-outline-danger"
+                                onclick="return confirm('Êtes-vous sûr?')">
+                            Supprimer cette candidature
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+</body>
+</html>
+
