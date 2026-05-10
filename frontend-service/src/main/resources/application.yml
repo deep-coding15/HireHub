@@ -59,7 +59,6 @@ hirehub:
   public-base-url: http://localhost:8086
   recaptcha:
     site-key: ${RECAPTCHA_SITE_KEY:}
-  candidature-service-url: http://localhost:8081
 
 eureka:
   client:

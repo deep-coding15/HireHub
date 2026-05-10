@@ -1,5 +1,7 @@
 package com.hirehub.candidature.config;
 
+import com.hirehub.common.enums.CandidatureStatus;
+
 /**
  * Machine d'états pour les statuts de candidature
  * Définit les transitions autorisées entre les différents statuts
@@ -26,15 +28,17 @@ public class CandidatureStateMachine {
         }
 
         return switch (fromStatus) {
-            case "EN_COURS" -> toStatus.equals("ACCEPTÉE")
-                            || toStatus.equals("REJETÉE")
-                            || toStatus.equals("EN_ATTENTE");
+            case "SOUMISE" -> toStatus.equals(CandidatureStatus.EN_COURS.getLabel())
+                    || toStatus.equals(CandidatureStatus.REFUSEE.getLabel());
 
-            case "EN_ATTENTE" -> toStatus.equals("ACCEPTÉE")
-                              || toStatus.equals("REJETÉE");
+            case "EN_COURS" -> toStatus.equals(CandidatureStatus.ENTRETIEN.getLabel())
+                    || toStatus.equals(CandidatureStatus.REFUSEE.getLabel());
 
-            case "ACCEPTÉE" -> false; // Terminal state
-            case "REJETÉE" -> false;  // Terminal state
+            case "ENTRETIEN" -> toStatus.equals(CandidatureStatus.ACCEPTEE.getLabel())
+                    || toStatus.equals(CandidatureStatus.REFUSEE.getLabel());
+
+            case "ACCEPTEE" -> false; // Terminal state
+            case "REFUSEE" -> false;  // Terminal state
 
             default -> false;
         };
@@ -49,22 +53,22 @@ public class CandidatureStateMachine {
             ================================
             
             States:
-            - EN_COURS: La candidature est en cours d'examen par le recruteur
-            - EN_ATTENTE: En attente de deuxième tour ou complément d'info
-            - ACCEPTÉE: Candidature acceptée par le recruteur (état terminal)
-            - REJETÉE: Candidature rejetée par le recruteur (état terminal)
+            - SOUMISE: La candidature est en cours d'examen par le recruteur
+            - EN_COURS: En attente de deuxième tour ou complément d'info
+            - ACCEPTEE: Candidature acceptée par le recruteur (état terminal)
+            - REFUSEE: Candidature rejetée par le recruteur (état terminal)
             
             Transitions:
             EN_COURS
-              ├─> ACCEPTÉE (recruteur approuve)
-              ├─> REJETÉE (recruteur refuse)
-              └─> EN_ATTENTE (en attente)
+              ├─> ACCEPTEE (recruteur approuve)
+              ├─> REFUSEE (recruteur refuse)
+              └─> EN_COURS (en attente)
             
             EN_ATTENTE
-              ├─> ACCEPTÉE (recruteur approuve après attente)
-              └─> REJETÉE (recruteur refuse après attente)
+              ├─> ACCEPTEE (recruteur approuve après attente)
+              └─> REFUSEE (recruteur refuse après attente)
             
-            ACCEPTÉE et REJETÉE = états terminaux (pas de transition possible)
+            ACCEPTEE et REFUSEE = états terminaux (pas de transition possible)
             """;
     }
 }

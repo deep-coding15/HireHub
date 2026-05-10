@@ -1,5 +1,6 @@
 package com.hirehub.candidature.dtos;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.hirehub.common.enums.CandidatureStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,7 +23,9 @@ public class CandidatureDTO {
     private String CV_Path;
     private String lettreMotivationPath;
     private CandidatureStatus status;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dateSoumission;
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime dateModification;
 }
 

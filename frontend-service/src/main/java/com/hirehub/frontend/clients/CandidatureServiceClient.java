@@ -10,10 +10,7 @@ import java.util.List;
  * Client Feign pour communiquer avec candidature-service
  * Gère toutes les opérations liées aux candidatures
  */
-@FeignClient(
-    name = "candidature-service",
-    url = "${hirehub.candidature-service-url:http://localhost:8081}"
-)
+@FeignClient(name = "candidature-service")
 public interface CandidatureServiceClient {
 
     /**
