@@ -66,6 +66,11 @@
             <version>0.12.3</version>
             <scope>runtime</scope>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+
         <!-- HireHub Common -->
         <dependency>
             <groupId>com.hirehub</groupId>

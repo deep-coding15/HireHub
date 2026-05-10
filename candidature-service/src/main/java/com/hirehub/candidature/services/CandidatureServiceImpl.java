@@ -6,10 +6,7 @@ import com.hirehub.candidature.config.InvalidTransitionException;
 import com.hirehub.candidature.config.UserContext;
 import com.hirehub.candidature.entities.Candidature;
 import com.hirehub.candidature.entities.HistoriqueStatus;
-import com.hirehub.candidature.exceptions.CandidatureChangedStatusException;
-import com.hirehub.candidature.exceptions.CandidatureCreatedConflitException;
-import com.hirehub.candidature.exceptions.CandidatureNotFoundException;
-import com.hirehub.candidature.exceptions.OffreNotFoundException;
+import com.hirehub.candidature.exceptions.*;
 import com.hirehub.candidature.repository.CandidatureRepository;
 import com.hirehub.candidature.repository.HistoriqueStatusRepository;
 import com.hirehub.common.constants.EventType;
@@ -95,15 +92,36 @@ public class CandidatureServiceImpl implements CandidatureService {
     @Override
     public List<Candidature> getMyCandidaturesByCandidat() {
         log.info("Récupération des candidatures du candidat");
-        // TODO: Récupérer le candidatId depuis le SecurityContext
-        String candidatId = "current-user"; // À remplacer par le vrai candidat authentifié
+        // Récupérer le candidatId depuis le SecurityContext
+        UserContext.UserInfo user = UserContext.getUser();
+        if (user == null) {
+            throw new UnauthorizedException("Utilisateur non authentifié");
+        }
+        String candidatId = user.userId.toString();
         return candidatureRepository.findByCandidatId(candidatId);
     }
 
     @Override
     public List<Candidature> getCandidaturesByOfferIdByRecruiter(String offerId) {
         log.info("Récupération des candidatures pour l'offre: {}", offerId);
-        // TODO: Vérifier que le recruteur authentifié est propriétaire de l'offre
+        // Vérifier que le recruteur authentifié est propriétaire de l'offre
+        UserContext.UserInfo user = UserContext.getUser();
+        if (user == null) {
+            throw new UnauthorizedException("Utilisateur non authentifié");
+        }
+        try {
+            boolean isOwner = offreServiceClient.isRecruteurOwner(offerId, user.userId.toString());
+            if (!isOwner) {
+                log.warn("Recruteur {} n'est pas propriétaire de l'offre {}", user.userId, offerId);
+                throw new UnauthorizedException("Vous n'êtes pas propriétaire de cette offre");
+            }
+        } catch (FeignException.NotFound e) {
+            log.error("Offre {} non trouvée", offerId, e);
+            throw new OffreNotFoundException("Offre non trouvée");
+        } catch (FeignException e) {
+            log.error("Erreur lors de la vérification de propriété de l'offre: {}", e.getMessage(), e);
+            throw new UnauthorizedException("Erreur de vérification d'accès à l'offre");
+        }
         return candidatureRepository.findByOffreId(offerId);
     }
 
@@ -172,7 +190,16 @@ public class CandidatureServiceImpl implements CandidatureService {
         Candidature candidature = candidatureRepository.findById(id)
                 .orElseThrow(() -> new CandidatureNotFoundException("Candidature non trouvée"));
 
-        // TODO: Vérifier que le candidat authentifié est le propriétaire
+        // Vérifier que le candidat authentifié est le propriétaire
+        UserContext.UserInfo user = UserContext.getUser();
+        if (user == null) {
+            throw new UnauthorizedException("Utilisateur non authentifié");
+        }
+        if (!candidature.getCandidatId().equals(user.userId.toString())) {
+            log.warn("Candidat {} tente d'accéder à une candidature qui ne lui appartient pas ({})",
+                user.userId, candidature.getId());
+            throw new UnauthorizedException("Cette candidature ne vous appartient pas");
+        }
 
         if (CV_Path != null) {
             candidature.setCV_Path(CV_Path);
@@ -190,8 +217,34 @@ public class CandidatureServiceImpl implements CandidatureService {
     @Override
     public void uploadCVAndCoverLetter(String id, String CV_Path, String lettreMotivationPath) {
         log.info("Upload des fichiers pour la candidature: {}", id);
-        // TODO: Implémenter l'upload réel des fichiers
-        updateCandidatureDetailsByCandidat(id, CV_Path, lettreMotivationPath);
+
+        // Vérifier que les chemins sont fournis
+        if (CV_Path == null && lettreMotivationPath == null) {
+            throw new IllegalArgumentException("Au moins un fichier (CV ou lettre de motivation) doit être fourni");
+        }
+
+        // Générer les chemins relatifs dans le volume Docker
+        String cvRelativePath = null;
+        String lettreRelativePath = null;
+
+        if (CV_Path != null && !CV_Path.isEmpty()) {
+            // Générer un nom de fichier unique pour le CV
+            String fileName = "cv_" + id + "_" + System.currentTimeMillis() + ".pdf";
+            cvRelativePath = "cvs/" + fileName;
+            log.info("CV sera stocké dans: {}", cvRelativePath);
+        }
+
+        if (lettreMotivationPath != null && !lettreMotivationPath.isEmpty()) {
+            // Générer un nom de fichier unique pour la lettre
+            String fileName = "lettre_" + id + "_" + System.currentTimeMillis() + ".pdf";
+            lettreRelativePath = "lettres/" + fileName;
+            log.info("Lettre de motivation sera stockée dans: {}", lettreRelativePath);
+        }
+
+        // Mettre à jour la candidature avec les nouveaux chemins
+        updateCandidatureDetailsByCandidat(id, cvRelativePath, lettreRelativePath);
+
+        log.info("Upload des fichiers terminé pour la candidature {}", id);
     }
 
     @Override

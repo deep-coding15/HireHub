@@ -3,6 +3,7 @@ package com.hirehub.candidature.web;
 import com.hirehub.candidature.config.CandidatureSecurityService;
 import com.hirehub.candidature.config.RequireAuth;
 import com.hirehub.candidature.config.UserContext;
+import com.hirehub.candidature.dtos.CandidatureDTO;
 import com.hirehub.candidature.entities.Candidature;
 import com.hirehub.candidature.entities.HistoriqueStatus;
 import com.hirehub.candidature.exceptions.CandidatureChangedStatusException;
@@ -12,12 +13,22 @@ import com.hirehub.candidature.repository.HistoriqueStatusRepository;
 import com.hirehub.candidature.services.CandidatureService;
 import com.hirehub.common.dtos.ApiResponse;
 import com.hirehub.common.enums.UserRole;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.stream.Collectors;
 
 /**
  * Contrôleur REST pour les candidatures.
@@ -61,10 +72,31 @@ public class CandidatureController {
      * GET /candidatures/moi
      */
     @GetMapping("/moi")
-    public ResponseEntity<ApiResponse<List<Candidature>>> myCandidatures() {
+    public ResponseEntity<ApiResponse<List<CandidatureDTO>>> myCandidatures(HttpServletRequest request) {
+        // LOG TEST
+        System.out.println("AUTH HEADER: " + request.getHeader("Authorization"));
 
-        // TODO: lire le candidatId depuis le SecurityContext
-        List<Candidature> data = candidatureService.getMyCandidaturesByCandidat();
+        // Affiche TOUS les headers pour débusquer celui utilisé par l'équipe Auth
+        Collections.list(request.getHeaderNames())
+                .forEach(h -> System.out.println(h + ": " + request.getHeader(h)));
+
+
+        UserContext.UserInfo user = securityService.requireAuth();
+        List<CandidatureDTO> data = candidatureService
+                .getMyCandidaturesByCandidat()
+                .stream().map(c -> {
+                    CandidatureDTO dto = new CandidatureDTO();
+                    dto.setId(c.getId());
+                    dto.setCandidatId(c.getCandidatId());
+                    dto.setOffreId(c.getOffreId());
+                    dto.setCV_Path(c.getCV_Path());
+                    dto.setLettreMotivationPath(c.getLettreMotivationPath());
+                    dto.setStatus(c.getStatus());
+                    dto.setDateSoumission(c.getDateSoumission());
+                    dto.setDateModification(c.getDateModification());
+                    return dto;
+                })
+                .collect(Collectors.toList());
         return ResponseEntity.ok(ApiResponse.ok("Candidatures récupérées", data));
 
     }
@@ -146,7 +178,8 @@ public class CandidatureController {
 
             candidatureService.updateCandidatureDetailsByCandidat(id, cvPath, lettreMotivationPath);
             Candidature updated = candidatureService.getCandidatureById(id);
-            // TODO: garder les fichiers dans le volume docker
+            // Les fichiers sont maintenant stockés dans /app/uploads/ (volume Docker)
+            // Cette logique est gérée dans le service CandidatureServiceImpl.uploadCVAndCoverLetter()
             return ResponseEntity.ok(ApiResponse.ok("Fichiers mis à jour", updated));
         } catch (UnauthorizedException e) {
             log.warn("Accès non autorisé: {}", e.getMessage());
@@ -201,9 +234,29 @@ public class CandidatureController {
     public ResponseEntity<ApiResponse<List<HistoriqueStatus>>> historique(@PathVariable String id)
             throws Exception {
         try {
-            // TODO: vérifier que (candidat propriétaire) OU (recruteur propriétaire de l'offre)
+            UserContext.UserInfo user = securityService.requireAuth();
+
+            Candidature candidature = candidatureService.getCandidatureById(id);
+            if (candidature == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(ApiResponse.error("Candidature non trouvée"));
+            }
+
+            // Vérifier que (candidat propriétaire) OU (recruteur propriétaire de l'offre)
+            if (UserRole.CANDIDAT.name().equals(user.role)) {
+                securityService.requireCandidatCanViewHistory(user, candidature);
+            } else if (UserRole.RECRUTEUR.name().equals(user.role)) {
+                securityService.requireRecruteurCanViewHistory(user, candidature);
+            } else {
+                throw new UnauthorizedException("Rôle utilisateur non reconnu");
+            }
+
             List<HistoriqueStatus> data = historiqueStatusRepository.findByCandidatureIdOrderByDateChangementDesc(id);
             return ResponseEntity.ok(ApiResponse.ok("Historique récupéré", data));
+        } catch (UnauthorizedException e) {
+            log.warn("Accès non autorisé à l'historique: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
             log.error("Erreur récupération historique candidature {}: {}", id, e.getMessage(), e);
             throw new Exception(e.getMessage());
@@ -274,7 +327,7 @@ public class CandidatureController {
      * - Un recruteur autorisé (pour voir les candidatures)
      */
     @GetMapping("/{id}/download")
-    public ResponseEntity<ApiResponse<String>> downloadFile(
+    public ResponseEntity<Resource> downloadFile(
             @PathVariable String id,
             @RequestParam(value = "type", defaultValue = "cv") String fileType) {
 
@@ -283,8 +336,7 @@ public class CandidatureController {
 
             Candidature candidature = candidatureService.getCandidatureById(id);
             if (candidature == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("Candidature non trouvée"));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
             // Vérification des droits d'accès selon le rôle
@@ -296,28 +348,49 @@ public class CandidatureController {
                 throw new UnauthorizedException("Rôle utilisateur non reconnu");
             }
 
-            // Retourner le chemin du fichier
+            // Obtenir le chemin du fichier
             String filePath = fileType.equalsIgnoreCase("cv")
                 ? candidature.getCV_Path()
                 : candidature.getLettreMotivationPath();
 
             if (filePath == null || filePath.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(ApiResponse.error("Fichier non trouvé"));
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
-            // TODO: Implémenter le streaming réel du fichier
-            // Actuellement, on retourne juste le chemin (pour tests)
-            return ResponseEntity.ok(ApiResponse.ok("Fichier disponible", filePath));
+            // Créer le chemin absolu du fichier (dans le volume Docker)
+            Path fileAbsolutePath = Paths.get("/app/uploads/", filePath);
+            Resource resource = new FileSystemResource(fileAbsolutePath);
+
+            if (!resource.exists() || !resource.isReadable()) {
+                log.error("Fichier non trouvé ou non lisible: {}", fileAbsolutePath);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+            }
+
+            // Déterminer le type MIME du fichier
+            String contentType = Files.probeContentType(fileAbsolutePath);
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            // Créer les headers pour le téléchargement
+            HttpHeaders headers = new HttpHeaders();
+            headers.add(HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + resource.getFilename() + "\"");
+            headers.add(HttpHeaders.CONTENT_TYPE, contentType);
+            headers.add(HttpHeaders.CONTENT_LENGTH, String.valueOf(resource.contentLength()));
+
+            log.info("Streaming fichier {} pour candidature {}", filePath, id);
+            return ResponseEntity.ok()
+                    .headers(headers)
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .body(resource);
 
         } catch (UnauthorizedException e) {
             log.warn("Accès non autorisé au téléchargement: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(ApiResponse.error(e.getMessage()));
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         } catch (Exception e) {
             log.error("Erreur téléchargement fichier candidature {}: {}", id, e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.error("Erreur lors du téléchargement"));
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
