@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Historique candidature</title>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+    <div class="container">
+        <div class="mb-3">
+            <a th:href="@{/candidat/mes-candidatures}" class="btn btn-outline-secondary">
+                ← Retour aux candidatures
+            </a>
+        </div>
+
+        <h1 class="page-hero-title">Historique de candidature</h1>
+
+        <div th:if="${error}" class="alert alert-danger">
+            <span th:text="${error}"></span>
+        </div>
+
+        <div th:if="${historique.isEmpty()}" class="alert alert-info">
+            Aucun changement de statut pour le moment.
+        </div>
+
+        <div th:unless="${historique.isEmpty()}" class="hh-card">
+            <div class="timeline">
+                <div th:each="event : ${historique}" class="timeline-item">
+                    <div class="timeline-marker"></div>
+                    <div class="timeline-content">
+                        <h5 class="mb-1">
+                            <span th:class="${event.ancienStatusBadgeClass}"
+                                  th:text="${event.ancienStatusLabel}"></span>
+                            →
+                            <span th:class="${event.nouveauStatusBadgeClass}"
+                                  th:text="${event.nouveauStatusLabel}"></span>
+                        </h5>
+                        <p class="text-muted mb-1">
+                            <small th:text="${event.getDateChangementFormatted()}"></small>
+                        </p>
+                        <p th:if="${event.commentaire}" th:text="${event.commentaire}" class="mb-0"></p>
+                        <p th:unless="${event.commentaire}" class="text-muted mb-0">
+                            <small>Pas de commentaire</small>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<style>
+.timeline {
+    position: relative;
+    padding: 10px 0;
+}
+
+.timeline-item {
+    display: flex;
+    margin-bottom: 30px;
+    position: relative;
+}
+
+.timeline-marker {
+    width: 12px;
+    height: 12px;
+    background-color: var(--hh-violet-600);
+    border-radius: 50%;
+    margin-top: 5px;
+    margin-right: 20px;
+    flex-shrink: 0;
+}
+
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 20px;
+    height: 30px;
+    width: 2px;
+    background-color: var(--hh-violet-200);
+}
+
+.timeline-content {
+    flex: 1;
+}
+</style>
+</body>
+</html>
+

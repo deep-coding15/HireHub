@@ -45,11 +45,11 @@ services:
       - hirehub-rabbitmq-data:/var/lib/rabbitmq
       - hirehub-rabbitmq-logs:/var/log/rabbitmq
 
-  #notification-service:
+  #email-service:
     #build:
       #context: .
-      #dockerfile: notification-service/Dockerfile
-    #container_name: hirehub-notification-service
+      #dockerfile: email-service/Dockerfile
+    #container_name: hirehub-email-service
     #restart: unless-stopped
     #depends_on:
       #postgres:

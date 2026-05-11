@@ -19,9 +19,9 @@ public class CandidatureEventPublisher {
     }
 
     /**
-     * Publie l'événement candidature.created destiné à notification-service.
+     * Publie l'événement candidature.created destiné à email-service.
      *
-     * Contrat: on publie un EmailEventDTO (JSON) afin que notification-service puisse le désérialiser.
+     * Contrat: on publie un EmailEventDTO (JSON) afin que email-service puisse le désérialiser.
      * L'audit peut être fait via le même DTO, ou via une routing key dédiée si vous voulez séparer.
      */
     public void publishCandidatureCreated(String candidatureId,

@@ -57,4 +57,9 @@ eureka:
     service-url:
       defaultZone: http://localhost:8761/eureka/
 
+hirehub:
+  jwt:
+    secret: your-super-secret-key-change-me-in-production
+    expiration: 86400000
+
 
