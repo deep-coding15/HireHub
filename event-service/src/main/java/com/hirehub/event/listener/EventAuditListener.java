@@ -67,7 +67,7 @@ public class EventAuditListener {
                     eventType,
                     json,
                     "UNKNOWN_SOURCE",
-                    "UNKNOWN_DESTINATION"
+                    "Email-Service"
             );
         } catch (Exception e) {
             log.error("[AUDIT ERROR] Erreur lors de l'audit de l'événement {}: {}", message.getEventType(), e.getMessage(), e);

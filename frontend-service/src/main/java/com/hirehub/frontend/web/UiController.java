@@ -113,11 +113,6 @@ public class UiController {
         return "pages/candidat/dashboard";
     }
 
-    @GetMapping("/candidat/mes-candidatures")
-    public String candidatMesCandidatures() {
-        return "pages/candidat/mes-candidatures";
-    }
-
     @GetMapping("/candidat/entretiens")
     public String candidatEntretiens() {
         return "pages/candidat/entretiens";
