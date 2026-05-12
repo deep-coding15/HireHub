@@ -49,13 +49,15 @@ eureka:
 
 hirehub:
   jwt:
-    secret: your-super-secret-key-change-me-in-production
-    expiration: 86400000
-
-# Même secret que auth-service (HS256). Ignoré si profil mock (pas de JwtDecoder).
-hirehub:
-  jwt:
     secret: ${HIREHUB_JWT_SECRET:hirehub-local-dev-jwt-secret-change-me-32b}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
 
 logging:
   level:

@@ -57,3 +57,11 @@ hirehub:
       api-key: "K87844108488957"
       endpoint: ${OCR_SPACE_ENDPOINT:https://api.ocr.space/parse/image}
       language: ${OCR_SPACE_LANGUAGE:fre}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha
