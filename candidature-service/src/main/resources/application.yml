@@ -52,6 +52,11 @@ hirehub:
     secret: your-super-secret-key-change-me-in-production
     expiration: 86400000
 
+# Même secret que auth-service (HS256). Ignoré si profil mock (pas de JwtDecoder).
+hirehub:
+  jwt:
+    secret: ${HIREHUB_JWT_SECRET:hirehub-local-dev-jwt-secret-change-me-32b}
+
 logging:
   level:
     com.hirehub.candidature: INFO

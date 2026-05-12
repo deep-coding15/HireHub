@@ -32,6 +32,10 @@ eureka:
       defaultZone: http://localhost:8761/eureka/
 
 hirehub:
+  # Clé HMAC ≥ 32 octets (HS256). En production : HIREHUB_JWT_SECRET.
+  jwt:
+    secret: ${HIREHUB_JWT_SECRET:hirehub-local-dev-jwt-secret-change-me-32b}
+    expiration-seconds: ${HIREHUB_JWT_EXPIRATION_SECONDS:3600}
   frontend-base-url: http://localhost:8086
   recaptcha:
     enabled: true
