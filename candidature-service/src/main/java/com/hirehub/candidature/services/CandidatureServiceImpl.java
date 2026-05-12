@@ -3,28 +3,18 @@ package com.hirehub.candidature.services;
 import com.hirehub.candidature.clients.OffreServiceClient;
 import com.hirehub.candidature.config.CandidatureStateMachine;
 import com.hirehub.candidature.config.InvalidTransitionException;
-import com.hirehub.candidature.config.UserContext;
 import com.hirehub.candidature.entities.Candidature;
 import com.hirehub.candidature.entities.HistoriqueStatus;
 import com.hirehub.candidature.exceptions.*;
 import com.hirehub.candidature.repository.CandidatureRepository;
 import com.hirehub.candidature.repository.HistoriqueStatusRepository;
-<<<<<<< HEAD
+import com.hirehub.candidature.security.CurrentUser;
 import com.hirehub.common.constants.EventType;
 import com.hirehub.common.enums.CandidatureStatus;
+import com.hirehub.common.enums.UserRole;
 import com.hirehub.common.notification.NotificationPublisher;
 import com.hirehub.common.notification.RabbitMQConstants;
 import feign.FeignException;
-=======
-import com.hirehub.candidature.security.CurrentUser;
-
-import com.hirehub.common.constants.RabbitMQConstants;
-import com.hirehub.common.enums.CandidatureStatus;
-import com.hirehub.common.enums.UserRole;
-import com.hirehub.common.events.CandidatureCreatedEvent;
-import com.hirehub.common.events.StatutChangedEvent;
-
->>>>>>> 1fef3d4 (feat(auth): JWT login HS256 et integration candidature-service)
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
@@ -65,7 +55,10 @@ public class CandidatureServiceImpl implements CandidatureService {
     public void createCandidatureByCandidat(Candidature candidature) {
         log.info("Création d'une candidature pour l'offre: {}", candidature.getOffreId());
 
-<<<<<<< HEAD
+        CurrentUser.requireAnyRole(UserRole.CANDIDAT);
+        String candidatId = CurrentUser.requireSubject();
+        candidature.setCandidatId(candidatId);
+
         // 1. Vérifier que l'offre existe et est publiée
         try {
             boolean offreExists = offreServiceClient.offreExists(candidature.getOffreId());
@@ -79,13 +72,6 @@ public class CandidatureServiceImpl implements CandidatureService {
         }
 
         // 2. Vérifier qu'un candidat n'a postulé qu'une seule fois par offre
-=======
-        CurrentUser.requireAnyRole(UserRole.CANDIDAT);
-        String candidatId = CurrentUser.requireSubject();
-        candidature.setCandidatId(candidatId);
-
-        // Vérifier qu'un candidat n'a postulé qu'une seule fois par offre
->>>>>>> 1fef3d4 (feat(auth): JWT login HS256 et integration candidature-service)
         Optional<Candidature> existing = candidatureRepository.findByCandidatIdAndOffreId(
                 candidatId,
                 candidature.getOffreId()
@@ -113,35 +99,29 @@ public class CandidatureServiceImpl implements CandidatureService {
     @Override
     public List<Candidature> getMyCandidaturesByCandidat() {
         log.info("Récupération des candidatures du candidat");
-        // Récupérer le candidatId depuis le SecurityContext
-        UserContext.UserInfo user = UserContext.getUser();
-        if (user == null) {
-            throw new UnauthorizedException("Utilisateur non authentifié");
-        }
-        String candidatId = user.userId.toString();
+        CurrentUser.requireAnyRole(UserRole.CANDIDAT);
+        String candidatId = CurrentUser.requireSubject();
         return candidatureRepository.findByCandidatId(candidatId);
     }
 
     @Override
     public List<Candidature> getCandidaturesByOfferIdByRecruiter(String offerId) {
         log.info("Récupération des candidatures pour l'offre: {}", offerId);
-        // Vérifier que le recruteur authentifié est propriétaire de l'offre
-        UserContext.UserInfo user = UserContext.getUser();
-        if (user == null) {
-            throw new UnauthorizedException("Utilisateur non authentifié");
-        }
-        try {
-            boolean isOwner = offreServiceClient.isRecruteurOwner(offerId, user.userId.toString());
-            if (!isOwner) {
-                log.warn("Recruteur {} n'est pas propriétaire de l'offre {}", user.userId, offerId);
-                throw new UnauthorizedException("Vous n'êtes pas propriétaire de cette offre");
+        CurrentUser.requireAnyRole(UserRole.RECRUTEUR, UserRole.ADMIN);
+        if (!CurrentUser.hasAnyRole(UserRole.ADMIN)) {
+            try {
+                boolean isOwner = offreServiceClient.isRecruteurOwner(offerId, CurrentUser.requireSubject());
+                if (!isOwner) {
+                    log.warn("Recruteur {} n'est pas propriétaire de l'offre {}", CurrentUser.requireSubject(), offerId);
+                    throw new UnauthorizedException("Vous n'êtes pas propriétaire de cette offre");
+                }
+            } catch (FeignException.NotFound e) {
+                log.error("Offre {} non trouvée", offerId, e);
+                throw new OffreNotFoundException("Offre non trouvée");
+            } catch (FeignException e) {
+                log.error("Erreur lors de la vérification de propriété de l'offre: {}", e.getMessage(), e);
+                throw new UnauthorizedException("Erreur de vérification d'accès à l'offre");
             }
-        } catch (FeignException.NotFound e) {
-            log.error("Offre {} non trouvée", offerId, e);
-            throw new OffreNotFoundException("Offre non trouvée");
-        } catch (FeignException e) {
-            log.error("Erreur lors de la vérification de propriété de l'offre: {}", e.getMessage(), e);
-            throw new UnauthorizedException("Erreur de vérification d'accès à l'offre");
         }
         return candidatureRepository.findByOffreId(offerId);
     }
@@ -149,12 +129,19 @@ public class CandidatureServiceImpl implements CandidatureService {
     @Override
     public Candidature getCandidatureById(String id) {
         log.info("Récupération de la candidature: {}", id);
-        return candidatureRepository.findById(id).orElse(null);
+        Candidature candidature = candidatureRepository.findById(id).orElse(null);
+        if (candidature == null) {
+            return null;
+        }
+        requireCanReadCandidature(candidature);
+        return candidature;
     }
 
     @Override
     public void updateCandidatureStatusByRecruiter(String id, String status) {
         log.info("Mise à jour du statut de la candidature: {} -> {}", id, status);
+
+        CurrentUser.requireAnyRole(UserRole.RECRUTEUR, UserRole.ADMIN);
 
         Candidature candidature = candidatureRepository.findById(id)
                 .orElseThrow( () -> new CandidatureNotFoundException("Candidature non trouvée"));
@@ -180,18 +167,7 @@ public class CandidatureServiceImpl implements CandidatureService {
             historique.setAncienStatus(oldStatus);
             historique.setNouveauStatus(newStatus);
             historique.setDateChangement(LocalDateTime.now());
-<<<<<<< HEAD
-
-            // Récupérer l'ID du recruteur depuis UserContext
-            UserContext.UserInfo user = UserContext.getUser();
-            if (user != null) {
-                historique.setUtilisateurId(user.userId.toString());
-            } else {
-                historique.setUtilisateurId("system");
-            }
-=======
             historique.setUtilisateurId(CurrentUser.requireSubject());
->>>>>>> 1fef3d4 (feat(auth): JWT login HS256 et integration candidature-service)
             historiqueStatusRepository.save(historique);
 
             log.info("Statut de la candidature {} mis à jour de {} à {}", id, oldStatus, newStatus);
@@ -215,16 +191,7 @@ public class CandidatureServiceImpl implements CandidatureService {
         Candidature candidature = candidatureRepository.findById(id)
                 .orElseThrow(() -> new CandidatureNotFoundException("Candidature non trouvée"));
 
-        // Vérifier que le candidat authentifié est le propriétaire
-        UserContext.UserInfo user = UserContext.getUser();
-        if (user == null) {
-            throw new UnauthorizedException("Utilisateur non authentifié");
-        }
-        if (!candidature.getCandidatId().equals(user.userId.toString())) {
-            log.warn("Candidat {} tente d'accéder à une candidature qui ne lui appartient pas ({})",
-                user.userId, candidature.getId());
-            throw new UnauthorizedException("Cette candidature ne vous appartient pas");
-        }
+        requireCandidatOwnerOrAdmin(candidature);
 
         if (CV_Path != null) {
             candidature.setCV_Path(CV_Path);
