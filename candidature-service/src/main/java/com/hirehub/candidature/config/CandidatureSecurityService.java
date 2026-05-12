@@ -1,6 +1,6 @@
 package com.hirehub.candidature.config;
 
-import com.hirehub.candidature.clients.OffreServiceClient;
+import com.hirehub.candidature.clients.IOffreServiceClient;
 import com.hirehub.candidature.entities.Candidature;
 import com.hirehub.candidature.exceptions.UnauthorizedException;
 import com.hirehub.common.enums.UserRole;
@@ -16,10 +16,10 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class CandidatureSecurityService {
 
-    private final OffreServiceClient offreServiceClient;
+    private final IOffreServiceClient IOffreServiceClient;
 
-    public CandidatureSecurityService(OffreServiceClient offreServiceClient) {
-        this.offreServiceClient = offreServiceClient;
+    public CandidatureSecurityService(IOffreServiceClient IOffreServiceClient) {
+        this.IOffreServiceClient = IOffreServiceClient;
     }
 
     /**
@@ -80,7 +80,7 @@ public class CandidatureSecurityService {
     public void requireRecruteurOwnsOffre(UserContext.UserInfo user, Candidature candidature) {
         try {
             // Appel Feign pour vérifier que le recruteur est propriétaire de l'offre
-            boolean isOwner = offreServiceClient.isRecruteurOwner(candidature.getOffreId(), user.userId.toString());
+            boolean isOwner = IOffreServiceClient.isRecruteurOwner(candidature.getOffreId(), user.userId.toString());
 
             if (!isOwner) {
                 log.warn("Recruteur {} n'est pas propriétaire de l'offre {}",
@@ -167,7 +167,7 @@ public class CandidatureSecurityService {
     public void requireRecruteurCanViewPipeline(UserContext.UserInfo user, String offreId) {
         requireRecruteur(user);
         try {
-            boolean isOwner = offreServiceClient.isRecruteurOwner(offreId, user.userId.toString());
+            boolean isOwner = IOffreServiceClient.isRecruteurOwner(offreId, user.userId.toString());
             if (!isOwner) {
                 log.warn("Recruteur {} n'est pas propriétaire de l'offre {}", user.userId, offreId);
                 throw new UnauthorizedException("Vous n'êtes pas propriétaire de cette offre");

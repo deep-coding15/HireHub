@@ -14,7 +14,7 @@ import java.util.*;
 @Service
 @Profile("mock") // S'active SEULEMENT avec le profil 'mock'
 @Slf4j
-public class CandidatureServiceMock implements CandidatureService {
+public class CandidatureServiceMock implements ICandidatureService {
 
     // Données en mémoire (simule une BDD)
     private static final Map<String, Candidature> mockDatabase = new HashMap<>();
@@ -29,7 +29,7 @@ public class CandidatureServiceMock implements CandidatureService {
         c1.setOffreId("offre-dev-001");
         c1.setStatus(CandidatureStatus.EN_COURS);
         c1.setDateSoumission(LocalDateTime.now().minusDays(5));
-        c1.setCV_Path("/uploads/cv/john_doe_cv.pdf");
+        c1.setCvPath("/uploads/cv/john_doe_cv.pdf");
         c1.setLettreMotivationPath("/uploads/cover/john_doe_cover.pdf");
         mockDatabase.put(c1.getId(), c1);
 
@@ -40,7 +40,7 @@ public class CandidatureServiceMock implements CandidatureService {
         c2.setOffreId("offre-dev-001");
         c2.setStatus(CandidatureStatus.ACCEPTEE);
         c2.setDateSoumission(LocalDateTime.now().minusDays(10));
-        c2.setCV_Path("/uploads/cv/alice_smith_cv.pdf");
+        c2.setCvPath("/uploads/cv/alice_smith_cv.pdf");
         c2.setLettreMotivationPath("/uploads/cover/alice_smith_cover.pdf");
         mockDatabase.put(c2.getId(), c2);
 
@@ -51,7 +51,7 @@ public class CandidatureServiceMock implements CandidatureService {
         c3.setOffreId("offre-dev-001");
         c3.setStatus(CandidatureStatus.REFUSEE);
         c3.setDateSoumission(LocalDateTime.now().minusDays(15));
-        c3.setCV_Path("/uploads/cv/bob_johnson_cv.pdf");
+        c3.setCvPath("/uploads/cv/bob_johnson_cv.pdf");
         c3.setLettreMotivationPath("/uploads/cover/bob_johnson_cover.pdf");
         mockDatabase.put(c3.getId(), c3);
 
@@ -62,7 +62,7 @@ public class CandidatureServiceMock implements CandidatureService {
         c4.setOffreId("offre-qa-002");
         c4.setStatus(CandidatureStatus.EN_COURS);
         c4.setDateSoumission(LocalDateTime.now().minusDays(3));
-        c4.setCV_Path("/uploads/cv/carol_white_cv.pdf");
+        c4.setCvPath("/uploads/cv/carol_white_cv.pdf");
         c4.setLettreMotivationPath("/uploads/cover/carol_white_cover.pdf");
         mockDatabase.put(c4.getId(), c4);
 
@@ -73,7 +73,7 @@ public class CandidatureServiceMock implements CandidatureService {
         c5.setOffreId("offre-dev-001");
         c5.setStatus(CandidatureStatus.ENTRETIEN);
         c5.setDateSoumission(LocalDateTime.now().minusDays(7));
-        c5.setCV_Path("/uploads/cv/diana_brown_cv.pdf");
+        c5.setCvPath("/uploads/cv/diana_brown_cv.pdf");
         c5.setLettreMotivationPath("/uploads/cover/diana_brown_cover.pdf");
         mockDatabase.put(c5.getId(), c5);
 
@@ -84,13 +84,14 @@ public class CandidatureServiceMock implements CandidatureService {
      * @param candidature la candidature à créer
      */
     @Override
-    public void createCandidatureByCandidat(Candidature candidature) {
+    public Candidature createCandidatureByCandidat(Candidature candidature) {
         String newId = "cand-" + String.format("%03d", idCounter++);
         candidature.setId(newId);
         candidature.setDateSoumission(LocalDateTime.now());
-        candidature.setStatus(CandidatureStatus.EN_COURS);
+        candidature.setStatus(CandidatureStatus.SOUMISE);
         mockDatabase.put(newId, candidature);
         log.info("[MOCK] Candidature créée: {} pour l'offre: {}", newId, candidature.getOffreId());
+        return candidature;
     }
 
     /**
@@ -168,7 +169,7 @@ public class CandidatureServiceMock implements CandidatureService {
         Candidature candidature = mockDatabase.get(id);
         if (candidature != null) {
             if (CV_Path != null) {
-                candidature.setCV_Path(CV_Path);
+                candidature.setCvPath(CV_Path);
             }
             if (lettreMotivationPath != null) {
                 candidature.setLettreMotivationPath(lettreMotivationPath);

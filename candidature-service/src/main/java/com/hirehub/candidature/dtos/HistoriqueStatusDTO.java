@@ -5,9 +5,10 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class HistoriqueStatutDTO {
+public class HistoriqueStatusDTO {
     private String timestamp;
     private String ancienStatut;
     private String nouveauStatut;
     private String auteur;
+    private String commentaire;
 }

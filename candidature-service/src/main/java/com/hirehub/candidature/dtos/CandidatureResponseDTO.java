@@ -1,4 +1,4 @@
-package com.hirehub.common.dtos.candidatures;
+package com.hirehub.candidature.dtos;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,11 +9,11 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class CandidatureDTO {
+public class CandidatureResponseDTO {
     private String id;
-    private String candidatId;
     private String offreId;
+    private String candidatId;
     private String status;
-    private String cvPath;
-    private String lettreMotivationPath;
+    private String message;
+    private String createdAt;
 }

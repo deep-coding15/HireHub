@@ -9,18 +9,21 @@ import com.hirehub.common.enums.CandidatureStatus;
 public class CandidatureStateMachine {
 
     /**
+     * <pre>
      * Vérifie si une transition de statut est valide
      *
-     * Transitions autorisées:
-     * EN_COURS → ACCEPTÉE
-     * EN_COURS → REJETÉE
-     * EN_COURS → EN_ATTENTE
-     * EN_ATTENTE → ACCEPTÉE
-     * EN_ATTENTE → REJETÉE
+     * Transitions autorisées :
+     * SOUMISE → EN_COURS
+     * SOUMISE → REFUSEE
+     * EN_COURS → ENTRETIEN
+     * EN_COURS → REFUSEE
+     * ENTRETIEN → ACCEPTEE
+     * ENTRETIEN → REFUSEE
      *
      * @param fromStatus statut actuel
      * @param toStatus nouveau statut demandé
      * @return true si la transition est valide, false sinon
+     * </pre>
      */
     public static boolean isTransitionValid(String fromStatus, String toStatus) {
         if (fromStatus == null || toStatus == null) {
@@ -28,13 +31,16 @@ public class CandidatureStateMachine {
         }
 
         return switch (fromStatus) {
-            case "SOUMISE" -> toStatus.equals(CandidatureStatus.EN_COURS.getLabel())
+            case "SOUMISE"
+                    -> toStatus.equals(CandidatureStatus.EN_COURS.getLabel())
                     || toStatus.equals(CandidatureStatus.REFUSEE.getLabel());
 
-            case "EN_COURS" -> toStatus.equals(CandidatureStatus.ENTRETIEN.getLabel())
+            case "EN_COURS"
+                    -> toStatus.equals(CandidatureStatus.ENTRETIEN.getLabel())
                     || toStatus.equals(CandidatureStatus.REFUSEE.getLabel());
 
-            case "ENTRETIEN" -> toStatus.equals(CandidatureStatus.ACCEPTEE.getLabel())
+            case "ENTRETIEN"
+                    -> toStatus.equals(CandidatureStatus.ACCEPTEE.getLabel())
                     || toStatus.equals(CandidatureStatus.REFUSEE.getLabel());
 
             case "ACCEPTEE" -> false; // Terminal state
@@ -53,8 +59,9 @@ public class CandidatureStateMachine {
             ================================
             
             States:
-            - SOUMISE: La candidature est en cours d'examen par le recruteur
-            - EN_COURS: En attente de deuxième tour ou complément d'info
+            - SOUMISE: Candidature reçue
+            - EN_COURS: La candidature est en cours d'examen par le recruteur
+            - ENTRETIEN: En attente d'entretien
             - ACCEPTEE: Candidature acceptée par le recruteur (état terminal)
             - REFUSEE: Candidature rejetée par le recruteur (état terminal)
             

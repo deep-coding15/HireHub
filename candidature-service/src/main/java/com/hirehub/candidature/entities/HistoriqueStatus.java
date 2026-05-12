@@ -52,4 +52,17 @@ public class HistoriqueStatus {
     protected void onCreate() {
         dateChangement = LocalDateTime.now();
     }
+
+    public String getAncienStatut() {
+        return ancienStatus.getLabel();
+    }
+
+    public String getNouveauStatut() {
+        return nouveauStatus.getLabel();
+    }
+
+    public String getAuteur() {
+        return utilisateurId;
+    }
+
 }

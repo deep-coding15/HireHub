@@ -9,8 +9,8 @@ import org.springframework.web.bind.annotation.RequestParam;
  * Client Feign pour communiquer avec offre-service
  * Vérifie que les offres existent et sont publiées
  */
-@FeignClient(name = "offre-service", url = "${offre-service.url:http://localhost:8083}")
-public interface OffreServiceClient {
+@FeignClient(name = "offre-service")
+public interface IOffreServiceClient {
 
     /**
      * Récupère une offre par son ID
@@ -18,7 +18,7 @@ public interface OffreServiceClient {
      * @param id l'ID de l'offre
      * @return les détails de l'offre
      */
-    @GetMapping("/offres/{id}")
+    @GetMapping("/api/offres/{id}")
     OffreDTO getOffre(@PathVariable("id") String id);
 
     /**
@@ -27,7 +27,7 @@ public interface OffreServiceClient {
      * @param id l'ID de l'offre
      * @return true si l'offre existe et est publiée, false sinon
      */
-    @GetMapping("/offres/{id}/exists")
+    @GetMapping("/api/offres/{id}/exists")
     boolean offreExists(@PathVariable("id") String id);
 
     /**
@@ -37,10 +37,11 @@ public interface OffreServiceClient {
      * @param recruteurId l'ID du recruteur
      * @return true si le recruteur est propriétaire, false sinon
      */
-    @GetMapping("/offres/{offreId}/owner")
+    @GetMapping("/api/offres/{offreId}/owner")
     boolean isRecruteurOwner(
         @PathVariable("offreId") String offreId,
         @RequestParam("recruteurId") String recruteurId
     );
+
 }
 

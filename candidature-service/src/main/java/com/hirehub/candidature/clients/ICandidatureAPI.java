@@ -1,4 +1,4 @@
-package com.hirehub.candidature;
+package com.hirehub.candidature.clients;
 
 import com.hirehub.candidature.entities.Candidature;
 import com.hirehub.candidature.entities.HistoriqueStatus;
@@ -12,7 +12,7 @@ import java.util.List;
  * Définit les contrats pour les endpoints REST
  */
 @Tag(name = "Candidatures", description = "Gestion des candidatures")
-public interface CandidatureAPI {
+public interface ICandidatureAPI {
 
     /**
      * Crée une nouvelle candidature

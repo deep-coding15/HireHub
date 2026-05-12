@@ -12,10 +12,10 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests unitaires pour CandidatureServiceMock
+ * Tests unitaires pour ICandidatureServiceMock
  * Ces tests s'exécutent quand le profil "mock" est actif
  */
-@DisplayName("CandidatureServiceMock Tests")
+@DisplayName("ICandidatureServiceMock Tests")
 @ActiveProfiles("mock")
 class CandidatureServiceMockTest {
 
@@ -89,7 +89,7 @@ class CandidatureServiceMockTest {
         Candidature newCandidature = new Candidature();
         newCandidature.setCandidatId("user-newcandidat");
         newCandidature.setOffreId("offre-dev-001");
-        newCandidature.setCV_Path("/uploads/cv/new_cv.pdf");
+        newCandidature.setCvPath("/uploads/cv/new_cv.pdf");
         newCandidature.setLettreMotivationPath("/uploads/cover/new_cover.pdf");
 
         int initialCount = service.getMyCandidaturesByCandidat().size();
@@ -139,7 +139,7 @@ class CandidatureServiceMockTest {
         // Assert
         Candidature updated = service.getCandidatureById(candidatureId);
         assertNotNull(updated);
-        assertEquals(newCVPath, updated.getCV_Path());
+        assertEquals(newCVPath, updated.getCvPath());
         assertEquals(newCoverPath, updated.getLettreMotivationPath());
     }
 
@@ -175,7 +175,7 @@ class CandidatureServiceMockTest {
         // Assert
         Candidature updated = service.getCandidatureById(candidatureId);
         assertNotNull(updated);
-        assertEquals(newCVPath, updated.getCV_Path());
+        assertEquals(newCVPath, updated.getCvPath());
         assertEquals(newCoverPath, updated.getLettreMotivationPath());
     }
 
@@ -216,7 +216,7 @@ class CandidatureServiceMockTest {
         // Arrange
         String candidatureId = "cand-001";
         Candidature original = service.getCandidatureById(candidatureId);
-        String originalCV = original.getCV_Path();
+        String originalCV = original.getCvPath();
         String newCoverPath = "/uploads/cover/new_cover.pdf";
 
         // Act
@@ -224,7 +224,7 @@ class CandidatureServiceMockTest {
 
         // Assert
         Candidature updated = service.getCandidatureById(candidatureId);
-        assertEquals(originalCV, updated.getCV_Path(), "CV ne devrait pas changer");
+        assertEquals(originalCV, updated.getCvPath(), "CV ne devrait pas changer");
         assertEquals(newCoverPath, updated.getLettreMotivationPath(), "Cover devrait être mis à jour");
     }
 }

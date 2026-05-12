@@ -37,7 +37,7 @@ public class Candidature {
     private String offreId;
 
     @Column(name = "cv_path")
-    private String CV_Path;
+    private String cvPath;
 
     @Column(name = "lettre_motivation_path")
     private String lettreMotivationPath;

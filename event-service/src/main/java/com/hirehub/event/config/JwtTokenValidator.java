@@ -15,7 +15,9 @@ public class JwtTokenValidator {
     private final String jwtSecret;
     private final SecretKey secretKey;
 
-    public JwtTokenValidator(@Value("${hirehub.jwt.secret:your-super-secret-key-change-me-in-production}") String jwtSecret) {
+    public JwtTokenValidator(
+            @Value("${hirehub.jwt.secret:your-super-secret-key-change-me-in-production}")
+            String jwtSecret) {
         this.jwtSecret = jwtSecret;
         this.secretKey = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }

@@ -4,8 +4,8 @@ import com.hirehub.candidature.entities.Candidature;
 
 import java.util.List;
 
-public interface CandidatureService {
-    void createCandidatureByCandidat(Candidature candidature);
+public interface ICandidatureService {
+    Candidature createCandidatureByCandidat(Candidature candidature);
     List<Candidature> getMyCandidaturesByCandidat();
     List<Candidature> getCandidaturesByOfferIdByRecruiter(String offerId);
     Candidature getCandidatureById(String id);

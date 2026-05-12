@@ -38,7 +38,7 @@ public class CandidatureSeeder implements CommandLineRunner {
         // L'ID est généré automatiquement via UUID dans ton entité
         c.setCandidatId(candidatId);
         c.setOffreId(offreId);
-        c.setCV_Path("/uploads/cv/" + cvName);
+        c.setCvPath("/uploads/cv/" + cvName);
         c.setLettreMotivationPath("/uploads/lm/lettre_" + offreId + ".pdf");
         c.setStatus(status);
         // dateSoumission et dateModification sont gérées par @PrePersist dans ton entité
