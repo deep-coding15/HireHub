@@ -56,8 +56,8 @@ class CandidatureServiceMockTest {
     @Test
     @DisplayName("Should get candidature by ID")
     void testGetCandidatureById() {
-        // Arrange
-        String candidatureId = "cand-001";
+        // cand-004 : peu utilisé par les autres tests (base mock statique partagée)
+        String candidatureId = "cand-004";
 
         // Act
         Candidature candidature = service.getCandidatureById(candidatureId);
@@ -65,8 +65,8 @@ class CandidatureServiceMockTest {
         // Assert
         assertNotNull(candidature);
         assertEquals(candidatureId, candidature.getId());
-        assertEquals("user-john-001", candidature.getCandidatId());
-        assertEquals(CandidatureStatus.ACCEPTEE, candidature.getStatus());
+        assertEquals("user-carol-004", candidature.getCandidatId());
+        assertEquals(CandidatureStatus.EN_COURS, candidature.getStatus());
     }
 
     @Test

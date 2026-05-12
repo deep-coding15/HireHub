@@ -9,14 +9,27 @@ import com.hirehub.candidature.entities.HistoriqueStatus;
 import com.hirehub.candidature.exceptions.*;
 import com.hirehub.candidature.repository.CandidatureRepository;
 import com.hirehub.candidature.repository.HistoriqueStatusRepository;
+<<<<<<< HEAD
 import com.hirehub.common.constants.EventType;
 import com.hirehub.common.enums.CandidatureStatus;
 import com.hirehub.common.notification.NotificationPublisher;
 import com.hirehub.common.notification.RabbitMQConstants;
 import feign.FeignException;
+=======
+import com.hirehub.candidature.security.CurrentUser;
+
+import com.hirehub.common.constants.RabbitMQConstants;
+import com.hirehub.common.enums.CandidatureStatus;
+import com.hirehub.common.enums.UserRole;
+import com.hirehub.common.events.CandidatureCreatedEvent;
+import com.hirehub.common.events.StatutChangedEvent;
+
+>>>>>>> 1fef3d4 (feat(auth): JWT login HS256 et integration candidature-service)
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -52,6 +65,7 @@ public class CandidatureServiceImpl implements CandidatureService {
     public void createCandidatureByCandidat(Candidature candidature) {
         log.info("Création d'une candidature pour l'offre: {}", candidature.getOffreId());
 
+<<<<<<< HEAD
         // 1. Vérifier que l'offre existe et est publiée
         try {
             boolean offreExists = offreServiceClient.offreExists(candidature.getOffreId());
@@ -65,8 +79,15 @@ public class CandidatureServiceImpl implements CandidatureService {
         }
 
         // 2. Vérifier qu'un candidat n'a postulé qu'une seule fois par offre
+=======
+        CurrentUser.requireAnyRole(UserRole.CANDIDAT);
+        String candidatId = CurrentUser.requireSubject();
+        candidature.setCandidatId(candidatId);
+
+        // Vérifier qu'un candidat n'a postulé qu'une seule fois par offre
+>>>>>>> 1fef3d4 (feat(auth): JWT login HS256 et integration candidature-service)
         Optional<Candidature> existing = candidatureRepository.findByCandidatIdAndOffreId(
-                candidature.getCandidatId(),
+                candidatId,
                 candidature.getOffreId()
         );
 
@@ -159,6 +180,7 @@ public class CandidatureServiceImpl implements CandidatureService {
             historique.setAncienStatus(oldStatus);
             historique.setNouveauStatus(newStatus);
             historique.setDateChangement(LocalDateTime.now());
+<<<<<<< HEAD
 
             // Récupérer l'ID du recruteur depuis UserContext
             UserContext.UserInfo user = UserContext.getUser();
@@ -167,6 +189,9 @@ public class CandidatureServiceImpl implements CandidatureService {
             } else {
                 historique.setUtilisateurId("system");
             }
+=======
+            historique.setUtilisateurId(CurrentUser.requireSubject());
+>>>>>>> 1fef3d4 (feat(auth): JWT login HS256 et integration candidature-service)
             historiqueStatusRepository.save(historique);
 
             log.info("Statut de la candidature {} mis à jour de {} à {}", id, oldStatus, newStatus);
@@ -254,7 +279,7 @@ public class CandidatureServiceImpl implements CandidatureService {
         Candidature candidature = candidatureRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Candidature non trouvée"));
 
-        // TODO: Vérifier que le candidat authentifié est le propriétaire
+        requireCandidatOwnerOrAdmin(candidature);
 
         // Supprimer aussi l'historique associé
         List<HistoriqueStatus> historique = historiqueStatusRepository.findByCandidatureIdOrderByDateChangementDesc(id);
@@ -322,6 +347,33 @@ public class CandidatureServiceImpl implements CandidatureService {
             log.info("Événement 'candidature.statut.changed' (EmailEventDTO) publié pour la candidature: {}", candidature.getId());
         } catch (Exception e) {
             log.error("Erreur lors de la publication de l'événement statut.changed: {}", e.getMessage(), e);
+        }
+    }
+
+    private void requireCanReadCandidature(Candidature candidature) {
+        if (CurrentUser.hasAnyRole(UserRole.ADMIN)) {
+            return;
+        }
+        UserRole role = CurrentUser.requireRole();
+        if (role == UserRole.CANDIDAT) {
+            if (!CurrentUser.requireSubject().equals(candidature.getCandidatId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé à cette candidature");
+            }
+            return;
+        }
+        if (role == UserRole.RECRUTEUR) {
+            return;
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé à cette candidature");
+    }
+
+    private void requireCandidatOwnerOrAdmin(Candidature candidature) {
+        if (CurrentUser.hasAnyRole(UserRole.ADMIN)) {
+            return;
+        }
+        CurrentUser.requireAnyRole(UserRole.CANDIDAT);
+        if (!CurrentUser.requireSubject().equals(candidature.getCandidatId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Vous n'êtes pas le propriétaire de cette candidature");
         }
     }
 }

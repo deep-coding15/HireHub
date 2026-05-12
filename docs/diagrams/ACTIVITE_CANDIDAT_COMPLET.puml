@@ -1,0 +1,201 @@
+' =============================================================================
+' Diagramme d'ACTIVITE COMPLET - Parcours **CANDIDAT** (HireHub ATS)
+' Vue metier uniquement (pas de noms de microservices). Monochrome.
+' Rendu : https://www.plantuml.com/plantuml/
+' =============================================================================
+
+@startuml ACTIVITE_CANDIDAT_COMPLET
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam activityDiamondBackgroundColor white
+skinparam noteBackgroundColor white
+
+title HireHub - Activites completes du **Candidat**
+
+|Candidat|
+start
+:Accede au site;
+
+partition "Consultation libre (sans compte)" {
+  |Candidat|
+  :Peut ouvrir le catalogue des offres **sans compte**;
+  |Systeme|
+  :Affiche les offres **publiees** et filtres;
+  |Candidat|
+  :Consulte detail d'une offre;
+  if (Souhaite postuler sans etre connecte ?) then (oui)
+    |Systeme|
+    :Redirige vers inscription ou connexion;
+  else (non)
+    |Candidat|
+    :Continue la lecture sans postuler;
+  endif
+}
+
+partition "Inscription Candidat" {
+  |Candidat|
+  :Choisit **Inscription Candidat**;
+  :Saisit nom complet et e-mail;
+  :Demande l'envoi du code de verification;
+  |Systeme|
+  if (E-mail deja utilise ?) then (oui)
+    |Candidat|
+    :Message : compte existant ou autre e-mail;
+    stop
+  else (non)
+    :Genere code a 6 chiffres et enregistre la demande;
+    :Envoie le code par e-mail;
+    |Candidat|
+    :Saisit le code;
+    |Systeme|
+    if (Code valide et non expire ?) then (non)
+      |Candidat|
+      :Message erreur, peut redemander un code;
+      stop
+    else (oui)
+      :Marque l'e-mail comme verifie pour la suite du formulaire;
+      |Candidat|
+      :Saisit mot de passe et informations obligatoires;
+      :Accepte les conditions si prevues;
+      :Soumet (verification anti-robot si active);
+      |Systeme|
+      if (Donnees et securite OK ?) then (non)
+        |Candidat|
+        :Message erreur de validation;
+        stop
+      else (oui)
+        :Cree le compte role **Candidat**;
+        :Redirige vers la page de connexion avec succes;
+      endif
+    endif
+  endif
+}
+
+|Candidat|
+partition "Connexion" {
+  :Saisit e-mail et mot de passe;
+  |Systeme|
+  if (Identifiants corrects ?) then (non)
+    |Candidat|
+    :Message echec, reessayer ou reinitialiser mot de passe;
+    stop
+  else (oui)
+    :Etablit la session securisee;
+  endif
+}
+
+partition "Recherche et choix d'offres" {
+  |Candidat|
+  :Accede au catalogue des offres;
+  :Utilise filtres et tri (date, lieu, contrat);
+  |Systeme|
+  :Retourne la liste paginee des offres ouvertes;
+  |Candidat|
+  :Lit le detail (description, profil, avantages);
+  if (Offre encore ouverte aux candidatures ?) then (non)
+    |Candidat|
+    :Message : offre fermee ou pourvue;
+    stop
+  else (oui)
+    |Candidat|
+    :Peut lancer la candidature;
+  endif
+}
+
+partition "Depot de candidature" {
+  |Candidat|
+  :Clique sur **Postuler**;
+  |Systeme|
+  if (Session candidat active ?) then (non)
+    :Demande connexion;
+    stop
+  else (oui)
+    |Candidat|
+    :Redige la lettre de motivation;
+    :Selectionne le fichier CV (PDF ou format accepte);
+    :Soumet la candidature;
+    |Systeme|
+    if (Taille et format du fichier OK ?) then (non)
+      |Candidat|
+      :Message sur le document a corriger;
+      stop
+    else (oui)
+      if (Deja candidat sur cette offre ?) then (oui)
+        |Candidat|
+        :Message : une seule candidature par offre;
+        stop
+      else (non)
+        :Enregistre la candidature statut **Soumise**;
+        :Stocke le CV de facon securisee;
+        :Declenche l'envoi d'un **e-mail de confirmation** au candidat;
+        |Candidat|
+        :Voit la confirmation a l'ecran;
+      endif
+    endif
+  endif
+}
+
+partition "Suivi des candidatures" {
+  |Candidat|
+  :Ouvre **Mes candidatures**;
+  |Systeme|
+  :Affiche la liste avec dates et intitules d'offres;
+  |Candidat|
+  :Consulte le **statut** de chaque dossier;
+  note right
+    Exemples de statuts : Soumise, En cours d'examen,
+    Entretien planifie, Acceptee, Refusee, Archivee
+  end note
+  :Ouvre le detail d'une candidature;
+  |Systeme|
+  if (Pieces ou messages supplementaires prevus ?) then (oui)
+    |Candidat|
+    :Consulte les informations mises a jour;
+  else (non)
+    |Candidat|
+    :Aucun complement affiche pour ce dossier;
+  endif
+}
+
+partition "Entretien (cote candidat)" {
+  |Candidat|
+  if (Recruteur a planifie un entretien ?) then (oui)
+    |Systeme|
+    :Notifie par e-mail (date, lieu ou lien);
+    |Candidat|
+    :Consulte la convocation dans l'espace candidat;
+    :Prepare et participe a l'entretien;
+  else (non)
+  endif
+}
+
+partition "Decision finale (cote candidat)" {
+  |Systeme|
+  if (Decision du recruteur publiee ?) then (oui)
+    |Candidat|
+    :Recoit l'e-mail et voit le statut **Acceptee** ou **Refusee**;
+    :Consulte le motif ou message si fourni;
+  else (non)
+    |Candidat|
+    :Attend la suite du processus;
+  endif
+}
+
+partition "Profil (optionnel)" {
+  |Candidat|
+  if (Souhaite mettre a jour son profil ?) then (oui)
+    :Modifie coordonnees ou CV par defaut;
+    |Systeme|
+    :Enregistre les changements;
+  else (non)
+    |Candidat|
+    :Conserve le profil tel quel;
+  endif
+}
+
+|Candidat|
+:Se deconnecte ou quitte la session;
+stop
+
+@enduml

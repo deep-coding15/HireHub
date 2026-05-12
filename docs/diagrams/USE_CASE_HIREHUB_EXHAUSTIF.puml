@@ -1,0 +1,154 @@
+@startuml UC_HIREHUB_EXHAUSTIF
+title HireHub ATS - Cas d'utilisation exhaustifs (equipe 4, microservices)
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+actor "Candidat" as C
+actor "Recruteur" as R
+actor "Administrateur" as A
+actor "Systeme\n(notifications / OCR)" as S <<system>>
+
+rectangle "Plateforme HireHub (ATS)" {
+
+  package "Authentification & compte" {
+    usecase "S'inscrire comme candidat" as UC_C_REG
+    usecase "S'inscrire comme recruteur\n(justificatif + workflow)" as UC_R_REG
+    usecase "Se connecter (login)" as UC_LOGIN
+    usecase "Se connecter via OAuth\n(Google)" as UC_OAUTH
+    usecase "Se deconnecter" as UC_LOGOUT
+    usecase "Reinitialiser mot de passe\n(code email)" as UC_RESET
+    usecase "Verifier email avant inscription\n(code 6 chiffres)" as UC_EMAIL_VERIF
+  }
+
+  package "Candidat - Offres & candidatures" {
+    usecase "Consulter les offres\n(filtres, pagination)" as UC_C_OFFRES
+    usecase "Voir le detail d'une offre" as UC_C_DETAIL
+    usecase "Postuler a une offre\n(lettre + CV PDF)" as UC_C_POSTULER
+    usecase "Consulter mes candidatures\n(timeline / statuts)" as UC_C_MES
+    usecase "Suivre le statut en temps reel" as UC_C_SUIVI
+    usecase "Telecharger / consulter\npieces jointes (selon droits)" as UC_C_PJ
+  }
+
+  package "Candidat - Entretiens & profil" {
+    usecase "Consulter mes entretiens planifies" as UC_C_ENT
+    usecase "Recevoir email\n(confirmation, statut, entretien)" as UC_C_MAIL <<include>>
+    usecase "Modifier mon profil candidat" as UC_C_PROFIL
+  }
+
+  package "Recruteur - Offres" {
+    usecase "Creer une offre" as UC_R_CR_OFF
+    usecase "Publier / desactiver une offre" as UC_R_PUB
+    usecase "Modifier une offre" as UC_R_MOD_OFF
+    usecase "Consulter statistiques par offre" as UC_R_STAT_OFF
+  }
+
+  package "Recruteur - Pipeline candidatures" {
+    usecase "Voir candidatures par offre\n(tableau trie)" as UC_R_PIPE
+    usecase "Changer statut candidature\n(Soumise, En cours, ...)" as UC_R_STAT
+    usecase "Ajouter commentaires internes" as UC_R_COM
+    usecase "Telecharger CV candidat" as UC_R_CV
+    usecase "Accepter ou refuser candidature" as UC_R_DEC
+  }
+
+  package "Recruteur - Entretiens" {
+    usecase "Planifier un entretien\n(date, lieu, participants)" as UC_R_PLAN
+    usecase "Recevoir notifications\nemails pipeline" as UC_R_MAIL
+  }
+
+  package "Recruteur - Validation compte\n(sans approbation admin)" {
+    usecase "Acceder espace /recruteur" as UC_R_ESPACE
+    usecase "Inscription avec justificatif\n+ validation automatique" as UC_R_AUTO_DOC
+    usecase "Controle documentaire asynchrone\n(verification-service / OCR)" as UC_R_OCR
+    usecase "Compte actif si justificatif conforme\n(decision systeme)" as UC_R_ACTIF
+    usecase "UI \"en attente\" si verification\nasync en cours (pas d'admin)" as UC_R_PENDING_UI
+  }
+
+  package "Administrateur" {
+    usecase "Consulter dashboard global\n(KPI, Chart.js)" as UC_A_DASH
+    usecase "Voir statistiques agregees\nmulti-services" as UC_A_STATS
+    usecase "Rejeter / suspendre compte" as UC_A_REJ
+    usecase "Assigner roles utilisateur" as UC_A_ROLE
+    usecase "Voir logs d'activite" as UC_A_LOG
+    usecase "Supprimer offres / candidatures\n(moderation)" as UC_A_MOD
+    usecase "Creer comptes admin\n(seed / manuel)" as UC_A_SEED
+  }
+
+  package "Transversal" {
+    usecase "Propager JWT entre services\n(Feign / Gateway)" as UC_JWT
+    usecase "Decouvrir services\n(Eureka)" as UC_EUR
+  }
+}
+
+' --- Candidat
+C --> UC_C_REG
+C --> UC_LOGIN
+C --> UC_OAUTH
+C --> UC_LOGOUT
+C --> UC_RESET
+C --> UC_EMAIL_VERIF
+UC_C_REG ..> UC_EMAIL_VERIF : <<include>>
+C --> UC_C_OFFRES
+C --> UC_C_DETAIL
+C --> UC_C_POSTULER
+C --> UC_C_MES
+C --> UC_C_SUIVI
+C --> UC_C_PJ
+C --> UC_C_ENT
+C --> UC_C_PROFIL
+UC_C_POSTULER ..> UC_C_MAIL : <<include>>
+UC_C_SUIVI ..> UC_C_MAIL : <<include>>
+
+' --- Recruteur
+R --> UC_R_REG
+R --> UC_EMAIL_VERIF
+R --> UC_LOGIN
+R --> UC_OAUTH
+R --> UC_LOGOUT
+R --> UC_RESET
+R --> UC_R_ESPACE
+R --> UC_R_AUTO_DOC
+R --> UC_R_PENDING_UI
+UC_R_REG ..> UC_R_AUTO_DOC : <<include>>
+UC_R_AUTO_DOC ..> UC_R_OCR : <<include>>
+UC_R_OCR ..> UC_R_ACTIF : <<include>>
+UC_R_PENDING_UI ..> UC_R_OCR : <<extend>>
+R --> UC_R_CR_OFF
+R --> UC_R_PUB
+R --> UC_R_MOD_OFF
+R --> UC_R_STAT_OFF
+R --> UC_R_PIPE
+R --> UC_R_STAT
+R --> UC_R_COM
+R --> UC_R_CV
+R --> UC_R_DEC
+R --> UC_R_PLAN
+UC_R_STAT ..> UC_R_MAIL : <<include>>
+UC_R_DEC ..> UC_R_MAIL : <<include>>
+UC_R_PLAN ..> UC_R_MAIL : <<include>>
+
+' --- Admin
+A --> UC_LOGIN
+A --> UC_A_DASH
+A --> UC_A_STATS
+A --> UC_A_REJ
+A --> UC_A_ROLE
+A --> UC_A_LOG
+A --> UC_A_MOD
+A --> UC_A_SEED
+
+' --- Systeme (async)
+S --> UC_C_MAIL
+S --> UC_R_MAIL
+S --> UC_R_OCR
+
+note bottom of UC_R_ACTIF
+  **Projet actuel** : pas d'etape
+  \"admin approuve le recruteur\".
+  La conformite repose sur la
+  **verification documentaire**
+  (automatique + async).
+end note
+
+@enduml

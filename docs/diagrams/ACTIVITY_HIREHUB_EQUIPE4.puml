@@ -1,0 +1,180 @@
+' =============================================================================
+' Diagrammes d'ACTIVITE - equipe 4 (sans approbation admin recruteur)
+' =============================================================================
+
+@startuml ACT_01_RECRUTEUR_VALIDATION_AUTO
+title ACT-01 : Recruteur — validation sans admin (document + systeme)
+
+|Recruteur|
+start
+:Inscription (email + code puis formulaire\n+ justificatif + reCAPTCHA);
+
+|auth-service|
+:Validation stricte synchrone\n(justificatif vs formulaire);
+if (Document refuse (sync) ?) then (oui)
+  :Erreur — aucun compte;
+  stop
+endif
+:Cree compte RECRUTEUR\n(statut selon workflow metier);
+
+|RabbitMQ|
+if (Message verification async ?) then (oui)
+  |verification-service|
+  :OCR / coherence;
+  :Publie resultat;
+  |auth-service|
+  :Met a jour statut / flags;
+else (non ou desactive)
+endif
+
+|Recruteur|
+:Acces **/recruteur/**;
+note right
+  **Pas** d'etape \"admin approuve\".
+  Verrouillage eventuel lie au
+  **statut de verification automatique**
+  (ex. en cours d'analyse OCR).
+end note
+
+if (Fonctions metier disponibles\nselon statut ?) then (oui)
+  :Offres, pipeline, entretiens;
+else (en attente systeme)
+  :UI indique verification en cours;
+endif
+stop
+
+@enduml
+
+
+@startuml ACT_02_CANDIDAT_PARCOURS_COMPLET
+title ACT-02 : Parcours candidat (offre -> candidature -> notifications)
+
+start
+:Visite catalogue offres;
+:Filtre / pagination;
+:Ouvre detail offre;
+
+if (Connecte ?) then (non)
+  :Redirection login / inscription;
+  stop
+endif
+
+:Formulaire postuler\n(lettre + CV PDF);
+if (Validation taille / type PDF ?) then (non)
+  :Erreur formulaire;
+  stop
+endif
+
+:candidature-service\ncree candidature SOUMISE;
+fork
+  :Notification async\nemail confirmation;
+fork again
+  :Affichage /mes-candidatures;
+end fork
+
+repeat
+  :Consulte timeline statuts;
+repeat while (Decision finale ?) is (non)
+->oui;
+:Statut ACCEPTEE ou REFUSEE;
+:Email final;
+stop
+
+@enduml
+
+
+@startuml ACT_03_RECRUTEUR_PIPELINE
+title ACT-03 : Activite pipeline recruteur (offre -> candidatures -> entretien -> decision)
+
+start
+:Creer brouillon offre;
+:Publier offre;
+:Offre visible candidats;
+
+repeat :Consulter tableau\ncandidatures par offre;
+  :Tri par date;
+  if (Action ?) then (changer statut)
+    :PATCH statut;
+    :Notification candidat;
+  elseif (commentaire interne) then
+    :Sauvegarde commentaire;
+  elseif (telecharger CV) then
+    :GET fichier stocke;
+  elseif (planifier entretien) then
+    :entretien-service\nplanification;
+    :Emails candidat + recruteur;
+  elseif (decision finale) then
+    :ACCEPTEE / REFUSEE;
+    :Email + archivage;
+    stop
+  endif
+repeat while (suite traitement ?) is (oui)
+->non;
+stop
+
+@enduml
+
+
+@startuml ACT_04_ADMIN_DASHBOARD
+title ACT-04 : Activite admin (dashboard + moderation — sans approbation recruteur)
+
+start
+:Connexion role ADMIN;
+:Chargement dashboard;
+fork
+  :Agregation stats\n(offres, candidatures, ...);
+fork again
+  :Graphiques Chart.js;
+end fork
+
+partition "Moderation / gouvernance" {
+  if (Suspendre compte ?) then (oui)
+    :PATCH actif = false;
+  elseif (Roles ?) then
+    :Assigner roles;
+  elseif (Suppression contenu ?) then
+    :Supprimer offre / candidature;
+  endif
+}
+
+partition "Audit" {
+  :Consultation logs activite;
+}
+stop
+
+@enduml
+
+
+@startuml ACT_05_DEPLOIEMENT_DOCKER
+title ACT-05 : Demarrage environnement (docker-compose + microservices)
+
+start
+:docker compose up\n(PostgreSQL, RabbitMQ, Mailtrap...);
+
+fork
+  :Demarrer **eureka-server**;
+fork again
+  :Demarrer **config-server** (optionnel);
+fork again
+  :Demarrer **api-gateway**;
+fork again
+  :Demarrer **auth-service**;
+fork again
+  :Demarrer **offre-service**;
+fork again
+  :Demarrer **candidature-service**;
+fork again
+  :Demarrer **notification-service**;
+fork again
+  :Demarrer **entretien-service**;
+fork again
+  :Demarrer **verification-service**;
+fork again
+  :Demarrer **frontend-service**;
+end fork
+
+:Tous enregistres sur Eureka\n(sauf services sans client);
+:Navigateur -> http://localhost:8086;
+stop
+
+@enduml
