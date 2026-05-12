@@ -27,7 +27,10 @@ public class JwtAuthenticationFilter implements Filter {
     private static final List<String> PUBLIC_PATHS = List.of(
             "/auth/login",
             "/auth/register",
-            "/actuator/health"
+            "/actuator/health",
+            "/v3/api-docs",
+            "/swagger-ui",
+            "/swagger-ui.html"
     );
 
     private final JwtTokenValidator jwtTokenValidator;

@@ -1,0 +1,361 @@
+' =============================================================================
+' DIAGRAMME D'ACTIVITE - HireHub ATS (tres detaille)
+' Rendu : https://www.plantuml.com/plantuml/  |  Extension VS Code / IntelliJ PlantUML
+' Hypotheses metier : recruteur **auto-approuve** (pas d'action admin obligatoire
+'   sur l'inscription) ; verification asynchrone via RabbitMQ (verification-service).
+' =============================================================================
+
+@startuml ACTIVITE_HIREHUB_HYPER_DETAILLEE
+title Page 1 / 4 : Candidat - inscription, login, offres, candidature, notifications
+
+skinparam ActivityBackgroundColor #F8F9FA
+skinparam ActivityBorderColor #4C1D95
+skinparam ActivityDiamondBackgroundColor #EDE9FE
+skinparam NoteBackgroundColor #FFF9C4
+skinparam ArrowColor #333333
+skinparam defaultTextAlignment center
+
+|#E8DAEF|Candidat|
+start
+:Accede au site (frontend :8086);
+note right
+  Toujours meme origine (ex. localhost)
+  pour conserver le cookie de session.
+end note
+
+partition "Inscription candidat" {
+  :Menu Inscription > Candidat;
+  :Saisit nom + email professionnel;
+  :Soumet etape email;
+  |#D6EAF8|frontend-service|
+  :POST /register/candidat/email;
+  :SignupEmailVerificationService\nrequestCode();
+  if (Email deja pris ?) then (oui)
+    |#E8DAEF|Candidat|
+    :Message erreur + rester sur formulaire;
+    stop
+  else (non)
+    |#D6EAF8|frontend-service|
+    :Session PENDING_EMAIL + redirect code;
+    |#E8DAEF|Candidat|
+    :Recoit code 6 chiffres (SMTP);
+    :Saisit code;
+    |#D6EAF8|frontend-service|
+    :POST /register/candidat/code;
+    if (Code invalide ?) then (oui)
+      |#E8DAEF|Candidat|
+      :Flash erreur + retour saisie code;
+      stop
+    else (non)
+      :Session VERIFIED (nom, email, role CANDIDAT);
+      :Redirect formulaire inscription finale;
+      |#E8DAEF|Candidat|
+      :Saisit mot de passe + champs profil;
+      :Soumet (reCAPTCHA si active);
+      |#D6EAF8|frontend-service|
+      :POST auth-service /register/candidat\n(frontendRedirect=true);
+      |#FADBD8|auth-service|
+      :Valide reCAPTCHA;
+      if (reCAPTCHA KO ?) then (oui)
+        |#D6EAF8|frontend-service|
+        :Redirect /login?registerError=1;
+        stop
+      endif
+      :Valider champs obligatoires;
+      if (Manquants ?) then (oui)
+        |#D6EAF8|frontend-service|
+        :Redirect /login erreur;
+        stop
+      endif
+      :UserRegistrationService.registerCandidate();
+      :Persistance UserAccount (role CANDIDAT);
+      |#D6EAF8|frontend-service|
+      :Redirect /login?registered=1&flow=candidat;
+    endif
+  endif
+}
+
+|#E8DAEF|Candidat|
+:Se connecte (email + mot de passe);
+|#D6EAF8|frontend-service|
+:POST login -> auth-service;
+|#FADBD8|auth-service|
+:Verifier credentials;
+if (OK ?) then (non)
+  |#E8DAEF|Candidat|
+  :Afficher erreur auth;
+  stop
+endif
+:Generer JWT (claims: sub, roles, ...);
+|#E8DAEF|Candidat|
+:Cookie / session securisee selon config;
+
+partition "Parcours offres et candidature" {
+  :Naviguer /offres;
+  |#D6EAF8|frontend-service|
+  :Feign / Gateway -> offre-service;
+  |#D5F5E3|offre-service|
+  :GET liste paginee + filtres\n(ville, type contrat, ...);
+  :Lecture BDD offres (statut PUBLIEE);
+  |#E8DAEF|Candidat|
+  :Affiche cartes offres;
+
+  :Choisit une offre > detail;
+  |#D5F5E3|offre-service|
+  :GET /offres/{id};
+  if (Offre existe et publique ?) then (non)
+    |#E8DAEF|Candidat|
+    :404 / message;
+    stop
+  endif
+
+  |#E8DAEF|Candidat|
+  :Clic **Postuler**;
+  |#D6EAF8|frontend-service|
+  if (JWT candidat valide ?) then (non)
+    :Redirect login;
+    stop
+  endif
+  :Afficher formulaire lettre + fichier CV (PDF);
+
+  |#E8DAEF|Candidat|
+  :Remplit lettre + joint CV;
+  :Soumet multipart;
+  |#D6EAF8|frontend-service|
+  :POST via Gateway -> candidature-service\n(JWT propagate FeignInterceptor);
+
+  |#FCF3CF|candidature-service|
+  :Extraire userId depuis token / headers;
+  :Verifier offreId + pas de doublon candidature;
+  if (Deja postule ?) then (oui)
+    :HTTP 409 / message metier;
+    |#E8DAEF|Candidat|
+    stop
+  endif
+  if (Taille / type fichier OK ?) then (non)
+    :HTTP 400;
+    |#E8DAEF|Candidat|
+    stop
+  endif
+  :Sauver entite Candidature\nstatut = **SOUMISE**;
+  :Stocker fichier CV (chemin ou blob);
+  :Publier evenement (queue / REST)\nvers notification;
+  fork
+    |#D7BDE2|notification-service|
+    :Recevoir demande envoi mail;
+    :Charger template Thymeleaf;
+    :Spring Mail -> SMTP (Mailtrap dev);
+    |#E8DAEF|Candidat|
+    :**Email** confirmation reception;
+  fork again
+    |#E8DAEF|Candidat|
+    :Redirect /mes-candidatures;
+  end fork
+
+  |#E8DAEF|Candidat|
+  :Consulte timeline candidatures;
+  |#D6EAF8|frontend-service|
+  :GET candidatures du candidat;
+  |#FCF3CF|candidature-service|
+  :Liste triee + statuts + dates;
+}
+
+stop
+
+newpage
+title Page 2 / 4 : inscription **Recruteur** + verification **asynchrone** (auto-approuve)
+
+|#D5E8D4|Recruteur|
+start
+:Inscription > Recruteur;
+partition "Verification email (meme mecanisme que candidat)" {
+  :Nom + email pro;
+  |#D6EAF8|frontend-service|
+  :POST /register/recruteur/email;
+  if (email_taken / invalid ?) then (oui)
+    |#D5E8D4|Recruteur|
+    stop
+  endif
+  :Session PENDING + role RECRUTEUR;
+  :Ecran code 6 chiffres;
+  |#D5E8D4|Recruteur|
+  :Saisit code;
+  |#D6EAF8|frontend-service|
+  :POST /register/recruteur/code;
+  if (code KO ?) then (oui)
+    stop
+  endif
+  :Session VERIFIED (nom, email, RECRUTEUR);
+  :Redirect **/register/recruteur** (formulaire entreprise);
+}
+
+|#D5E8D4|Recruteur|
+:Remplit telephone, mot de passe,\nraison sociale, SIRET, ville, site,\npresentation, justificatif PDF/JPG/PNG;
+:Coche CGU / verification documentaire;
+:Submit (reCAPTCHA execute avant POST);
+
+|#D6EAF8|frontend-service|
+:grecaptcha.execute -> token hidden;
+:POST **multipart** directement vers\nauth-service URL (cross-origin);
+
+|#FADBD8|auth-service|
+:Verifier champs texte obligatoires;
+if (Manquants ?) then (oui)
+  :HTTP 302 -> /register/recruteur\n?registerError=1&code=missing_fields;
+  stop
+endif
+if (Fichier absent ?) then (oui)
+  :302 missing_file;
+  stop
+endif
+:Verifier reCAPTCHA **avant** OCR long;
+if (reCAPTCHA KO ?) then (oui)
+  :302 recaptcha_failed;
+  stop
+endif
+
+partition "Validation stricte document (synchrone inscription)" {
+  :RecruiterDocumentStrictValidationService\nvalidateOrThrow(form);
+  if (OCR / match raison+SIRET KO ?) then (oui)
+    :Exception -> 302 **justificatif_mismatch**\n(+ detail both|raison|siret);
+    |#D6EAF8|frontend-service|
+    if (Session VERIFIED presente ?) then (oui)
+      :GET /register/recruteur + bandeau erreur;
+    else (non)
+      :Flash erreurs -> redirect\n/register/recruteur/email;
+    endif
+    |#D5E8D4|Recruteur|
+    stop
+  endif
+}
+
+:UserRegistrationService.registerRecruiter();
+:Persistance compte + fichiers metier;
+:Publier **RecruiterRegisteredEvent** -> **RabbitMQ**\n(verification-service en aval);
+
+fork
+  |#FADBD8|auth-service|
+  :302 succes -> /login\n?registered=1&flow=recruteur\n(+ docMatch si strict OK);
+fork again
+  |#EBDEF0|verification-service|
+  :@RabbitListener queue verification;
+  :RecruiterDocumentVerificationService\nverifyAsync(event);
+  :Scoring (raison, SIRET, type MIME,\nOCR Space si configure,\nmots-cles KBIS/RC/ICE...);
+  :Construire **RecruiterVerifiedEvent**;
+  :convertAndSend exchange / routing\nRECRUITER_VERIFIED;
+  |#FADBD8|auth-service|
+  :Consumer (ou autre) met a jour\nstatut / score en BDD;
+  |#D7BDE2|notification-service|
+  :Eventuel email informationnel;
+end fork
+
+|#D5E8D4|Recruteur|
+:Page login avec banniere succes;
+:Connexion JWT role RECRUTEUR;
+note right
+  **Auto-approuve** : pas d'etape
+  "Admin approuve l'inscription".
+  L'admin peut toujours **moderer**
+  ou **suspendre** un compte existant.
+end note
+
+stop
+@enduml
+
+
+@startuml ACTIVITE_RECRUTEUR_PIPELINE_ENTRETIEN
+title Activite : **Recruteur** - offres, pipeline, **entretien**, decisions
+
+|#D5E8D4|Recruteur|
+start
+:Login JWT;
+|#D6EAF8|frontend-service|
+:Espace /recruteur/**;
+
+partition "Gestion offres" {
+  :Creer / editer offre (brouillon);
+  |#D5F5E3|offre-service|
+  :POST/PATCH proprietaire = userId du JWT;
+  :Publier offre (statut PUBLIEE);
+  :Visible liste candidat (GET public ou filtre);
+}
+
+partition "Pipeline candidatures" {
+  |#D5E8D4|Recruteur|
+  :Ouvre offre > liste candidatures;
+  |#FCF3CF|candidature-service|
+  :GET par offreId + droits recruteur;
+  :Tri date + pagination;
+
+  |#D5E8D4|Recruteur|
+  :Telecharge CV (stream securise);
+  :Change statut (ex. SOUMISE -> EN_COURS);
+  |#FCF3CF|candidature-service|
+  :Valider transition;
+  :Historiser changement;
+  :Declencher notification;
+  |#D7BDE2|notification-service|
+  :Email candidat "mise a jour statut";
+}
+
+partition "Entretien" {
+  |#D5E8D4|Recruteur|
+  :Planifier entretien (date, lieu, lien);
+  |#D6EAF8|frontend-service|
+  :POST entretien-service;
+  |#F9E79F|entretien-service|
+  :Valider candidatureId + droits;
+  :Persistance entretien;
+  if (Mise a jour statut candidature\nENTRETIEN prevue ?) then (oui)
+    |#FCF3CF|candidature-service|
+    :PATCH statut;
+  endif
+  |#D7BDE2|notification-service|
+  :Emails candidat + recruteur\n(date, lieu, consignes);
+}
+
+partition "Decision finale" {
+  |#D5E8D4|Recruteur|
+  :Accepter ou refuser candidature;
+  |#FCF3CF|candidature-service|
+  :PATCH ACCEPTEE ou REFUSEE;
+  :Archivage / regles fin de flux;
+  |#D7BDE2|notification-service|
+  :Email decision finale;
+}
+
+stop
+
+newpage
+title Page 4 / 4 : **Admin** + **infrastructure** transverse (sans approbation inscription recruteur)
+
+|#F5B7B1|Admin|
+start
+:Login compte seed / manuel (role ADMIN);
+|#D6EAF8|frontend-service|
+:Routes /admin/**;
+
+partition "Supervision (exemples)" {
+  :Dashboard KPI (agregation stats\nFeign vers plusieurs services);
+  :Liste utilisateurs;
+  |#FADBD8|auth-service|
+  :GET users filtres pagination;
+  :Detail utilisateur;
+  if (Action suspendre / bloquer ?) then (oui)
+    :PATCH actif=false;
+    :JWT suivants refuses ou invalider sessions;
+  endif
+  :Journal actions / logs si implemente;
+}
+
+|#E5E8E8|Equipe (rotation)|
+partition "Hors tableau Excel mais indispensable" {
+  :**api-gateway** : routes, JWT global, CORS;
+  :**eureka-server** : enregistrement services;
+  :**config-server** : profils centralises;
+  :**hirehub-common** : DTO + Feign JWT\n(commits en accord equipe);
+  :**docker-compose** : Postgres par service,\nRabbitMQ, montee stack;
+}
+
+stop
+@enduml

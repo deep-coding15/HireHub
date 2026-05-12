@@ -1,0 +1,216 @@
+' =============================================================================
+' Diagramme d'ACTIVITE COMPLET - Parcours **RECRUTEUR** (HireHub ATS)
+' Vue metier uniquement. Compte **auto-valide** sans approbation admin obligatoire.
+' Rendu : https://www.plantuml.com/plantuml/
+' =============================================================================
+
+@startuml ACTIVITE_RECRUTEUR_COMPLET
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam activityDiamondBackgroundColor white
+skinparam noteBackgroundColor white
+
+title HireHub - Activites completes du **Recruteur**
+
+|Recruteur|
+start
+:Accede au site;
+
+partition "Inscription Recruteur" {
+  :Choisit **Inscription Recruteur**;
+  :Saisit nom et e-mail professionnel;
+  :Demande le code de verification;
+  |Systeme|
+  if (E-mail invalide ou deja utilise ?) then (oui)
+    |Recruteur|
+    :Message d'erreur adapte;
+    stop
+  else (non)
+    :Envoie le code par e-mail;
+    |Recruteur|
+    :Saisit le code a 6 chiffres;
+    |Systeme|
+    if (Code correct ?) then (non)
+      |Recruteur|
+      stop
+    else (oui)
+      :Associe la session au profil **Recruteur**;
+      |Recruteur|
+      :Saisit telephone et mot de passe;
+      :Indique raison sociale, identifiant d'entreprise (ex. SIRET), adresse, ville;
+      :Redige la presentation de l'entreprise;
+      :Joint le **justificatif** legal (PDF, image selon regles);
+      :Accepte la verification documentaire;
+      :Soumet le formulaire (anti-robot si active);
+      |Systeme|
+      if (Champs obligatoires complets ?) then (non)
+        |Recruteur|
+        :Liste des champs manquants;
+        stop
+      else (oui)
+        if (Justificatif present ?) then (non)
+          |Recruteur|
+          stop
+        else (oui)
+          if (Anti-robot valide ?) then (non)
+            |Recruteur|
+            stop
+          else (oui)
+            partition "Controle document / formulaire" {
+              :Extrait le texte du justificatif si possible;
+              if (Coherence raison sociale + identifiant avec le document ?) then (non)
+                |Recruteur|
+                :Message detaille, **aucun compte cree**;
+                :Corrige les champs ou change de fichier;
+                stop
+              else (oui)
+                :Cree le compte **Recruteur**;
+                note right
+                  Validation **automatique** du compte
+                  (pas d'etape obligatoire d'approbation par un administrateur).
+                end note
+                :Redirige vers la connexion avec message de succes;
+                partition "Apres creation (asynchrone)" {
+                  :Met en file l'analyse approfondie du dossier;
+                  :Calcule un score ou une trace de conformite;
+                  :Met a jour le dossier entreprise;
+                  :Envoie un e-mail d'information si prevu;
+                }
+              endif
+            }
+          endif
+        endif
+      endif
+    endif
+  endif
+}
+
+|Recruteur|
+partition "Connexion" {
+  :Saisit e-mail et mot de passe;
+  |Systeme|
+  if (Identifiants corrects ?) then (non)
+    |Recruteur|
+    stop
+  else (oui)
+    :Ouvre la session **Recruteur**;
+  endif
+}
+
+partition "Gestion des offres d'emploi" {
+  |Recruteur|
+  :Accede a **Mes offres**;
+  if (Nouvelle offre ?) then (oui)
+    :Redige titre, description, profil recherche;
+    :Definit lieu, type de contrat, salaire si affiche;
+    :Enregistre en **brouillon** ou publie directement;
+    |Systeme|
+    if (Publication demandee ?) then (oui)
+      :Passe l'offre au statut **Publiee**;
+      :Rend l'offre visible aux candidats;
+    else (non)
+      :Conserve le brouillon modifiable;
+    endif
+  else (non)
+    |Recruteur|
+    :Ne cree pas de nouvelle offre dans cette etape;
+  endif
+  |Recruteur|
+  if (Modifier ou fermer une offre ?) then (oui)
+    |Systeme|
+    :Applique les changements ou clot l'offre;
+  else (non)
+    |Recruteur|
+    :Conserve les offres telles quelles;
+  endif
+}
+
+partition "Reception et examen des candidatures" {
+  |Recruteur|
+  :Ouvre le **tableau des candidatures** pour une offre choisie;
+  |Systeme|
+  :Affiche la liste triee (date, statut);
+  |Recruteur|
+  :Ouvre une ligne candidat;
+  :Lit la lettre de motivation;
+  :Telecharge le CV;
+  if (Besoin de notes internes ?) then (oui)
+    :Saisit un commentaire reserve au recrutement;
+    |Systeme|
+    :Enregistre la note;
+  else (non)
+    |Recruteur|
+    :Passe sans note interne;
+  endif
+}
+
+partition "Pilotage du statut (pipeline)" {
+  |Recruteur|
+  :Selectionne la candidature;
+  :Choisit la transition de statut (ex. Soumise vers En cours);
+  |Systeme|
+  if (Transition autorisee par les regles metier ?) then (non)
+    |Recruteur|
+    :Message : transition impossible;
+    stop
+  else (oui)
+    :Met a jour le statut et l'historique;
+    :Notifie le candidat par **e-mail**;
+  endif
+}
+
+partition "Entretiens" {
+  |Recruteur|
+  if (Planifier un entretien ?) then (oui)
+    :Choisit date, creneau, lieu physique ou lien visio;
+    :Valide la convocation;
+    |Systeme|
+    :Enregistre l'entretien lie a la candidature;
+    if (Mise a jour automatique du statut candidature ?) then (oui)
+      :Passe le dossier en **Entretien planifie**;
+    else (non)
+      :Conserve le statut candidature actuel;
+    endif
+    :Envoie les e-mails au candidat et copie recruteur;
+  else (non)
+    |Recruteur|
+    :Ne planifie pas d'entretien pour l'instant;
+  endif
+  if (Reporter ou annuler ?) then (oui)
+    |Systeme|
+    :Met a jour ou supprime le creneau;
+    :Notifie les parties;
+  else (non)
+    |Recruteur|
+    :Garde le creneau tel quel;
+  endif
+}
+
+partition "Decision de recrutement" {
+  |Recruteur|
+  :Cloture le dossier par **Acceptation** ou **Refus**;
+  |Systeme|
+  :Met le statut final;
+  :Envoie l'e-mail de decision au candidat;
+  if (Archivage automatique ?) then (oui)
+    :Archive la candidature;
+  else (non)
+  endif
+}
+
+partition "Supervision interne (optionnel)" {
+  |Recruteur|
+  if (Consultation statistiques sur ses offres ?) then (oui)
+    :Affiche indicateurs (vues, candidatures, taux de reponse);
+  else (non)
+    |Recruteur|
+    :Retour au tableau des offres ou candidatures;
+  endif
+}
+
+|Recruteur|
+:Se deconnecte;
+stop
+
+@enduml

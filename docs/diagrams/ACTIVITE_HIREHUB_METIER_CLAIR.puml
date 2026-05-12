@@ -1,0 +1,269 @@
+' =============================================================================
+' Diagramme d'ACTIVITE - Vue METIER (sans noms de microservices ni couleurs)
+' Acteurs : Candidat, Recruteur, Administrateur, Systeme
+' Rendu : https://www.plantuml.com/plantuml/
+' =============================================================================
+
+@startuml
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam activityDiamondBackgroundColor white
+skinparam noteBackgroundColor white
+
+title Parcours metier HireHub - vue activite detaillee (partie 1 : Candidat)
+
+|Candidat|
+start
+:Accede a la plateforme de recrutement;
+
+partition "Inscription compte candidat" {
+  :Choisit inscription **Candidat**;
+  :Saisit nom complet et adresse e-mail;
+  :Demande l'envoi d'un code de verification;
+  |Systeme|
+  :Verifie que l'e-mail n'est pas deja utilise;
+  if (E-mail deja enregistre ?) then (oui)
+    |Candidat|
+    :Affichage message : choisir autre e-mail ou se connecter;
+    stop
+  else (non)
+    :Genere code a 6 chiffres;
+    :Envoie le code par e-mail;
+    |Candidat|
+    :Saisit le code recu;
+    |Systeme|
+    if (Code correct et non expire ?) then (non)
+      |Candidat|
+      :Message erreur, nouvelle saisie;
+      stop
+    else (oui)
+      :Marque l'e-mail comme verifie pour cette session;
+      |Candidat|
+      :Complete mot de passe et informations demandees;
+      :Valide le formulaire (protection anti-robot si active);
+      |Systeme|
+      :Cree le compte avec role **Candidat**;
+      :Redirige vers la connexion avec message de succes;
+    endif
+  endif
+}
+
+|Candidat|
+partition "Connexion" {
+  :Saisit e-mail et mot de passe;
+  |Systeme|
+  if (Identifiants valides ?) then (non)
+    |Candidat|
+    :Message echec connexion;
+    stop
+  else (oui)
+    :Ouvre une session securisee;
+  endif
+}
+
+partition "Recherche et consultation des offres" {
+  |Candidat|
+  :Consulte la liste des offres;
+  :Applique filtres (ville, type de contrat, etc.);
+  |Systeme|
+  :Retourne les offres **publiees** et disponibles;
+  |Candidat|
+  :Ouvre le detail d'une offre;
+}
+
+partition "Depot de candidature" {
+  |Candidat|
+  :Demande a postuler;
+  |Systeme|
+  if (Utilisateur connecte comme candidat ?) then (oui)
+    |Candidat|
+    :Redige lettre de motivation;
+    :Joint curriculum au format accepte (ex. PDF);
+    :Soumet la candidature;
+    |Systeme|
+    if (Fichier conforme taille et format ?) then (oui)
+      if (Candidature deja existante pour cette offre ?) then (oui)
+        |Candidat|
+        :Message : une seule candidature par offre;
+        stop
+      else (non)
+        :Enregistre la candidature avec statut **Soumise**;
+        :Conserve le CV de maniere securisee;
+        :Prepare envoi **e-mail de confirmation** au candidat;
+        |Candidat|
+        :Affiche page de suivi des candidatures;
+      endif
+    else (non)
+      |Candidat|
+      :Message erreur sur le document;
+      stop
+    endif
+  else (non)
+    :Demande connexion ou inscription;
+    stop
+  endif
+}
+
+|Candidat|
+partition "Suivi" {
+  :Consulte l'historique de ses candidatures;
+  :Voit les statuts (soumise, en cours, entretien, decision, etc.);
+}
+
+newpage
+title Parcours metier HireHub - partie 2 : Recruteur (auto-validation du compte)
+
+|Recruteur|
+:Accede a la plateforme;
+
+partition "Inscription compte recruteur" {
+  :Choisit inscription **Recruteur**;
+  :Saisit nom et e-mail professionnel;
+  :Demande code de verification;
+  |Systeme|
+  if (E-mail ou donnees invalides ?) then (oui)
+    |Recruteur|
+    stop
+  else (non)
+    |Systeme|
+    :Envoie code par e-mail;
+    |Recruteur|
+    :Saisit le code;
+    |Systeme|
+    if (Code valide ?) then (non)
+      |Recruteur|
+      stop
+    else (oui)
+      :Associe la session au profil **Recruteur**;
+      |Recruteur|
+      :Renseigne telephone, mot de passe;
+      :Indique raison sociale, identifiant d'entreprise (ex. SIRET), ville;
+      :Decrit l'entreprise;
+      :Joint **justificatif** d'existence legale (extrait, attestation, etc.);
+      :Accepte les conditions de verification documentaire;
+      :Soumet le formulaire;
+      |Systeme|
+      if (Champs obligatoires complets ?) then (non)
+        |Recruteur|
+        :Message listant les manques;
+        stop
+      else (oui)
+        if (Piece jointe presente ?) then (non)
+          |Recruteur|
+          :Message : justificatif obligatoire;
+          stop
+        else (oui)
+          if (Verification anti-robot OK ?) then (non)
+            |Recruteur|
+            :Message : renouveler la verification;
+            stop
+          else (oui)
+            partition "Controle de coherence document / formulaire" {
+              :Extrait le texte du justificatif si possible;
+              if (Raison sociale et identifiant retrouves dans le document ?) then (non)
+                |Recruteur|
+                :Message detaille : aucun compte cree;
+                :Reste sur le formulaire pour corriger ou changer de fichier;
+                stop
+              else (oui)
+                :Cree le compte **Recruteur**;
+                note right
+                  Compte **valide automatiquement**
+                  sans intervention manuelle d'un administrateur
+                  pour l'ouverture du compte (politique projet).
+                end note
+                :Redirige vers la connexion avec message de succes;
+                partition "Traitement complementaire asynchrone" {
+                  :Met en file une demande d'analyse approfondie du dossier;
+                  :Calcule un score de conformite (texte, type de piece, mots-cles);
+                  :Publie un evenement **compte recruteur verifie**;
+                  :Met a jour le dossier recruteur (score, trace);
+                  :Peut declencher un e-mail d'information;
+                }
+              endif
+            }
+          endif
+        endif
+      endif
+    endif
+  endif
+}
+
+|Recruteur|
+partition "Apres connexion - cycle de recrutement" {
+  :Se connecte;
+  partition "Offres d'emploi" {
+    :Redige une offre (brouillon);
+    :Publie l'offre;
+    |Systeme|
+    :Rend l'offre visible aux candidats;
+  }
+  partition "Traitement des candidatures" {
+    |Recruteur|
+    :Ouvre le tableau des candidatures pour une offre;
+    :Consulte lettre et telecharge le CV;
+    :Ajoute des notes internes si prevu;
+    :Change le statut (ex. vers **En cours d'examen**);
+    |Systeme|
+    :Historise le changement;
+    :Notifie le candidat par e-mail;
+  }
+  partition "Entretiens" {
+    |Recruteur|
+    :Planifie un entretien (date, lieu ou lien visioconference);
+    |Systeme|
+    :Enregistre l'entretien lie a la candidature;
+    if (Regle metier : lier statut candidature a l'entretien ?) then (oui)
+      :Met a jour le statut de la candidature;
+    else (non)
+      :Ne modifie pas le statut automatiquement;
+    endif
+    :Envoie les convocations par e-mail aux parties;
+  }
+  partition "Decision" {
+    |Recruteur|
+    :Cloture par **Acceptation** ou **Refus**;
+    |Systeme|
+    :Met a jour le statut final;
+    :Envoie l'e-mail de decision au candidat;
+  }
+}
+
+newpage Administration et elements transverses
+
+|Administrateur|
+:Se connecte avec un compte dedie (non inscrit comme le grand public);
+|Systeme|
+:Verifie le role **Administrateur**;
+
+partition "Supervision" {
+  |Administrateur|
+  :Consulte le tableau de bord (indicateurs globaux);
+  :Consulte la liste des utilisateurs;
+  :Affiche le detail d'un compte;
+  if (Decision de suspendre un compte ?) then (oui)
+    |Systeme|
+    :Desactive le compte;
+    :Refuse les nouvelles connexions pour ce compte;
+    |Administrateur|
+  else (non)
+    :Aucune suspension;
+  endif
+  :Consulte journaux d'activite si disponibles;
+}
+
+|Systeme|
+partition "Elements transverses (charge equipe)" {
+  :Annuaire des composants du systeme distribue;
+  :Point d'entree unique pour les appels securises;
+  :Configuration centralisee des environnements;
+  :Bibliotheque partagee des contrats de donnees et regles communes;
+  :Orchestration des bases de donnees par domaine;
+  :Files de messages pour traitements asynchrones;
+  :Conteneurisation pour demarrage local ou demonstration;
+}
+
+stop
+
+@enduml

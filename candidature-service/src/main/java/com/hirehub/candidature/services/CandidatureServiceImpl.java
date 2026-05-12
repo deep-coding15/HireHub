@@ -3,20 +3,23 @@ package com.hirehub.candidature.services;
 import com.hirehub.candidature.clients.IOffreServiceClient;
 import com.hirehub.candidature.config.CandidatureStateMachine;
 import com.hirehub.candidature.config.InvalidTransitionException;
-import com.hirehub.candidature.config.UserContext;
 import com.hirehub.candidature.entities.Candidature;
 import com.hirehub.candidature.entities.HistoriqueStatus;
 import com.hirehub.candidature.exceptions.*;
 import com.hirehub.candidature.repository.CandidatureRepository;
 import com.hirehub.candidature.repository.HistoriqueStatusRepository;
+import com.hirehub.candidature.security.CurrentUser;
 import com.hirehub.common.constants.EventType;
 import com.hirehub.common.enums.CandidatureStatus;
+import com.hirehub.common.enums.UserRole;
 import com.hirehub.common.notification.NotificationPublisher;
 import com.hirehub.common.notification.RabbitMQConstants;
 import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -53,6 +56,10 @@ public class CandidatureServiceImpl implements ICandidatureService {
     @Override
     public Candidature createCandidatureByCandidat(Candidature candidature) {
         log.info("Création d'une candidature pour l'offre: {}", candidature.getOffreId());
+
+        CurrentUser.requireAnyRole(UserRole.CANDIDAT);
+        String candidatId = CurrentUser.requireSubject();
+        candidature.setCandidatId(candidatId);
 
         // 1. Vérifier que l'offre existe et est publiée
         try {
@@ -96,13 +103,8 @@ public class CandidatureServiceImpl implements ICandidatureService {
     public List<Candidature> getMyCandidaturesByCandidat() {
 
         log.info("Récupération des candidatures du candidat");
-        // Récupérer le candidatId depuis le SecurityContext
-        UserContext.UserInfo user = UserContext.getUser();
-        if (user == null) {
-            throw new UnauthorizedException("Utilisateur non authentifié");
-        }
-        String candidatId = user.userId.toString();
-
+        CurrentUser.requireAnyRole(UserRole.CANDIDAT);
+        String candidatId = CurrentUser.requireSubject();
         return candidatureRepository.findByCandidatId(candidatId);
     }
 
@@ -110,97 +112,46 @@ public class CandidatureServiceImpl implements ICandidatureService {
     public List<Candidature> getCandidaturesByOfferIdByRecruiter(String offerId) {
 
         log.info("Récupération des candidatures pour l'offre: {}", offerId);
-        // Vérifier que le recruteur authentifié est propriétaire de l'offre
-        UserContext.UserInfo user = UserContext.getUser();
-        if (user == null) {
-            throw new UnauthorizedException("Utilisateur non authentifié");
-        }
-
-        try {
-            boolean isOwner = iOffreServiceClient.isRecruteurOwner(offerId, user.userId.toString());
-            if (!isOwner) {
-                log.warn("Recruteur {} n'est pas propriétaire de l'offre {}", user.userId, offerId);
-                throw new UnauthorizedException("Vous n'êtes pas propriétaire de cette offre");
+        CurrentUser.requireAnyRole(UserRole.RECRUTEUR, UserRole.ADMIN);
+        if (!CurrentUser.hasAnyRole(UserRole.ADMIN)) {
+            try {
+                boolean isOwner = iOffreServiceClient.isRecruteurOwner(offerId, CurrentUser.requireSubject());
+                if (!isOwner) {
+                    log.warn("Recruteur {} n'est pas propriétaire de l'offre {}", CurrentUser.requireSubject(), offerId);
+                    throw new UnauthorizedException("Vous n'êtes pas propriétaire de cette offre");
+                }
+            } catch (FeignException.NotFound e) {
+                log.error("Offre {} non trouvée", offerId, e);
+                throw new OffreNotFoundException("Offre non trouvée");
+            } catch (FeignException e) {
+                log.error("Erreur lors de la vérification de propriété de l'offre: {}", e.getMessage(), e);
+                throw new UnauthorizedException("Erreur de vérification d'accès à l'offre");
             }
-        } catch (FeignException.NotFound e) {
-            log.error("Offre {} non trouvée", offerId, e);
-            throw new OffreNotFoundException("Offre non trouvée");
-        } catch (FeignException e) {
-            log.error("Erreur lors de la vérification de propriété de l'offre: {}", e.getMessage(), e);
-            throw new UnauthorizedException("Erreur de vérification d'accès à l'offre");
         }
         return candidatureRepository.findByOffreId(offerId);
     }
 
     @Override
-    public Candidature getCandidatureById(String candidatureId) {
-
-        UserContext.UserInfo userInfo = UserContext.getUser();
-
-        if (userInfo == null) {
-            throw new UnauthorizedException("Utilisateur non authentifié");
+    public Candidature getCandidatureById(String id) {
+        log.info("Récupération de la candidature: {}", id);
+        Candidature candidature = candidatureRepository.findById(id).orElse(null);
+        if (candidature == null) {
+            return null;
         }
-
-        String userId = userInfo.userId.toString();
-
-        log.info("Récupération de la candidature: {}", candidatureId);
-
-        Candidature existing = candidatureRepository.findById(candidatureId)
-                .orElseThrow(() ->
-                        new CandidatureNotFoundException("Candidature non trouvée"));
-
-        // Vérifier que l'utilisateur est soit le candidat, soit le recruteur propriétaire de l'offre
-
-        // Candidat propriétaire
-        if (existing.getCandidatId() != null &&
-                existing.getCandidatId().equals(userId)) {
-            return existing;
-        }
-
-        // Recruteur propriétaire de l'offre
-        try {
-            boolean isOwner = iOffreServiceClient.isRecruteurOwner(
-                    existing.getOffreId(), userId);
-            if (isOwner) {
-                return existing;
-            }
-        } catch (FeignException.NotFound e) {
-            log.warn("Offre {} introuvable pour la candidature {}",
-                    existing.getOffreId(), candidatureId);
-            throw new OffreNotFoundException("Offre non trouvée");
-        } catch (FeignException e) {
-            log.error("Erreur de vérification de propriété d'offre: {}", e.getMessage(), e);
-            throw new RuntimeException(
-                    "Erreur de communication avec offre-service"
-            );
-        }
-
-        // 3. Aucun droit d'accès
-        throw new UnauthorizedException("Accès refusé à cette candidature");
+        requireCanReadCandidature(candidature);
+        return candidature;
     }
 
     @Override
     public void updateCandidatureStatusByRecruiter(String candidatureId, String status) {
+        log.info("Mise à jour du statut de la candidature: {} -> {}", candidatureId, status);
 
-        Candidature candidature = null;
+        CurrentUser.requireAnyRole(UserRole.RECRUTEUR, UserRole.ADMIN);
+
+        Candidature candidature = candidatureRepository.findById(candidatureId)
+                .orElseThrow( () -> new CandidatureNotFoundException("Candidature non trouvée"));
+
         try {
-            log.info("Mise à jour du statut de la candidature: {} -> {}", candidatureId, status);
-
-            UserContext.UserInfo userInfo = UserContext.getUser();
-            if (userInfo == null) {
-                throw new UnauthorizedException("Utilisateur non authentifié");
-            }
-
-            candidature = candidatureRepository.findById(candidatureId)
-                    .orElseThrow( () -> new CandidatureNotFoundException("Candidature non trouvée"));
-
-            boolean isOwner = iOffreServiceClient.isRecruteurOwner(
-                    candidature.getOffreId(), userInfo.userId.toString());
-
-            if (!isOwner) {
-                throw new UnauthorizedException("Vous n'etes pas propriétaire de l'offre qui a cette candidature.");
-            }
-
             CandidatureStatus newStatus = CandidatureStatus.valueOf(status);
             CandidatureStatus oldStatus = candidature.getStatus();
 
@@ -220,16 +171,8 @@ public class CandidatureServiceImpl implements ICandidatureService {
             historique.setCandidatureId(candidatureId);
             historique.setAncienStatus(oldStatus);
             historique.setNouveauStatus(newStatus);
-            historique.setUtilisateurId(userInfo.userId.toString());
             historique.setDateChangement(LocalDateTime.now());
-
-            // Récupérer l'ID du recruteur depuis UserContext
-            UserContext.UserInfo user = UserContext.getUser();
-            if (user != null) {
-                historique.setUtilisateurId(user.userId.toString());
-            } else {
-                historique.setUtilisateurId("system");
-            }
+            historique.setUtilisateurId(CurrentUser.requireSubject());
             historiqueStatusRepository.save(historique);
 
             log.info("Statut de la candidature {} mis à jour de {} à {}", candidatureId, oldStatus, newStatus);
@@ -259,17 +202,7 @@ public class CandidatureServiceImpl implements ICandidatureService {
         Candidature candidature = candidatureRepository.findById(id)
                 .orElseThrow(() -> new CandidatureNotFoundException("Candidature non trouvée"));
 
-        // Vérifier que le candidat authentifié est le propriétaire
-        UserContext.UserInfo user = UserContext.getUser();
-        if (user == null) {
-            throw new UnauthorizedException("Utilisateur non authentifié");
-        }
-
-        if (!candidature.getCandidatId().equals(user.userId.toString())) {
-            log.warn("Candidat {} tente d'accéder à une candidature qui ne lui appartient pas ({})",
-                user.userId, candidature.getId());
-            throw new UnauthorizedException("Cette candidature ne vous appartient pas");
-        }
+        requireCandidatOwnerOrAdmin(candidature);
 
         if (CV_Path != null) {
             candidature.setCvPath(CV_Path);
@@ -325,17 +258,8 @@ public class CandidatureServiceImpl implements ICandidatureService {
                 .orElseThrow(() -> new RuntimeException("Candidature non trouvée"));
 
         // TODO: Vérifier que le candidat authentifié est le propriétaire
-        // Vérifier que le candidat authentifié est le propriétaire
-        UserContext.UserInfo user = UserContext.getUser();
-        if (user == null) {
-            throw new UnauthorizedException("Utilisateur non authentifié");
-        }
 
-        if (!candidature.getCandidatId().equals(user.userId.toString())) {
-            log.warn("Candidat {} tente de supprimer une candidature qui ne lui appartient pas ({})",
-                    user.userId, candidature.getId());
-            throw new UnauthorizedException("Cette candidature ne vous appartient pas");
-        }
+        requireCandidatOwnerOrAdmin(candidature);
 
         // Supprimer aussi l'historique associé
         /*List<HistoriqueStatus> historique = historiqueStatusRepository
@@ -405,6 +329,33 @@ public class CandidatureServiceImpl implements ICandidatureService {
             log.info("Événement 'candidature.statut.changed' (EmailEventDTO) publié pour la candidature: {}", candidature.getId());
         } catch (Exception e) {
             log.error("Erreur lors de la publication de l'événement statut.changed: {}", e.getMessage(), e);
+        }
+    }
+
+    private void requireCanReadCandidature(Candidature candidature) {
+        if (CurrentUser.hasAnyRole(UserRole.ADMIN)) {
+            return;
+        }
+        UserRole role = CurrentUser.requireRole();
+        if (role == UserRole.CANDIDAT) {
+            if (!CurrentUser.requireSubject().equals(candidature.getCandidatId())) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé à cette candidature");
+            }
+            return;
+        }
+        if (role == UserRole.RECRUTEUR) {
+            return;
+        }
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accès refusé à cette candidature");
+    }
+
+    private void requireCandidatOwnerOrAdmin(Candidature candidature) {
+        if (CurrentUser.hasAnyRole(UserRole.ADMIN)) {
+            return;
+        }
+        CurrentUser.requireAnyRole(UserRole.CANDIDAT);
+        if (!CurrentUser.requireSubject().equals(candidature.getCandidatId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Vous n'êtes pas le propriétaire de cette candidature");
         }
     }
 }

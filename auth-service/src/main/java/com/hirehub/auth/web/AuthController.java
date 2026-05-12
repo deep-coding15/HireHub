@@ -1,9 +1,12 @@
 package com.hirehub.auth.web;
 
+import com.hirehub.auth.dto.LoginRequest;
 import com.hirehub.auth.dto.RegisterCandidateForm;
 import com.hirehub.auth.dto.RegisterRecruiterForm;
 import com.hirehub.auth.exception.RecruiterJustificatifMismatchException;
 import com.hirehub.auth.model.UserAccount;
+import com.hirehub.auth.security.AccountUserDetails;
+import com.hirehub.auth.security.JwtService;
 import com.hirehub.auth.service.RecaptchaVerificationService;
 import com.hirehub.auth.service.RecruiterDocumentStrictValidationService;
 import com.hirehub.auth.service.UserRegistrationService;
@@ -14,8 +17,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,18 +42,55 @@ public class AuthController {
     private final UserRegistrationService userRegistrationService;
     private final RecaptchaVerificationService recaptchaVerificationService;
     private final RecruiterDocumentStrictValidationService recruiterDocumentStrictValidationService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
     private final String frontendBaseUrl;
 
     public AuthController(
             UserRegistrationService userRegistrationService,
             RecaptchaVerificationService recaptchaVerificationService,
             RecruiterDocumentStrictValidationService recruiterDocumentStrictValidationService,
+            AuthenticationManager authenticationManager,
+            JwtService jwtService,
             @Value("${hirehub.frontend-base-url}") String frontendBaseUrl
     ) {
         this.userRegistrationService = userRegistrationService;
         this.recaptchaVerificationService = recaptchaVerificationService;
         this.recruiterDocumentStrictValidationService = recruiterDocumentStrictValidationService;
+        this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
         this.frontendBaseUrl = frontendBaseUrl;
+    }
+
+    @PostMapping(
+            path = "/login",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+        if (request == null || !hasText(request.email()) || !hasText(request.password())) {
+            return ResponseEntity.badRequest().body(ApiResponse.error("Email et mot de passe sont obligatoires."));
+        }
+        String email = request.email().trim().toLowerCase();
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, request.password())
+            );
+            AccountUserDetails principal = (AccountUserDetails) authentication.getPrincipal();
+            UserAccount user = principal.getUser();
+            String token = jwtService.generateAccessToken(user);
+            Map<String, Object> payload = new HashMap<>();
+            payload.put("accessToken", token);
+            payload.put("tokenType", "Bearer");
+            payload.put("expiresIn", jwtService.getExpirationSeconds());
+            return ResponseEntity.ok(ApiResponse.ok("Connexion reussie.", payload));
+        } catch (BadCredentialsException exception) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(ApiResponse.error("Email ou mot de passe incorrect."));
+        } catch (DisabledException exception) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(ApiResponse.error("Compte bloque ou desactive."));
+        }
     }
 
     @PostMapping(

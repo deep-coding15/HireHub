@@ -55,6 +55,7 @@ spring:
       properties:
         hibernate:
           dialect: org.hibernate.dialect.PostgreSQLDialect
+
 # Configuration pour l'idempotence et le traitement des événements
 notification:
   idempotence:
@@ -63,3 +64,14 @@ notification:
   rabbitmq:
     max-retries: 3
     retry-delay-ms: 1000
+
+server:
+  port: ${SERVER_PORT:8080}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: alpha
+    tags-sorter: alpha

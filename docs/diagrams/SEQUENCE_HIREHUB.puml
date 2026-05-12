@@ -1,0 +1,175 @@
+' =============================================================================
+' Diagrammes de SEQUENCE - HireHub ATS (presentation equipe 4)
+' Rendu : https://www.plantuml.com/plantuml/  ou extension PlantUML
+' =============================================================================
+
+@startuml SEQ_01_CANDIDAT_POSTULER
+title SEQ-01 : Candidat postule a une offre (parcours presentation 3.1)
+
+actor "Candidat" as U
+participant "frontend-service\n:8086" as FE
+participant "api-gateway\n:8089" as GW
+participant "offre-service\n:8082" as OF
+participant "auth-service\n:8081" as AU
+participant "candidature-service\n:8083" as CA
+participant "notification-service\n:8084" as NO
+participant "RabbitMQ" as MQ
+
+U -> FE : GET /offres (filtres)
+FE -> GW : GET /offre-service/api/... (exemple via Gateway)
+GW -> OF : routage Eureka
+OF --> FE : page liste paginee
+FE --> U : affichage offres
+
+U -> FE : Clic \"Postuler\"
+FE -> GW : validation session / JWT
+GW -> AU : optionnel : introspection token
+AU --> FE : OK
+FE --> U : formulaire lettre + CV
+
+U -> FE : POST candidature (multipart)
+FE -> GW : avec JWT (FeignRequestInterceptor)
+GW -> CA : POST creer candidature
+CA -> CA : persistance BDD candidatures\nstatut = SOUMISE
+CA -> MQ : evenement nouvelle candidature
+MQ -> NO : message
+NO -> NO : Spring Mail (template)
+NO --> U : **email confirmation** (async)
+
+U -> FE : GET /mes-candidatures (ou /candidat/...)
+FE -> GW
+GW -> CA : liste par candidat
+CA --> FE : timeline + badges statut
+FE --> U : vue candidatures
+
+@enduml
+
+
+@startuml SEQ_02_RECRUTEUR_PIPELINE
+title SEQ-02 : Recruteur traite le pipeline (presentation 3.2)
+
+actor "Recruteur" as R
+participant "frontend-service" as FE
+participant "api-gateway" as GW
+participant "offre-service" as OF
+participant "candidature-service" as CA
+participant "entretien-service" as EN
+participant "notification-service" as NO
+participant "RabbitMQ" as MQ
+
+R -> FE : Creer / publier offre
+FE -> GW : POST/PATCH offre (+ JWT)
+GW -> OF : CRUD offre
+OF --> FE : offre visible publiquement
+
+R -> FE : Voir candidatures par offre
+FE -> GW
+GW -> CA : GET candidatures filtrees
+CA --> FE : tableau trie par date
+
+R -> FE : Passe statut \"En cours\"
+FE -> GW
+GW -> CA : PATCH statut
+CA -> MQ : evenement changement statut
+MQ -> NO
+NO --> R : (email interne si conf)
+NO --> R : **email candidat** (async)
+
+R -> FE : Planifier entretien
+FE -> GW
+GW -> EN : POST entretien (date, lieu)
+EN -> MQ
+MQ -> NO
+NO --> R : email avec details
+NO --> R : meme email au candidat
+
+R -> FE : Accepter / Refuser
+FE -> GW
+GW -> CA : PATCH ACCEPTEE / REFUSEE
+CA -> MQ
+MQ -> NO
+NO --> R : email final (async)
+
+@enduml
+
+
+@startuml SEQ_03_ADMIN_SUPERVISION
+title SEQ-03 : Admin supervise (dashboard + suspension — sans approbation recruteur)
+
+actor "Administrateur" as A
+participant "frontend-service" as FE
+participant "api-gateway" as GW
+participant "auth-service" as AU
+participant "stats / agregats\n(multi-services)" as ST
+
+A -> FE : Ouvre dashboard
+FE -> GW : appels paralleles / agregation
+GW -> ST : KPIs (Feign vers services)
+ST --> FE : donnees pour Chart.js
+FE --> A : dashboard global
+
+A -> FE : Suspendre compte utilisateur
+FE -> GW
+GW -> AU : PATCH actif = false
+AU --> FE
+FE --> A : connexion bloquee au prochain login
+
+@enduml
+
+
+@startuml SEQ_04_INSCRIPTION_RECRUTEUR_ASYNC
+title SEQ-04 : Inscription recruteur + verification documentaire (async)
+
+actor "Recruteur" as R
+participant "frontend-service" as FE
+participant "auth-service" as AU
+participant "RabbitMQ" as MQ
+participant "verification-service" as VS
+
+R -> FE : Email + code (pre-validation)
+FE -> FE : signup_email_challenges
+
+R -> FE : Formulaire + justificatif
+FE -> AU : POST /register/recruteur (multipart)
+AU -> AU : reCAPTCHA + validation stricte sync
+AU -> AU : INSERT users (RECRUTEUR)
+AU -> MQ : publish RecruiterRegistered
+AU --> FE : redirect (succes ou erreur)
+
+MQ -> VS : consume
+VS -> VS : OCR / extraction texte
+VS -> VS : coherence raison sociale / SIRET
+VS -> MQ : publish resultat (OK / review / reject)
+
+MQ -> AU : listener resultat
+AU -> AU : UPDATE verificationStatus\n+ recruiterApproved\n(suite verification-service,\npas action admin)
+
+R -> FE : Rafraichit espace
+FE -> FE : lecture users\n(lock UI selon flags)
+
+@enduml
+
+
+@startuml SEQ_05_JWT_GATEWAY_FEIGN
+title SEQ-05 : Appel securise via Gateway + propagation JWT (principe stack)
+
+actor "Client" as CL
+participant "api-gateway" as GW
+participant "Service A\n(Feign client)" as SA
+participant "Service B" as SB
+
+CL -> GW : HTTP + Bearer JWT
+GW -> GW : filtre JWT global\n(validation signature / claims)
+GW -> SA : requete route
+SA -> SA : FeignRequestInterceptor\n(repose Authorization)
+SA -> SB : appel interne avec JWT
+SB -> SB : Security / regles metier
+SB --> SA : reponse
+SA --> GW
+GW --> CL
+
+note right of GW
+  Presentation : JWT partage via\n**common-lib** + interceptor Feign
+end note
+
+@enduml
