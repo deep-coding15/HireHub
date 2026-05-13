@@ -2,9 +2,10 @@ package com.hirehub.candidature;
 
 import com.hirehub.candidature.entities.Candidature;
 import com.hirehub.candidature.entities.HistoriqueStatus;
-import com.hirehub.candidature.services.CandidatureService;
+import com.hirehub.candidature.services.CandidatureServiceImpl;
 import com.hirehub.common.dtos.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,12 +20,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/candidatures")
 @Slf4j
+@Profile("mock")
 public class CandidatureController {
 
-    private final CandidatureService candidatureService;
+    private final CandidatureServiceImpl candidatureService;
 
-    public CandidatureController(CandidatureService candidatureService) {
-        this.candidatureService = candidatureService;
+    public CandidatureController(CandidatureServiceImpl candidatureServiceImpl) {
+        this.candidatureService = candidatureServiceImpl;
     }
 
     /**

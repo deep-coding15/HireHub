@@ -2,6 +2,8 @@ package com.hirehub.email;
 
 import com.hirehub.email.email.interfaces.EmailBusinessService;
 import com.hirehub.email.template.EmailTemplateForAuthentification;
+import com.hirehub.email.dto.CandidateInfoDTO;
+import com.hirehub.email.feign.CandidateServiceClientAPI;
 import com.hirehub.common.dtos.candidatures.CandidatureDTO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -13,9 +15,39 @@ import static com.hirehub.email.template.EmailTemplateForCandidature.*;
 @Service
 public class EmailBusinessServiceImpl extends MailService implements EmailBusinessService {
 
-    public EmailBusinessServiceImpl(JavaMailSender mailSender) {
+    private final CandidateServiceClientAPI candidateServiceClientAPI;
+
+    public EmailBusinessServiceImpl(JavaMailSender mailSender,
+                                    CandidateServiceClientAPI candidateServiceClientAPI) {
 
         super(mailSender);
+        this.candidateServiceClientAPI = candidateServiceClientAPI;
+    }
+
+    private CandidateInfoDTO resolveCandidateInfo(String candidateId) {
+        if (candidateId == null || candidateId.isBlank()) {
+            return null;
+        }
+
+        try {
+            return candidateServiceClientAPI.getCandidateById(candidateId);
+        } catch (Exception e) {
+            log.warn("[CANDIDATE LOOKUP] Impossible de récupérer le candidat {}: {}", candidateId, e.getMessage());
+            return null;
+        }
+    }
+
+    private String resolveCandidateName(CandidateInfoDTO candidate) {
+        if (candidate == null) {
+            return "Candidat";
+        }
+        if (candidate.fullName != null && !candidate.fullName.isBlank()) {
+            return candidate.fullName;
+        }
+        String firstName = candidate.firstName == null ? "" : candidate.firstName.trim();
+        String lastName = candidate.lastName == null ? "" : candidate.lastName.trim();
+        String resolved = (firstName + " " + lastName).trim();
+        return resolved.isBlank() ? "Candidat" : resolved;
     }
 
     /**
@@ -32,17 +64,25 @@ public class EmailBusinessServiceImpl extends MailService implements EmailBusine
     public void sendCandidatureConfirmation(CandidatureDTO candidatureDTO) {
 
         try {
+            CandidateInfoDTO candidateInfo = resolveCandidateInfo(candidatureDTO.getCandidatId());
+            String candidateEmail = candidateInfo != null && candidateInfo.email != null && !candidateInfo.email.isBlank()
+                    ? candidateInfo.email
+                    : null;
+            String candidateName = resolveCandidateName(candidateInfo);
+
             String subject = "Votre candidature a été reçue - HireHub";
-
             String htmlBody = buildCandidatureConfirmationTemplate(
-                    candidatureDTO.getCandidatName(), candidatureDTO.getOffreTitle());
+                    candidateName, "Offre");
 
-            sendHtmlEmail(candidatureDTO.getCandidatEmail(), subject, htmlBody);
-            log.info("[📧 CANDIDATURE] Confirmation envoyée à: {} pour l'offre: {}",
-                    candidatureDTO.getCandidatEmail(), candidatureDTO.getOffreTitle());
+            if (candidateEmail == null || candidateEmail.isBlank()) {
+                throw new IllegalStateException("Email candidat introuvable pour l'id: " + candidatureDTO.getCandidatId());
+            }
+
+            sendHtmlEmail(candidateEmail, subject, htmlBody);
+            log.info("[📧 CANDIDATURE] Confirmation envoyée à: {}", candidateEmail);
         } catch (Exception e) {
-            log.error("[❌ CANDIDATURE] Erreur lors de l'envoi de confirmation à {}: {}",
-                    candidatureDTO.getCandidatEmail(), e.getMessage(), e);
+            log.error("[❌ CANDIDATURE] Erreur lors de l'envoi de confirmation pour candidat {}: {}",
+                    candidatureDTO.getCandidatId(), e.getMessage(), e);
             throw new RuntimeException("Erreur lors de l'envoi de confirmation de candidature", e);
         }
     }

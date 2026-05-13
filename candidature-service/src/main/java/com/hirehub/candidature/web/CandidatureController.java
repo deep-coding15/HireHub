@@ -16,6 +16,7 @@ import com.hirehub.candidature.repository.HistoriqueStatusRepository;
 import com.hirehub.candidature.services.ICandidatureService;
 import com.hirehub.common.dtos.ApiResponse;
 import com.hirehub.common.enums.UserRole;
+import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -67,7 +68,7 @@ public class CandidatureController {
     @PostMapping
     @RequireAuth
     public ResponseEntity<ApiResponse<CandidatureResponseDTO>> create(
-            @RequestBody CandidatureCreatedDTO candidatureDTO) {
+            @Valid @RequestBody CandidatureCreatedDTO candidatureDTO) {
 
         Candidature candidature = CandidatureMapper.toEntity(candidatureDTO);
 

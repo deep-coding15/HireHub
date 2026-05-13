@@ -46,10 +46,12 @@ public class CandidatureListener {
 
             emailService.sendCandidatureConfirmation(
                     new com.hirehub.common.dtos.candidatures.CandidatureDTO(
-                            event.getRecipientEmail(),
-                            event.getRecipientName(),
+                            event.getPayload().get("candidatureId").toString(),
+                            offerId.toString(),
                             offerTitle,
-                            offerId
+                            event.getPayload().get("status").toString(),
+                            event.getPayload().get("cvPath").toString(),
+                            event.getPayload().get("lettreMotivation").toString()
                     )
             );
 

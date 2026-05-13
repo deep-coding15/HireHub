@@ -40,7 +40,13 @@ public class EmailEventDTO implements Serializable {
     @JsonProperty("recipientName")
     private String recipientName;
 
+    private String recipientId;
+
     // ===== PAYLOAD =====
     @JsonProperty("payload")
     private Map<String, Object> payload;
+
+    public EmailEventDTO(String eventType, String recipientId, Map<String, Object> payload) {
+
+    }
 }
