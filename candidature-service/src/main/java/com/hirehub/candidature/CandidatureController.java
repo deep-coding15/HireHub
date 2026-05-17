@@ -5,7 +5,7 @@ import com.hirehub.candidature.entities.HistoriqueStatus;
 import com.hirehub.candidature.services.CandidatureServiceImpl;
 import com.hirehub.common.dtos.ApiResponse;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Profile;
+// import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,10 +17,12 @@ import java.util.List;
  * Contrôleur REST pour les candidatures
  * Endpoints: /candidatures
  */
-@RestController
-@RequestMapping("/candidatures")
+// Duplicate/simple controller disabled: prefer com.hirehub.candidature.web.CandidatureController
+// @RestController
+// @RequestMapping("/candidatures")
 @Slf4j
-@Profile("mock")
+// @Profile("mock")
+@Deprecated
 public class CandidatureController {
 
     private final CandidatureServiceImpl candidatureService;

@@ -10,12 +10,14 @@ import com.hirehub.candidature.repository.CandidatureRepository;
 import com.hirehub.candidature.repository.HistoriqueStatusRepository;
 import com.hirehub.candidature.security.CurrentUser;
 import com.hirehub.common.constants.EventType;
+import com.hirehub.common.dtos.ApiResponse;
 import com.hirehub.common.enums.CandidatureStatus;
 import com.hirehub.common.enums.UserRole;
 import com.hirehub.common.notification.NotificationPublisher;
 import com.hirehub.common.notification.RabbitMQConstants;
 import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -34,6 +36,7 @@ import java.util.Optional;
 @Service
 @Profile("!mock") // S'active partout SAUF si le profil 'mock' est actif
 @Slf4j
+@Primary
 public class CandidatureServiceImpl implements ICandidatureService {
 
     private final CandidatureRepository candidatureRepository;

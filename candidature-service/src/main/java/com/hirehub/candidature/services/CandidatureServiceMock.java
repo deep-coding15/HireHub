@@ -2,6 +2,7 @@ package com.hirehub.candidature.services;
 
 
 import com.hirehub.candidature.entities.Candidature;
+import com.hirehub.common.dtos.ApiResponse;
 import com.hirehub.common.enums.CandidatureStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
@@ -123,6 +124,7 @@ public class CandidatureServiceMock implements ICandidatureService {
 
     /**
      * Récupère une candidature par son ID
+     *
      * @param id l'ID de la candidature
      * @return la candidature ou null si non trouvée
      */

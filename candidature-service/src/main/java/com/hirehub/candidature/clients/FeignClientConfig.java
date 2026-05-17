@@ -24,6 +24,7 @@ public class FeignClientConfig {
             copyHeader(request, requestTemplate, "Authorization");
             copyHeader(request, requestTemplate, SecurityConstants.HEADER_USER_ID);
             copyHeader(request, requestTemplate, SecurityConstants.HEADER_USER_EMAIL);
+            copyHeader(request, requestTemplate, SecurityConstants.HEADER_USER_NAME);
             copyHeader(request, requestTemplate, SecurityConstants.HEADER_USER_ROLE);
 
             String userName = request.getHeader(SecurityConstants.HEADER_USER_NAME);

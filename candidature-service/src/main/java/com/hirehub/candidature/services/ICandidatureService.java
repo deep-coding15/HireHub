@@ -1,10 +1,12 @@
 package com.hirehub.candidature.services;
 
+import com.hirehub.candidature.clients.ICandidatureAPI;
 import com.hirehub.candidature.entities.Candidature;
+import com.hirehub.common.dtos.ApiResponse;
 
 import java.util.List;
 
-public interface ICandidatureService {
+public interface ICandidatureService  {
     Candidature createCandidatureByCandidat(Candidature candidature);
     List<Candidature> getMyCandidaturesByCandidat();
     List<Candidature> getCandidaturesByOfferIdByRecruiter(String offerId);

@@ -28,6 +28,7 @@ public class EmailController {
 
     @PostMapping("/candidature-confirmation")
     public ResponseEntity<Void> sendCandidatureConfirmation(@RequestBody CandidatureDTO candidature) {
+
         if(candidature == null || Utils.isBlank(candidature.getCandidatEmail()) || Utils.isNegativeOrNull(candidature.getOffreId())
         || Utils.isBlank(candidature.getOffreTitle()) || Utils.isBlank(candidature.getCandidatName())){
             return ResponseEntity.badRequest().build();
@@ -35,7 +36,15 @@ public class EmailController {
         businessMailService.sendCandidatureConfirmation(candidature);
         return ResponseEntity.ok().build();
     }
-
+/*
+* public class CandidatureDTO {
+    private String id;
+    private String candidatId;
+    private String offreId;
+    private String status;
+    private String cvPath;
+    private String lettreMotivationPath;
+}*/
     @PostMapping("/statut-changed")
     public ResponseEntity<Void> sendStatutChangedNotification(@RequestBody CandidatureStatutChangedDTO candidatureChangedDTO){
         if(candidatureChangedDTO == null || Utils.isBlank(candidatureChangedDTO.getCandidatEmail())

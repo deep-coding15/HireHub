@@ -1,5 +1,6 @@
 package com.hirehub.candidature.web;
 
+import com.hirehub.candidature.clients.ICandidatureAPI;
 import com.hirehub.candidature.config.CandidatureSecurityService;
 import com.hirehub.candidature.config.RequireAuth;
 import com.hirehub.candidature.config.UserContext;
@@ -42,20 +43,20 @@ import java.nio.file.Paths;
 @RequestMapping("/candidatures")
 @Slf4j
 @RequireAuth
-public class CandidatureController {
+public class CandidatureController implements ICandidatureAPI {
 
-    private final ICandidatureService ICandidatureService;
+    private final ICandidatureService candidatureService;
     private final HistoriqueStatusRepository historiqueStatusRepository;
     private final CandidatureSecurityService securityService;
     private final CandidatureMapper candidatureMapper;
     private final HistoriqueStatusMapper historiqueStatusMapper;
 
-    public CandidatureController(ICandidatureService ICandidatureService,
+    public CandidatureController(ICandidatureService candidatureService,
                                  HistoriqueStatusRepository historiqueStatusRepository,
                                  CandidatureSecurityService securityService,
                                  CandidatureMapper candidatureMapper,
                                  HistoriqueStatusMapper historiqueStatusMapper) {
-        this.ICandidatureService = ICandidatureService;
+        this.candidatureService = candidatureService;
         this.historiqueStatusRepository = historiqueStatusRepository;
         this.securityService = securityService;
         this.candidatureMapper = candidatureMapper;
@@ -67,12 +68,13 @@ public class CandidatureController {
      */
     @PostMapping
     @RequireAuth
+    @Override
     public ResponseEntity<ApiResponse<CandidatureResponseDTO>> create(
             @Valid @RequestBody CandidatureCreatedDTO candidatureDTO) {
 
         Candidature candidature = CandidatureMapper.toEntity(candidatureDTO);
 
-        Candidature candidatureCreated = ICandidatureService.createCandidatureByCandidat(candidature);
+        Candidature candidatureCreated = candidatureService.createCandidatureByCandidat(candidature);
 
         CandidatureResponseDTO candidatureResponseDTO = candidatureMapper.toResponseDTO(candidatureCreated);
 
@@ -85,8 +87,8 @@ public class CandidatureController {
      */
     @GetMapping("/moi")
     public ResponseEntity<ApiResponse<List<CandidatureResponseDTO>>> myCandidatures() {
-        UserContext.UserInfo user = securityService.requireAuth();
-        List<Candidature> data = ICandidatureService.getMyCandidaturesByCandidat();
+        securityService.requireAuth();
+        List<Candidature> data = candidatureService.getMyCandidaturesByCandidat();
 
         List<CandidatureResponseDTO> candidatureResponseDTO = candidatureMapper.toResponseDtos(data);
 
@@ -99,9 +101,10 @@ public class CandidatureController {
      * GET /candidatures/{id}
      */
     @GetMapping("/{id}")
+    @Override
     public ResponseEntity<ApiResponse<CandidatureResponseDTO>> get(@PathVariable String id) {
 
-        Candidature candidature = ICandidatureService.getCandidatureById(id);
+        Candidature candidature = candidatureService.getCandidatureById(id);
         if (candidature == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.error("Candidature non trouvée"));
@@ -116,13 +119,14 @@ public class CandidatureController {
      * PUT /candidatures/{candidatureId}/status?status=ACCEPTEE
      */
     @PutMapping("/{candidatureId}/status")
+    @Override
     public ResponseEntity<ApiResponse<CandidatureResponseDTO>> updateStatus(@PathVariable String candidatureId,
-                                                                 @RequestParam("status") String status) {
+                                                                 @RequestParam("status") String newStatus) {
         try {
             // Vérifier l'authentification et les droits
             UserContext.UserInfo user = securityService.requireAuth();
 
-            Candidature candidature = ICandidatureService.getCandidatureById(candidatureId);
+            Candidature candidature = candidatureService.getCandidatureById(candidatureId);
             if (candidature == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("Candidature non trouvée"));
@@ -132,8 +136,8 @@ public class CandidatureController {
             securityService.requireRecruteurCanChangeStatus(user, candidature);
 
             // Mettre à jour le statut
-            ICandidatureService.updateCandidatureStatusByRecruiter(candidatureId, status);
-            Candidature updated = ICandidatureService.getCandidatureById(candidatureId);
+            candidatureService.updateCandidatureStatusByRecruiter(candidatureId, newStatus);
+            Candidature updated = candidatureService.getCandidatureById(candidatureId);
 
             CandidatureResponseDTO candidatureResponseDTO = candidatureMapper.toResponseDTO(updated);
 
@@ -160,13 +164,14 @@ public class CandidatureController {
      * PATCH /candidatures/{id}?cvPath=...&lettreMotivationPath=...
      */
     @PatchMapping("/{id}")
+    @Override
     public ResponseEntity<ApiResponse<CandidatureResponseDTO>> updateFiles(@PathVariable String id,
                                                                 @RequestParam(value = "cvPath", required = false) String cvPath,
                                                                 @RequestParam(value = "lettreMotivationPath", required = false) String lettreMotivationPath) {
         try {
             UserContext.UserInfo user = securityService.requireAuth();
 
-            Candidature candidature = ICandidatureService.getCandidatureById(id);
+            Candidature candidature = candidatureService.getCandidatureById(id);
             if (candidature == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("Candidature non trouvée"));
@@ -175,8 +180,8 @@ public class CandidatureController {
             // Vérifier que le candidat peut mettre à jour ses fichiers
             securityService.requireCandidatCanUpdateFiles(user, candidature);
 
-            ICandidatureService.updateCandidatureDetailsByCandidat(id, cvPath, lettreMotivationPath);
-            Candidature updated = ICandidatureService.getCandidatureById(id);
+            candidatureService.updateCandidatureDetailsByCandidat(id, cvPath, lettreMotivationPath);
+            Candidature updated = candidatureService.getCandidatureById(id);
             // Les fichiers sont maintenant stockés dans /app/uploads/ (volume Docker)
             // Cette logique est gérée dans le service ICandidatureServiceImpl.uploadCVAndCoverLetter()
             CandidatureResponseDTO candidatureResponseDTO = candidatureMapper.toResponseDTO(updated);
@@ -194,6 +199,18 @@ public class CandidatureController {
     }
 
     /**
+     * Upload des fichiers
+     *
+     * @param candidatureId
+     * @param CV_Path
+     * @param lettreMotivationPath
+     */
+    @Override
+    public ApiResponse<Candidature> uploadFiles(String candidatureId, String CV_Path, String lettreMotivationPath) {
+        return null;
+    }
+
+    /**
      * POST /candidatures/{id}/upload?cvPath=...&lettreMotivationPath=...
      *
      * Ici, on garde l'API actuelle (paths) en attendant une vraie intégration Multipart.
@@ -205,7 +222,7 @@ public class CandidatureController {
         try {
             UserContext.UserInfo user = securityService.requireAuth();
 
-            Candidature candidature = ICandidatureService.getCandidatureById(id);
+            Candidature candidature = candidatureService.getCandidatureById(id);
             if (candidature == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("Candidature non trouvée"));
@@ -214,8 +231,8 @@ public class CandidatureController {
             // Vérifier que le candidat peut mettre à jour ses fichiers
             securityService.requireCandidatCanUpdateFiles(user, candidature);
 
-            ICandidatureService.uploadCVAndCoverLetter(id, cvPath, lettreMotivationPath);
-            Candidature updated = ICandidatureService.getCandidatureById(id);
+            candidatureService.uploadCVAndCoverLetter(id, cvPath, lettreMotivationPath);
+            Candidature updated = candidatureService.getCandidatureById(id);
 
             CandidatureResponseDTO candidatureResponseDTO = candidatureMapper.toResponseDTO(updated);
 
@@ -235,12 +252,13 @@ public class CandidatureController {
      * GET /candidatures/{id}/historique
      */
     @GetMapping("/{id}/historique")
-    public ResponseEntity<ApiResponse<List<HistoriqueStatusDTO>>> historique(@PathVariable String id)
+    @Override
+    public ResponseEntity<ApiResponse<List<HistoriqueStatusDTO>>> getHistorique(@PathVariable String candidatureId)
             throws Exception {
         try {
             UserContext.UserInfo user = securityService.requireAuth();
 
-            Candidature candidature = ICandidatureService.getCandidatureById(id);
+            Candidature candidature = candidatureService.getCandidatureById(candidatureId);
             if (candidature == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("Candidature non trouvée"));
@@ -255,7 +273,7 @@ public class CandidatureController {
                 throw new UnauthorizedException("Rôle utilisateur non reconnu");
             }
 
-            List<HistoriqueStatus> data = historiqueStatusRepository.findByCandidatureIdOrderByDateChangementDesc(id);
+            List<HistoriqueStatus> data = historiqueStatusRepository.findByCandidatureIdOrderByDateChangementDesc(candidatureId);
 
             return ResponseEntity.ok(ApiResponse.ok(
                     "Historique récupéré",
@@ -265,7 +283,7 @@ public class CandidatureController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(ApiResponse.error(e.getMessage()));
         } catch (Exception e) {
-            log.error("Erreur récupération historique candidature {}: {}", id, e.getMessage(), e);
+            log.error("Erreur récupération historique candidature {}: {}", candidatureId, e.getMessage(), e);
             throw new Exception(e.getMessage());
         }
     }
@@ -275,14 +293,15 @@ public class CandidatureController {
      * Pipeline du recruteur: liste de toutes les candidatures pour une offre
      */
     @GetMapping("/offre/{offreId}")
-    public ResponseEntity<ApiResponse<List<CandidatureResponseDTO>>> byOffer(@PathVariable String offreId) {
+    @Override
+    public ResponseEntity<ApiResponse<List<CandidatureResponseDTO>>> getCandidaturesByOffreForRecruteur(@PathVariable String offreId) {
         try {
             UserContext.UserInfo user = securityService.requireAuth();
 
             // Vérifier que le recruteur peut accéder au pipeline de cette offre
             securityService.requireRecruteurCanViewPipeline(user, offreId);
 
-            List<Candidature> data = ICandidatureService.getCandidaturesByOfferIdByRecruiter(offreId);
+            List<Candidature> data = candidatureService.getCandidaturesByOfferIdByRecruiter(offreId);
 
             List<CandidatureResponseDTO> candidatureResponseDTO = candidatureMapper.toResponseDtos(data);
             return ResponseEntity.ok(ApiResponse.ok("Candidatures récupérées", candidatureResponseDTO));
@@ -305,7 +324,7 @@ public class CandidatureController {
         try {
             UserContext.UserInfo user = securityService.requireAuth();
 
-            Candidature candidature = ICandidatureService.getCandidatureById(id);
+            Candidature candidature = candidatureService.getCandidatureById(id);
             if (candidature == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND)
                         .body(ApiResponse.error("Candidature non trouvée"));
@@ -314,7 +333,7 @@ public class CandidatureController {
             // Vérifier que le candidat peut supprimer sa candidature
             securityService.requireCandidatCanDeleteCandidature(user, candidature);
 
-            ICandidatureService.deleteCandidatureByCandidat(id);
+            candidatureService.deleteCandidatureByCandidat(id);
             return ResponseEntity.ok(ApiResponse.ok("Candidature supprimée", null));
         } catch (UnauthorizedException e) {
             log.warn("Accès non autorisé: {}", e.getMessage());
@@ -336,6 +355,7 @@ public class CandidatureController {
      * - Un recruteur autorisé (pour voir les candidatures)
      */
     @GetMapping("/file/{id}/download")
+    @Override
     public ResponseEntity<Resource> downloadFile(
             @PathVariable String id,
             @RequestParam(value = "type", defaultValue = "cv") String fileType) {
@@ -343,7 +363,7 @@ public class CandidatureController {
         try {
             UserContext.UserInfo user = securityService.requireAuth();
 
-            Candidature candidature = ICandidatureService.getCandidatureById(id);
+            Candidature candidature = candidatureService.getCandidatureById(id);
             if (candidature == null) {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
@@ -368,6 +388,24 @@ public class CandidatureController {
 
             // Créer le chemin absolu du fichier (dans le volume Docker)
             Path fileAbsolutePath = Paths.get("/app/uploads/", filePath);
+            
+            if(fileAbsolutePath == null || fileAbsolutePath.toString().isEmpty()) {
+                log.warn("Chemin de fichier invalide: {}", fileAbsolutePath);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+            else if(fileAbsolutePath.normalize().toString().contains("..")) {
+                log.warn("Tentative d'accès à un chemin de fichier non autorisé: {}", fileAbsolutePath);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+            else if(fileAbsolutePath.normalize().toString().contains("/app/uploads/")) {
+                log.warn("Tentative d'accès à un chemin de fichier en dehors du répertoire autorisé: {}", fileAbsolutePath);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+            else if(!fileAbsolutePath.normalize().toString().startsWith("/app/uploads/")) {
+                log.warn("Tentative d'accès à un chemin de fichier en dehors du répertoire autorisé: {}", fileAbsolutePath);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            }
+            
             Resource resource = new FileSystemResource(fileAbsolutePath);
 
             if (!resource.exists() || !resource.isReadable()) {
