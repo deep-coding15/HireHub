@@ -1,0 +1,8 @@
+﻿spring:
+  cloud:
+    openfeign:
+      enabled: false
+logging:
+  level:
+    com.hirehub.email.feign: INFO
+    com.hirehub.email: INFO

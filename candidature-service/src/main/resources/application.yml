@@ -5,7 +5,7 @@ spring:
   application:
     name: candidature-service
   profiles:
-    active: dev
+    active: sandbox
 
   # PostgreSQL Configuration
   datasource:
