@@ -5,6 +5,7 @@ import com.hirehub.common.dtos.candidatures.CandidatureStatutChangedDTO;
 import com.hirehub.common.dtos.entretiens.EntretienPlanifiedDTO;
 import com.hirehub.email.email.interfaces.EmailBusinessService;
 import jakarta.validation.Valid;
+import com.hirehub.email.EmailBusinessServiceImpl;
 import com.hirehub.email.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -18,11 +19,10 @@ import org.springframework.web.bind.annotation.*;
 public class EmailController {
 
     private static final Logger log = LoggerFactory.getLogger(EmailController.class);
+    private final EmailBusinessServiceImpl businessMailService;
 
-    private final EmailBusinessService businessMailService;
-
-    public EmailController(EmailBusinessService businessMailService) {
-        this.businessMailService = businessMailService;
+    public EmailController(EmailBusinessServiceImpl businessMailService) {
+      this.businessMailService = businessMailService;
     }
 
     /*@PostMapping("/envoyer")

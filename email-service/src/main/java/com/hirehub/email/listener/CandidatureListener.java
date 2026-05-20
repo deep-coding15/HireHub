@@ -45,10 +45,11 @@ public class CandidatureListener {
             Long offerId = Long.valueOf(event.getPayload().get("offerId").toString());
 
             emailService.sendCandidatureConfirmation(
-                    new com.hirehub.common.dtos.candidatures.CandidatureDTO(
+                    new com.hirehub.common.dtos.candidatures.CandidatureRabbitDTO(
                             event.getPayload().get("candidatureId").toString(),
                             offerId.toString(),
                             offerTitle,
+                            event.getRecipientEmail(),
                             event.getPayload().get("status").toString(),
                             event.getPayload().get("cvPath").toString(),
                             event.getPayload().get("lettreMotivation").toString()

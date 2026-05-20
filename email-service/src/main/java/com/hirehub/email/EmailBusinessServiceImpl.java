@@ -1,11 +1,13 @@
 package com.hirehub.email;
 
+import com.hirehub.common.dtos.candidatures.CandidatureRabbitDTO;
 import com.hirehub.email.email.interfaces.EmailBusinessService;
 import com.hirehub.email.template.EmailTemplateForAuthentification;
 import com.hirehub.email.dto.CandidateInfoDTO;
 import com.hirehub.email.feign.CandidateServiceClientAPI;
 import com.hirehub.common.dtos.candidatures.CandidatureDTO;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +17,7 @@ import static com.hirehub.email.template.EmailTemplateForCandidature.*;
 @Service
 public class EmailBusinessServiceImpl extends MailService implements EmailBusinessService {
 
+    @Autowired
     private final CandidateServiceClientAPI candidateServiceClientAPI;
 
     public EmailBusinessServiceImpl(JavaMailSender mailSender,
@@ -61,7 +64,7 @@ public class EmailBusinessServiceImpl extends MailService implements EmailBusine
      * }
      * </pre>
      */
-    public void sendCandidatureConfirmation(CandidatureDTO candidatureDTO) {
+    public void sendCandidatureConfirmation(CandidatureRabbitDTO candidatureDTO) {
 
         try {
             CandidateInfoDTO candidateInfo = resolveCandidateInfo(candidatureDTO.getCandidatId());
@@ -71,6 +74,40 @@ public class EmailBusinessServiceImpl extends MailService implements EmailBusine
             String candidateName = resolveCandidateName(candidateInfo);
 
             String subject = "Votre candidature a été reçue - HireHub";
+
+            String htmlBody = buildCandidatureConfirmationTemplate(
+                    candidateName, "Offre");
+
+            if (candidateEmail == null || candidateEmail.isBlank()) {
+                throw new IllegalStateException("Email candidat introuvable pour l'id: " + candidatureDTO.getCandidatId());
+            }
+
+            sendHtmlEmail(candidateEmail, subject, htmlBody);
+            log.info("[📧 CANDIDATURE] Confirmation envoyée à: {}", candidateEmail);
+        } catch (Exception e) {
+            log.error("[❌ CANDIDATURE] Erreur lors de l'envoi de confirmation pour candidat {}: {}",
+                    candidatureDTO.getCandidatId(), e.getMessage(), e);
+            throw new RuntimeException("Erreur lors de l'envoi de confirmation de candidature", e);
+        }
+    }
+
+    /**
+     * Template: Confirmation de candidature
+     *
+     * @param candidatureDTO
+     */
+    @Override
+    public void sendCandidatureConfirmation(CandidatureDTO candidatureDTO) {
+        try {
+            CandidateInfoDTO candidateInfo =
+                    resolveCandidateInfo(candidatureDTO.getCandidatId());
+            String candidateEmail = candidateInfo != null && candidateInfo.email != null && !candidateInfo.email.isBlank()
+                    ? candidateInfo.email
+                    : null;
+            String candidateName = resolveCandidateName(candidateInfo);
+
+            String subject = "Votre candidature a été reçue - HireHub";
+
             String htmlBody = buildCandidatureConfirmationTemplate(
                     candidateName, "Offre");
 

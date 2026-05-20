@@ -2,6 +2,9 @@ server:
   port: 8083
 
 spring:
+  mvc:
+    favicon:
+      enabled: false
   application:
     name: candidature-service
   profiles:
