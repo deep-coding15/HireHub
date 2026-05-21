@@ -1,0 +1,36 @@
+### 0. Nouvelle candidature
+# @name createCandidature
+POST http://localhost:8083/candidatures
+Content-Type: application/json
+
+{
+  "candidatId": "cand-1",
+  "offreId": "offre-1",
+  "CV_Path": "cv-test.pdf",
+  "lettreMotivationPath": "lettre-test.pdf"
+}
+
+> {%
+    client.global.set("candidatureId", response.body.data.id);
+%}
+
+### 1. Créer entretien
+# @name createEntretien
+POST http://localhost:8085/entretiens
+Content-Type: application/json
+
+{
+  "candidatureId": "{{candidatureId}}",
+  "recruteurId": "a0ad4183-0608-4032-8b40-5563cd5dd0d8",
+  "dateHeure": "2026-11-01T10:00:00",
+  "type": "VISIO",
+  "lienVisio": "https://meet.google.com/test-hirehub",
+  "notesInternes": "Premier entretien RH"
+}
+
+> {%
+    client.global.set("entretienId", response.body.data.id);
+%}
+
+### 5. Annuler
+DELETE http://localhost:8085/entretiens/{{entretienId}}?recruteurId=a0ad4183-0608-4032-8b40-5563cd5dd0d8
