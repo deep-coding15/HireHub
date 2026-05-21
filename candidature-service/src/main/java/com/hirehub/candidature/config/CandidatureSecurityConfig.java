@@ -7,6 +7,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
@@ -25,7 +26,9 @@ public class CandidatureSecurityConfig {
 
     @Bean
     @Profile("!mock")
-    public SecurityFilterChain candidatureJwtSecurity(HttpSecurity http, JwtDecoder hirehubJwtDecoder) throws Exception {
+    public SecurityFilterChain candidatureJwtSecurity(HttpSecurity http,
+                                                      JwtDecoder hirehubJwtDecoder,
+                                                      JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -37,7 +40,8 @@ public class CandidatureSecurityConfig {
                                 "/swagger-ui.html").permitAll()
                         .anyRequest().authenticated()
                 )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(hirehubJwtDecoder)));
+                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(hirehubJwtDecoder)))
+                .addFilterAfter(jwtAuthenticationFilter, BearerTokenAuthenticationFilter.class);
         return http.build();
     }
 }

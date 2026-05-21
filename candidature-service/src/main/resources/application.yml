@@ -50,6 +50,12 @@ eureka:
 hirehub:
   jwt:
     secret: ${HIREHUB_JWT_SECRET:hirehub-local-dev-jwt-secret-change-me-32b}
+app:
+  jwt:
+    # Clé secrète générée aléatoirement (ici encodée en Base64 pour plus de propreté)
+    secret-key: "dGhpcy1pcy1hLXZlcnktc2VjdXJlLWtleS1hbmQtbXVzdC1iZS1hdC1sZWFzdC0yNTYtYml0cw=="
+    # Temps d'expiration en millisecondes (Exemple : 1 heure -> 60 * 60 * 1000)
+    expiration-time: 3600000
 
 springdoc:
   api-docs:

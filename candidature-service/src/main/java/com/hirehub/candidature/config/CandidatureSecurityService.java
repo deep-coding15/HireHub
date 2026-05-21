@@ -3,6 +3,7 @@ package com.hirehub.candidature.config;
 import com.hirehub.candidature.clients.IOffreServiceClient;
 import com.hirehub.candidature.entities.Candidature;
 import com.hirehub.candidature.exceptions.UnauthorizedException;
+import com.hirehub.candidature.security.CurrentUser;
 import com.hirehub.common.enums.UserRole;
 import feign.FeignException;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,10 @@ public class CandidatureSecurityService {
     public UserContext.UserInfo requireAuth() {
         UserContext.UserInfo user = UserContext.getUser();
         if (user == null) {
+            user = CurrentUser.toUserInfo();
+            UserContext.setUser(user);
+        }
+        if (user == null || user.userId == null) {
             log.warn("Tentative d'accès sans authentification");
             throw new UnauthorizedException("Authentification requise");
         }
