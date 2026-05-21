@@ -9,11 +9,11 @@ import org.springframework.context.annotation.Configuration;
 public class OpenApiConfig {
 
     @Bean
-    public OpenAPI hireHubEntretienOpenAPI() {
+    public OpenAPI entretienOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("HireHub — Entretien Service")
-                        .version("1.0")
-                        .description("Planification et suivi des entretiens (endpoints REST à étendre selon le module)."));
+                        .title("Entretien Service API")
+                        .description("Gestion des entretiens — HireHub")
+                        .version("1.0.0"));
     }
 }
