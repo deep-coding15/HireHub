@@ -34,10 +34,7 @@ import java.nio.file.Paths;
 
 /**
  * Contrôleur REST pour les candidatures.
- *
- * Notes:
- * - Les contrôles d'auth (candidat/recruteur) sont marqués TODO car Spring Security n'est pas encore câblé ici.
- * - Les endpoints utilisent des paramètres simples (RequestParam/PathVariable) pour rester compatibles avec le service actuel.
+ * Tous les endpoints sont protégés via {@link RequireAuth} et {@link CandidatureSecurityService}.
  */
 @RestController
 @RequestMapping("/candidatures")
@@ -198,16 +195,11 @@ public class CandidatureController implements ICandidatureAPI {
         }
     }
 
-    /**
-     * Upload des fichiers
-     *
-     * @param candidatureId
-     * @param CV_Path
-     * @param lettreMotivationPath
-     */
     @Override
     public ApiResponse<Candidature> uploadFiles(String candidatureId, String CV_Path, String lettreMotivationPath) {
-        return null;
+        candidatureService.uploadCVAndCoverLetter(candidatureId, CV_Path, lettreMotivationPath);
+        Candidature updated = candidatureService.getCandidatureById(candidatureId);
+        return ApiResponse.ok("Fichiers uploadés", updated);
     }
 
     /**
@@ -251,7 +243,7 @@ public class CandidatureController implements ICandidatureAPI {
     /**
      * GET /candidatures/{id}/historique
      */
-    @GetMapping("/{id}/historique")
+    @GetMapping("/{candidatureId}/historique")
     @Override
     public ResponseEntity<ApiResponse<List<HistoriqueStatusDTO>>> getHistorique(@PathVariable String candidatureId)
             throws Exception {
@@ -386,23 +378,13 @@ public class CandidatureController implements ICandidatureAPI {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
 
-            // Créer le chemin absolu du fichier (dans le volume Docker)
-            Path fileAbsolutePath = Paths.get("/app/uploads/", filePath);
-            
-            if(fileAbsolutePath == null || fileAbsolutePath.toString().isEmpty()) {
-                log.warn("Chemin de fichier invalide: {}", fileAbsolutePath);
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-            }
-            else if(fileAbsolutePath.normalize().toString().contains("..")) {
-                log.warn("Tentative d'accès à un chemin de fichier non autorisé: {}", fileAbsolutePath);
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-            }
-            else if(fileAbsolutePath.normalize().toString().contains("/app/uploads/")) {
-                log.warn("Tentative d'accès à un chemin de fichier en dehors du répertoire autorisé: {}", fileAbsolutePath);
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-            }
-            else if(!fileAbsolutePath.normalize().toString().startsWith("/app/uploads/")) {
-                log.warn("Tentative d'accès à un chemin de fichier en dehors du répertoire autorisé: {}", fileAbsolutePath);
+            // Créer le chemin absolu et normalisé (résout les segments ".." avant toute vérification)
+            Path uploadsRoot = Paths.get("/app/uploads/");
+            Path fileAbsolutePath = uploadsRoot.resolve(filePath).normalize();
+
+            // Rejet si le chemin normalisé sort du répertoire uploads (path traversal)
+            if (!fileAbsolutePath.startsWith(uploadsRoot)) {
+                log.warn("Tentative de path traversal rejetée: {}", fileAbsolutePath);
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
             }
             

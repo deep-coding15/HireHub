@@ -264,19 +264,15 @@ public class CandidatureServiceImpl implements ICandidatureService {
         log.info("Suppression de la candidature: {}", candidatureId);
 
         Candidature candidature = candidatureRepository.findById(candidatureId)
-                .orElseThrow(() -> new RuntimeException("Candidature non trouvée"));
-
-        // TODO: Vérifier que le candidat authentifié est le propriétaire
+                .orElseThrow(() -> new CandidatureNotFoundException("Candidature non trouvée"));
 
         requireCandidatOwnerOrAdmin(candidature);
 
-        // Supprimer aussi l'historique associé
-        /*List<HistoriqueStatus> historique = historiqueStatusRepository
+        // Supprimer l'historique avant la candidature pour éviter les enregistrements orphelins
+        List<HistoriqueStatus> historique = historiqueStatusRepository
                 .findByCandidatureIdOrderByDateChangementDesc(candidatureId);
+        historiqueStatusRepository.deleteAll(historique);
 
-        historiqueStatusRepository.deleteAll(historique);*/
-
-        // Supprimer la candidature
         candidatureRepository.deleteById(candidatureId);
 
         log.info("Candidature {} supprimée", candidatureId);
