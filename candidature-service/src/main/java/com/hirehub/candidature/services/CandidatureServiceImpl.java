@@ -28,7 +28,6 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Implémentation réelle du service ICandidatureService
@@ -82,17 +81,14 @@ public class CandidatureServiceImpl implements ICandidatureService {
             throw new OffreNotFoundException(candidature.getOffreId(), e);
         }
 
-        // 2. Vérifier qu'un candidat n'a postulé qu'une seule fois par offre
-        Optional<Candidature> existing = candidatureRepository.findByCandidatIdAndOffreId(
-                candidature.getCandidatId(),
-                candidature.getOffreId()
-        );
-
-        if (existing.isPresent()) {
-            log.warn("Candidat {} a déjà postulé à l'offre {}",
+        // 2. Vérifier qu'un candidat n'a jamais postulé à cette offre (y compris candidatures retirées).
+        //    La requête native bypass @SQLRestriction pour inclure les enregistrements supprimés :
+        //    un retrait de candidature ne donne pas le droit de re-postuler.
+        if (candidatureRepository.existsByCandidatIdAndOffreIdIgnoringDeleted(
+                candidature.getCandidatId(), candidature.getOffreId())) {
+            log.warn("Candidat {} a déjà postulé à l'offre {} (active ou retirée)",
                     candidature.getCandidatId(), candidature.getOffreId());
-            throw new CandidatureCreatedConflitException(
-                    "Vous avez déjà postulé à cette offre.");
+            throw new CandidatureCreatedConflitException("Vous avez déjà postulé à cette offre.");
         }
 
         // 3. Définir les valeurs par défaut
@@ -261,21 +257,20 @@ public class CandidatureServiceImpl implements ICandidatureService {
 
     @Override
     public void deleteCandidatureByCandidat(String candidatureId) {
-        log.info("Suppression de la candidature: {}", candidatureId);
+        log.info("Retrait de la candidature: {}", candidatureId);
 
         Candidature candidature = candidatureRepository.findById(candidatureId)
                 .orElseThrow(() -> new CandidatureNotFoundException("Candidature non trouvée"));
 
         requireCandidatOwnerOrAdmin(candidature);
 
-        // Supprimer l'historique avant la candidature pour éviter les enregistrements orphelins
-        List<HistoriqueStatus> historique = historiqueStatusRepository
-                .findByCandidatureIdOrderByDateChangementDesc(candidatureId);
-        historiqueStatusRepository.deleteAll(historique);
+        // Soft delete : on marque la candidature comme retirée sans la supprimer physiquement.
+        // L'historique des statuts est conservé intact pour la piste d'audit RGPD.
+        candidature.setDeletedAt(LocalDateTime.now());
+        candidature.setDeletedBy(CurrentUser.requireSubject());
+        candidatureRepository.save(candidature);
 
-        candidatureRepository.deleteById(candidatureId);
-
-        log.info("Candidature {} supprimée", candidatureId);
+        log.info("Candidature {} retirée par {}", candidatureId, candidature.getDeletedBy());
     }
 
     /**

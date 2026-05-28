@@ -2,37 +2,44 @@ package com.hirehub.candidature.repository;
 
 import com.hirehub.candidature.entities.Candidature;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 /**
- * Repository pour les candidatures
- * Utilise JPA/Hibernate avec PostgreSQL pour la persistance
+ * Repository pour les candidatures.
+ *
+ * L'entité {@link Candidature} porte {@code @SQLRestriction("deleted_at IS NULL")},
+ * donc toutes les méthodes dérivées ({@code findBy*}) excluent automatiquement
+ * les candidatures retirées. Aucune adaptation n'est nécessaire ici.
+ *
+ * La seule exception est {@link #existsByCandidatIdAndOffreIdIgnoringDeleted},
+ * une requête native qui inclut les enregistrements supprimés pour empêcher
+ * un candidat de re-postuler à la même offre après avoir retiré sa candidature.
  */
 @Repository
 public interface CandidatureRepository extends JpaRepository<Candidature, String> {
 
-    /**
-     * Récupère toutes les candidatures d'un candidat
-     * @param candidatId l'ID du candidat
-     * @return liste des candidatures
-     */
     List<Candidature> findByCandidatId(String candidatId);
 
-    /**
-     * Récupère toutes les candidatures pour une offre
-     * @param offreId l'ID de l'offre
-     * @return liste des candidatures
-     */
     List<Candidature> findByOffreId(String offreId);
 
-    /**
-     * Vérifie si un candidat a déjà postulé à une offre
-     * @param candidatId l'ID du candidat
-     * @param offreId l'ID de l'offre
-     * @return Optional contenant la candidature si elle existe
-     */
+    /** Exclut les supprimées — utilisé pour les vues métier normales. */
     Optional<Candidature> findByCandidatIdAndOffreId(String candidatId, String offreId);
+
+    /**
+     * Vérifie l'existence d'une candidature (active OU retirée) pour la paire
+     * candidat/offre. Requête native pour bypasser {@code @SQLRestriction}.
+     *
+     * Utilisé à la création pour bloquer toute re-candidature, conformément
+     * à la politique RGPD/ATS : un retrait ne remet pas le compteur à zéro.
+     */
+    @Query(value = "SELECT COUNT(*) > 0 FROM candidatures WHERE candidat_id = :candidatId AND offre_id = :offreId",
+           nativeQuery = true)
+    boolean existsByCandidatIdAndOffreIdIgnoringDeleted(
+            @Param("candidatId") String candidatId,
+            @Param("offreId")    String offreId);
 }
