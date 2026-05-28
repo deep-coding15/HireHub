@@ -6,6 +6,7 @@ import com.hirehub.email.EmailBusinessServiceImpl;
 import com.hirehub.email.service.IdempotenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,9 @@ public class EntretienPlanifieListenerImpl {
     @RabbitListener(queues = RabbitMQConstants.QUEUE_NOTIFICATION_ENTRETIEN)
     public void handleEntretienPlanifie(@Payload EmailEventDTO event) {
         try {
+            if (event.getCorrelationId() != null) {
+                MDC.put("correlationId", event.getCorrelationId());
+            }
             String eventId = event.getEventId();
 
             // Vérifier l'idempotence
@@ -56,12 +60,14 @@ public class EntretienPlanifieListenerImpl {
 
             // Marquer comme traité avec succès
             idempotenceService.markAsProcessed(eventId, event.getEventType(), event.getRecipientEmail());
-            log.info("[✅ ENTRETIEN.PLANIFIE] Email de planification envoyé à: {}", event.getRecipientEmail());
+            log.info("[ENTRETIEN.PLANIFIE] OK - Email de planification envoye a: {}", event.getRecipientEmail());
 
         } catch (Exception e) {
-            log.error("[❌ ENTRETIEN.PLANIFIE] Erreur lors du traitement: {}", e.getMessage(), e);
+            log.error("[ENTRETIEN.PLANIFIE] ERREUR lors du traitement", e);
             idempotenceService.markAsFailed(event.getEventId(), event.getEventType(), event.getRecipientEmail(), e.getMessage());
             throw new RuntimeException("Erreur traitement entretien planifié", e);
+        } finally {
+            MDC.clear();
         }
     }
 
@@ -71,6 +77,9 @@ public class EntretienPlanifieListenerImpl {
     @RabbitListener(queues = RabbitMQConstants.QUEUE_NOTIFICATION_ENTRETIEN)
     public void handleEntretienAnnulation(@Payload EmailEventDTO event) {
         try {
+            if (event.getCorrelationId() != null) {
+                MDC.put("correlationId", event.getCorrelationId());
+            }
             String eventId = event.getEventId();
 
             // Vérifier l'idempotence
@@ -94,12 +103,14 @@ public class EntretienPlanifieListenerImpl {
 
             // Marquer comme traité avec succès
             idempotenceService.markAsProcessed(eventId, event.getEventType(), event.getRecipientEmail());
-            log.info("[✅ ENTRETIEN.ANNULATION] Email d'annulation envoyé à: {}", event.getRecipientEmail());
+            log.info("[ENTRETIEN.ANNULATION] OK - Email d'annulation envoye a: {}", event.getRecipientEmail());
 
         } catch (Exception e) {
-            log.error("[❌ ENTRETIEN.ANNULATION] Erreur lors du traitement: {}", e.getMessage(), e);
+            log.error("[ENTRETIEN.ANNULATION] ERREUR lors du traitement", e);
             idempotenceService.markAsFailed(event.getEventId(), event.getEventType(), event.getRecipientEmail(), e.getMessage());
             throw new RuntimeException("Erreur traitement annulation d'entretien", e);
+        } finally {
+            MDC.clear();
         }
     }
 

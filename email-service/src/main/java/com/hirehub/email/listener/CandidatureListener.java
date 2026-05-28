@@ -6,6 +6,7 @@ import com.hirehub.email.EmailBusinessServiceImpl;
 import com.hirehub.email.service.IdempotenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,9 @@ public class CandidatureListener {
     @RabbitListener(queues = RabbitMQConstants.QUEUE_NOTIFICATION_CANDIDATURE)
     public void handleCandidatureCreated(@Payload EmailEventDTO event) {
         try {
+            if (event.getCorrelationId() != null) {
+                MDC.put("correlationId", event.getCorrelationId());
+            }
             String eventId = event.getEventId();
 
             // Vérifier l'idempotence
@@ -58,16 +62,18 @@ public class CandidatureListener {
 
             // Marquer comme traité avec succès
             idempotenceService.markAsProcessed(eventId, event.getEventType(), event.getRecipientEmail());
-            log.info("[✅ CANDIDATURE.CREATED] Email envoyé avec succès à: {}", event.getRecipientEmail());
+            log.info("[CANDIDATURE.CREATED] OK - Email envoye a: {}", event.getRecipientEmail());
 
         } catch (Exception e) {
-            log.error("[❌ CANDIDATURE.CREATED] Erreur lors du traitement: {}", e.getMessage(), e);
+            log.error("[CANDIDATURE.CREATED] ERREUR lors du traitement", e);
             try {
                 idempotenceService.markAsFailed(event.getEventId(), event.getEventType(), event.getRecipientEmail(), e.getMessage());
             } catch (Exception ex) {
                 log.error("[IDEMPOTENCE ERROR] Impossible de marquer l'événement comme échoué: {}", ex.getMessage());
             }
             throw new RuntimeException("Erreur traitement création candidature", e);
+        } finally {
+            MDC.clear();
         }
     }
 
@@ -77,6 +83,9 @@ public class CandidatureListener {
     @RabbitListener(queues = RabbitMQConstants.QUEUE_NOTIFICATION_STATUT)
     public void handleCandidatureStatutChanged(@Payload EmailEventDTO event) {
         try {
+            if (event.getCorrelationId() != null) {
+                MDC.put("correlationId", event.getCorrelationId());
+            }
             String eventId = event.getEventId();
             log.info("[CANDIDATURE.STATUT.CHANGED] Traitement de l'événement {} pour: {}", eventId, event.getRecipientEmail());
 
@@ -95,11 +104,13 @@ public class CandidatureListener {
                     comment
             );
 
-            log.info("[✅ CANDIDATURE.STATUT.CHANGED] Email envoyé avec succès à: {}", event.getRecipientEmail());
+            log.info("[CANDIDATURE.STATUT.CHANGED] OK - Email envoye a: {}", event.getRecipientEmail());
 
         } catch (Exception e) {
-            log.error("[❌ CANDIDATURE.STATUT.CHANGED] Erreur lors du traitement: {}", e.getMessage(), e);
+            log.error("[CANDIDATURE.STATUT.CHANGED] ERREUR lors du traitement", e);
             throw new RuntimeException("Erreur traitement changement statut", e);
+        } finally {
+            MDC.clear();
         }
     }
 

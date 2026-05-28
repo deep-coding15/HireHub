@@ -4,6 +4,7 @@ import com.hirehub.candidature.config.UserContext;
 import com.hirehub.common.constants.JwtClaimNames;
 import com.hirehub.common.constants.SecurityConstants;
 import feign.RequestInterceptor;
+import org.slf4j.MDC;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.core.Authentication;
@@ -17,6 +18,11 @@ public class FeignClientConfig {
     @Bean
     public RequestInterceptor requestInterceptor() {
         return requestTemplate -> {
+            String correlationId = MDC.get("correlationId");
+            if (correlationId != null) {
+                requestTemplate.header(SecurityConstants.HEADER_CORRELATION_ID, correlationId);
+            }
+
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
             if (authentication instanceof JwtAuthenticationToken jwtAuth) {
                 applyJwtHeaders(jwtAuth.getToken(), requestTemplate);

@@ -42,6 +42,10 @@ public class EmailEventDTO implements Serializable {
 
     private String recipientId;
 
+    // ===== TRACING =====
+    @JsonProperty("correlationId")
+    private String correlationId; // ID de corrélation pour relier HTTP → RabbitMQ dans les logs
+
     // ===== PAYLOAD =====
     @JsonProperty("payload")
     private Map<String, Object> payload;

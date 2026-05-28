@@ -42,11 +42,15 @@ public class EntretienServiceImpl implements EntretienService {
 
     @Override
     public Entretien create(CreateEntretienRequest request) {
+        log.info("[ENTRETIEN] Creation: candidatureId={}, recruteurId={}, dateHeure={}",
+                request.getCandidatureId(), request.getRecruteurId(), request.getDateHeure());
+
         validateRequest(request);
         CandidatureSnapshot candidature = loadCandidature(request.getCandidatureId());
 
         if (entretienRepository.existsByCandidatureIdAndStatus(
                 request.getCandidatureId(), InterviewStatus.PLANIFIE)) {
+            log.warn("[ENTRETIEN] Conflit: entretien deja planifie pour candidatureId={}", request.getCandidatureId());
             throw new IllegalArgumentException("Un entretien est deja planifie pour cette candidature");
         }
 
@@ -55,10 +59,12 @@ public class EntretienServiceImpl implements EntretienService {
 
         if (entretienRepository.existsByRecruteurIdAndStatusAndDateHeureBetween(
                 request.getRecruteurId(), InterviewStatus.PLANIFIE, start, end)) {
+            log.warn("[ENTRETIEN] Conflit de creneau pour recruteurId={}", request.getRecruteurId());
             throw new IllegalArgumentException("Le recruteur a deja un entretien sur ce creneau");
         }
         if (entretienRepository.existsByCandidatIdAndStatusAndDateHeureBetween(
                 candidature.getCandidatId(), InterviewStatus.PLANIFIE, start, end)) {
+            log.warn("[ENTRETIEN] Conflit de creneau pour candidatId={}", candidature.getCandidatId());
             throw new IllegalArgumentException("Le candidat a deja un entretien sur ce creneau");
         }
 
@@ -76,6 +82,7 @@ public class EntretienServiceImpl implements EntretienService {
         Entretien saved = entretienRepository.save(entretien);
         candidatureClient.updateStatus(saved.getCandidatureId(), CandidatureStatus.ENTRETIEN.name());
         notificationPublisher.publish(saved, false);
+        log.info("[ENTRETIEN] Cree avec succes: entretienId={}, candidatId={}", saved.getId(), saved.getCandidatId());
         return saved;
     }
 
@@ -102,22 +109,30 @@ public class EntretienServiceImpl implements EntretienService {
 
     @Override
     public Entretien cancel(String entretienId, String recruteurId) {
+        log.info("[ENTRETIEN] Annulation: entretienId={}, recruteurId={}", entretienId, recruteurId);
+
         if (!StringUtils.hasText(recruteurId))
             throw new IllegalArgumentException("recruteurId est obligatoire");
 
         Entretien entretien = entretienRepository.findById(entretienId)
-                .orElseThrow(() -> new IllegalArgumentException("Entretien non trouve"));
+                .orElseThrow(() -> {
+                    log.warn("[ENTRETIEN] Entretien non trouve: id={}", entretienId);
+                    return new IllegalArgumentException("Entretien non trouve");
+                });
 
         if (!recruteurId.equals(entretien.getRecruteurId()))
             throw new SecurityException("Le recruteur ne peut pas annuler cet entretien");
 
-        if (entretien.getStatus() == InterviewStatus.ANNULE)
+        if (entretien.getStatus() == InterviewStatus.ANNULE) {
+            log.warn("[ENTRETIEN] Deja annule: entretienId={}", entretienId);
             return entretien;
+        }
 
         entretien.setStatus(InterviewStatus.ANNULE);
         entretien.setDateAnnulation(LocalDateTime.now(clock));
         Entretien saved = entretienRepository.save(entretien);
         notificationPublisher.publish(saved, true);
+        log.info("[ENTRETIEN] Annule avec succes: entretienId={}", saved.getId());
         return saved;
     }
 

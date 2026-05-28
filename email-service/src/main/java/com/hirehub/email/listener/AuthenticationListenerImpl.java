@@ -6,6 +6,7 @@ import com.hirehub.email.EmailBusinessServiceImpl;
 import com.hirehub.email.service.IdempotenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
@@ -29,6 +30,9 @@ public class AuthenticationListenerImpl {
     @RabbitListener(queues = RabbitMQConstants.QUEUE_NOTIFICATION_AUTHENTIFICATION)
     public void handleAuthenticationEvent(@Payload EmailEventDTO event) {
         try {
+            if (event.getCorrelationId() != null) {
+                MDC.put("correlationId", event.getCorrelationId());
+            }
             String eventId = event.getEventId();
             String eventType = event.getEventType();
 
@@ -57,12 +61,14 @@ public class AuthenticationListenerImpl {
 
             // Marquer comme traité avec succès
             idempotenceService.markAsProcessed(eventId, eventType, event.getRecipientEmail());
-            log.info("[✅ AUTH.{}] Email envoyé avec succès à: {}", eventType, event.getRecipientEmail());
+            log.info("[AUTH.{}] OK - Email envoye a: {}", eventType, event.getRecipientEmail());
 
         } catch (Exception e) {
-            log.error("[❌ AUTH] Erreur lors du traitement: {}", e.getMessage(), e);
+            log.error("[AUTH] ERREUR lors du traitement", e);
             idempotenceService.markAsFailed(event.getEventId(), event.getEventType(), event.getRecipientEmail(), e.getMessage());
             throw new RuntimeException("Erreur traitement authentification", e);
+        } finally {
+            MDC.clear();
         }
     }
 

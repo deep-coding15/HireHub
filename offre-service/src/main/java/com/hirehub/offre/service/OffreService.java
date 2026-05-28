@@ -8,6 +8,7 @@ import com.hirehub.offre.enums.TypeContrat;
 import com.hirehub.offre.repository.OffreRepository;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OffreService {
@@ -23,6 +25,7 @@ public class OffreService {
     private final OffreRepository offreRepository;
 
     public OffreResponse creerOffre(OffreRequest request, String recruteurId, String recruteurEmail) {
+        log.info("[OFFRE] Creation: titre={}, recruteurId={}", request.getTitre(), recruteurId);
         Offre offre = Offre.builder()
                 .titre(request.getTitre())
                 .description(request.getDescription())
@@ -34,7 +37,9 @@ public class OffreService {
                 .recruteurId(recruteurId)
                 .recruteurEmail(recruteurEmail)
                 .build();
-        return OffreResponse.from(offreRepository.save(offre));
+        OffreResponse response = OffreResponse.from(offreRepository.save(offre));
+        log.info("[OFFRE] Creee avec succes: offreId={}", response.getId());
+        return response;
     }
 
     public OffreResponse getOffre(Long id) {
@@ -69,6 +74,7 @@ public class OffreService {
     }
 
     public OffreResponse publierOffre(Long id, String recruteurId) {
+        log.info("[OFFRE] Publication: offreId={}, recruteurId={}", id, recruteurId);
         Offre offre = findOffre(id);
         verifierProprietaire(offre, recruteurId);
 
@@ -77,6 +83,7 @@ public class OffreService {
     }
 
     public OffreResponse fermerOffre(Long id, String recruteurId) {
+        log.info("[OFFRE] Fermeture: offreId={}, recruteurId={}", id, recruteurId);
         Offre offre = findOffre(id);
         verifierProprietaire(offre, recruteurId);
 
@@ -90,7 +97,10 @@ public class OffreService {
 
     private Offre findOffre(Long id) {
         return offreRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Offre non trouvee : " + id));
+                .orElseThrow(() -> {
+                    log.warn("[OFFRE] Offre non trouvee: id={}", id);
+                    return new IllegalArgumentException("Offre non trouvee : " + id);
+                });
     }
 
     private void verifierProprietaire(Offre offre, String recruteurId) {

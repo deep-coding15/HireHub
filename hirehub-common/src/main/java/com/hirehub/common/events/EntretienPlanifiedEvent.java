@@ -19,4 +19,5 @@ public class EntretienPlanifiedEvent {
     private String lieu;
     private String lienVisio;       // nullable si présentiel
     private boolean annule;         // true si c'est un événement d'annulation
+    private String correlationId;
 }

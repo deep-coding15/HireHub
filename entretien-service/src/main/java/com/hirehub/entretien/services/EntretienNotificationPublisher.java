@@ -4,6 +4,7 @@ import com.hirehub.common.events.EntretienPlanifiedEvent;
 import com.hirehub.common.notification.RabbitMQConstants;
 import com.hirehub.entretien.entities.Entretien;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
@@ -26,6 +27,7 @@ public class EntretienNotificationPublisher {
         event.setLieu(entretien.getLieu());
         event.setLienVisio(entretien.getLienVisio());
         event.setAnnule(annule);
+        event.setCorrelationId(MDC.get("correlationId"));
 
         rabbitTemplate.convertAndSend(
                 RabbitMQConstants.EXCHANGE,

@@ -27,7 +27,8 @@ public class FeignClientConfig {
                         "X-User-Email",
                         "X-User-Role",
                         "X-User-Name",
-                        "Cookie"
+                        "Cookie",
+                        "X-Correlation-Id"
                 };
                 // 1. Essayer de propager le header Authorization (si présent)
                 // On propage le token JWT vers le microservice suivant

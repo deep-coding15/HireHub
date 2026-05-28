@@ -11,4 +11,7 @@ public class SecurityConstants {
 
     // Préfixe JWT
     public static final String BEARER_PREFIX = "Bearer ";
+
+    // Header de corrélation — généré par l'API Gateway, propagé dans toute la chaîne
+    public static final String HEADER_CORRELATION_ID = "X-Correlation-Id";
 }

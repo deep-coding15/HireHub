@@ -7,6 +7,7 @@ import com.hirehub.common.notification.RabbitMQConstants;
 import com.hirehub.event.service.EventLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
@@ -55,6 +56,9 @@ public class EventAuditListener {
 
     private void auditCommon(EmailEventDTO message, String logPrefix) {
         try {
+            if (message.getCorrelationId() != null) {
+                MDC.put("correlationId", message.getCorrelationId());
+            }
             String eventId = message.getEventId();
             String eventType = message.getEventType();
             String json = safeToJson(message);
@@ -71,6 +75,8 @@ public class EventAuditListener {
             );
         } catch (Exception e) {
             log.error("[AUDIT ERROR] Erreur lors de l'audit de l'événement {}: {}", message.getEventType(), e.getMessage(), e);
+        } finally {
+            MDC.clear();
         }
     }
 

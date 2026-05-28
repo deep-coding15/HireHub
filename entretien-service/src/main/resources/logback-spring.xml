@@ -17,8 +17,8 @@
     </root>
 
     <springProfile name="dev">
-        <logger name="org.springframework.amqp" level="DEBUG"/>
-        <logger name="com.hirehub.email" level="DEBUG"/>
+        <logger name="com.hirehub.entretien" level="DEBUG"/>
+        <logger name="org.hibernate.SQL" level="DEBUG"/>
     </springProfile>
 
 </configuration>

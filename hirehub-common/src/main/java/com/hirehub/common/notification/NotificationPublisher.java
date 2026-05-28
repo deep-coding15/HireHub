@@ -1,6 +1,7 @@
 package com.hirehub.common.notification;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.MDC;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,8 @@ public class NotificationPublisher {
         event.setRecipientEmail(email);
         event.setRecipientName(name);
         event.setPayload(payload);
+        // Propagation du correlationId HTTP vers RabbitMQ
+        event.setCorrelationId(MDC.get("correlationId"));
 
         rabbitTemplate.convertAndSend(
                 RabbitMQConstants.EXCHANGE,
