@@ -1,6 +1,7 @@
 package com.hirehub.candidature.services;
 
 import com.hirehub.candidature.clients.IOffreServiceClient;
+import com.hirehub.candidature.clients.OffreDTO;
 import com.hirehub.candidature.config.CandidatureStateMachine;
 import com.hirehub.candidature.config.InvalidTransitionException;
 import com.hirehub.candidature.entities.Candidature;
@@ -63,14 +64,19 @@ public class CandidatureServiceImpl implements ICandidatureService {
         CurrentUser.requireAnyRole(UserRole.CANDIDAT);
         String candidatId = CurrentUser.requireSubject();
         candidature.setCandidatId(candidatId);
+        candidature.setCandidatEmail(CurrentUser.requireEmail());
 
-        // 1. Vérifier que l'offre existe et est publiée
+        // 1. Vérifier que l'offre existe et est publiée — on récupère le DTO complet pour avoir le titre
+        OffreDTO offre;
         try {
-            boolean offreExists = iOffreServiceClient.offreExists(candidature.getOffreId());
-            if (!offreExists) {
+            offre = iOffreServiceClient.getOffre(candidature.getOffreId());
+            if (offre == null || !offre.isPublished()) {
                 log.warn("Offre {} non trouvée ou non publiée", candidature.getOffreId());
                 throw new OffreNotFoundException("L'offre n'existe pas ou n'est pas publiée.");
             }
+        } catch (FeignException.NotFound e) {
+            log.warn("Offre {} introuvable", candidature.getOffreId());
+            throw new OffreNotFoundException("L'offre n'existe pas ou n'est pas publiée.");
         } catch (FeignException e) {
             log.error("Erreur lors de la vérification de l'offre: {}", e.getMessage(), e);
             throw new OffreNotFoundException(candidature.getOffreId(), e);
@@ -98,7 +104,7 @@ public class CandidatureServiceImpl implements ICandidatureService {
         log.info("Candidature créée avec l'ID: {}", saved.getId());
 
         // 5. Publier l'événement RabbitMQ
-        publishCandidatureCreatedEvent(saved);
+        publishCandidatureCreatedEvent(saved, offre.getTitre());
         return saved;
     }
 
@@ -279,44 +285,58 @@ public class CandidatureServiceImpl implements ICandidatureService {
     /**
      * Publie un événement "candidature.created" dans RabbitMQ (contrat EmailEventDTO)
      */
-    private void publishCandidatureCreatedEvent(Candidature candidature) {
+    private void publishCandidatureCreatedEvent(Candidature candidature, String offreTitre) {
         try {
-            // TODO: en attendant l'intégration auth, on n'a pas l'email ici.
-            // On met des placeholders pour tester le flux.
-            String candidateEmail = "test@hirehub.local";
-            String candidateName = "Candidat";
+            String candidateEmail = candidature.getCandidatEmail();
 
             Map<String, Object> payload = new HashMap<>();
             payload.put("candidatureId", candidature.getId());
             payload.put("offerId", candidature.getOffreId());
-            payload.put("offerTitle", "Offre");
+            payload.put("offerTitle", offreTitre != null ? offreTitre : candidature.getOffreId());
+            payload.put("status", candidature.getStatus().name());
+            payload.put("cvPath", candidature.getCvPath() != null ? candidature.getCvPath() : "");
+            payload.put("lettreMotivation", candidature.getLettreMotivationPath() != null ? candidature.getLettreMotivationPath() : "");
 
             notificationPublisher.publishEmailEvent(
                     EventType.CANDIDATURE_CREATED,
                     candidateEmail,
-                    candidateName,
+                    candidateEmail,
                     RabbitMQConstants.ROUTING_CANDIDATURE_CREATED,
                     payload
             );
 
-            log.info("Événement 'candidature.created' (EmailEventDTO) publié pour la candidature: {}", candidature.getId());
+            log.info("Événement 'candidature.created' publié pour la candidature: {}", candidature.getId());
         } catch (Exception e) {
             log.error("Erreur lors de la publication de l'événement candidature.created: {}", e.getMessage(), e);
         }
     }
 
     /**
-     * Publie un événement "candidature.statut.changed" dans RabbitMQ (contrat EmailEventDTO)
+     * Publie un événement "candidature.statut.changed" dans RabbitMQ (contrat EmailEventDTO).
+     * L'utilisateur courant est le recruteur : l'email du candidat vient de l'entité.
      */
     private void publishStatutChangedEvent(Candidature candidature, CandidatureStatus oldStatus, CandidatureStatus newStatus) {
         try {
-            String candidateEmail = "test@hirehub.local";
-            String candidateName = "Candidat";
+            String candidateEmail = candidature.getCandidatEmail();
+            if (candidateEmail == null || candidateEmail.isBlank()) {
+                log.warn("Email du candidat absent pour la candidature {}, notification annulée", candidature.getId());
+                return;
+            }
+
+            String offreTitre = candidature.getOffreId(); // fallback si Feign échoue
+            try {
+                OffreDTO offre = iOffreServiceClient.getOffre(candidature.getOffreId());
+                if (offre != null && offre.getTitre() != null) {
+                    offreTitre = offre.getTitre();
+                }
+            } catch (Exception ignored) {
+                log.warn("Impossible de récupérer le titre de l'offre {}", candidature.getOffreId());
+            }
 
             Map<String, Object> payload = new HashMap<>();
             payload.put("candidatureId", candidature.getId());
             payload.put("offerId", candidature.getOffreId());
-            payload.put("offerTitle", "Offre");
+            payload.put("offerTitle", offreTitre);
             payload.put("oldStatus", oldStatus.name());
             payload.put("newStatus", newStatus.name());
             payload.put("comment", "");
@@ -324,12 +344,12 @@ public class CandidatureServiceImpl implements ICandidatureService {
             notificationPublisher.publishEmailEvent(
                     EventType.CANDIDATURE_STATUT_CHANGED,
                     candidateEmail,
-                    candidateName,
+                    candidateEmail,
                     RabbitMQConstants.ROUTING_CANDIDATURE_STATUT_CHANGED,
                     payload
             );
 
-            log.info("Événement 'candidature.statut.changed' (EmailEventDTO) publié pour la candidature: {}", candidature.getId());
+            log.info("Événement 'candidature.statut.changed' publié pour la candidature: {}", candidature.getId());
         } catch (Exception e) {
             log.error("Erreur lors de la publication de l'événement statut.changed: {}", e.getMessage(), e);
         }

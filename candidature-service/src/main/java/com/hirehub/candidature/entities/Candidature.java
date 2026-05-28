@@ -33,6 +33,9 @@ public class Candidature {
     @Column(name = "candidat_id", nullable = false)
     private String candidatId;
 
+    @Column(name = "candidat_email")
+    private String candidatEmail;
+
     @Column(name = "offre_id", nullable = false)
     private String offreId;
 
