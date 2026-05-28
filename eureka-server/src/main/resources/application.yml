@@ -1,36 +1,15 @@
 server:
-  port: 8085
+  port: 8761
 
 spring:
   application:
-    name: entretien-service
-  datasource:
-    url: jdbc:postgresql://localhost:55432/hirehub_entretien
-    username: hirehub
-    password: hirehub
-    driver-class-name: org.postgresql.Driver
-  jpa:
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-    open-in-view: false
-  rabbitmq:
-    host: localhost
-    port: 5672
-    username: hirehub
-    password: hirehub
+    name: eureka-server
 
 eureka:
+  instance:
+    hostname: localhost
   client:
+    register-with-eureka: false
+    fetch-registry: false
     service-url:
-      defaultZone: http://localhost:8761/eureka/
-
-springdoc:
-  api-docs:
-    path: /v3/api-docs
-  swagger-ui:
-    path: /swagger-ui.html
-    operations-sorter: alpha
-    tags-sorter: alpha
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
