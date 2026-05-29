@@ -2,46 +2,28 @@ package com.hirehub.candidature.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
-import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
 
+/**
+ * Sécurité Spring : permissive au niveau HTTP.
+ * La validation du JWT et l'injection des identités sont désormais gérées par
+ * l'API Gateway ({@code JwtAuthGatewayFilter}). Ce service lit les headers
+ * X-User-* via {@link UserContextHeaderFilter} et applique ses propres contrôles
+ * métier via {@link CandidatureSecurityService}.
+ */
 @Configuration
 @EnableWebSecurity
 public class CandidatureSecurityConfig {
 
     @Bean
-    @Profile("mock")
-    public SecurityFilterChain candidatureMockSecurity(HttpSecurity http) throws Exception {
+    public SecurityFilterChain candidatureSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
-        return http.build();
-    }
-
-    @Bean
-    @Profile("!mock")
-    public SecurityFilterChain candidatureJwtSecurity(HttpSecurity http,
-                                                      JwtDecoder hirehubJwtDecoder,
-                                                      JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/**",
-                                "/v3/api-docs",
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html").permitAll()
-                        .anyRequest().authenticated()
-                )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.decoder(hirehubJwtDecoder)))
-                .addFilterAfter(jwtAuthenticationFilter, BearerTokenAuthenticationFilter.class);
         return http.build();
     }
 }

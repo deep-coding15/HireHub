@@ -60,9 +60,6 @@ hirehub:
   public-base-url: http://localhost:8086
   recaptcha:
     site-key: ${RECAPTCHA_SITE_KEY:}
-  jwt:
-    secret: ${HIREHUB_JWT_SECRET:hirehub-local-dev-jwt-secret-change-me-32b}
-    expiration-seconds: 3600
 
 eureka:
   client:

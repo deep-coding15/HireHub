@@ -16,7 +16,11 @@ eureka:
     service-url:
       defaultZone: http://localhost:8761/eureka/
 
-# Filtres JWT et routes explicites : à ajouter dans ce module (voir docs/ARCHITECTURE.md)
+hirehub:
+  jwt:
+    secret: ${HIREHUB_JWT_SECRET:hirehub-local-dev-jwt-secret-change-me-32b}
+
+# Routes explicites : la découverte Eureka suffit pour le développement.
 
 springdoc:
   api-docs:
