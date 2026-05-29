@@ -8,7 +8,9 @@
 <section layout:fragment="content" class="page-inner">
     <div class="container" style="max-width: 640px;">
         <h1 class="page-hero-title">Candidature</h1>
-        <p class="page-hero-sub">Offre #<span th:text="${offreId}">1</span> — lettre de motivation et CV au format PDF (upload vers <code>candidature-service</code>).</p>
+        <p class="page-hero-sub">Complétez votre dossier pour cette offre.</p>
+
+        <div class="alert alert-danger border-0 shadow-sm" th:if="${postulerError}" th:text="${postulerError}"></div>
 
         <form class="hh-card" method="post" th:action="@{/offres/{id}/postuler(id=${offreId})}" enctype="multipart/form-data">
             <div class="mb-3">
@@ -17,14 +19,13 @@
                           placeholder="Expliquez votre motivation…"></textarea>
             </div>
             <div class="mb-4">
-                <label class="hh-form-label" for="cv">CV (PDF)</label>
-                <input type="file" id="cv" name="cv" class="form-control rounded-3 border-0 shadow-sm" accept=".pdf"/>
+                <label class="hh-form-label" for="cv">CV (PDF, max. 5 Mo)</label>
+                <input type="file" id="cv" name="cv" class="form-control rounded-3 border-0 shadow-sm" accept=".pdf" required/>
             </div>
             <div class="d-flex gap-2 flex-wrap">
                 <button type="submit" class="btn hh-btn-primary rounded-pill">Envoyer ma candidature</button>
                 <a class="btn btn-outline-secondary rounded-pill" th:href="@{/offres/{id}(id=${offreId})}">Annuler</a>
             </div>
-            <p class="small text-muted mt-3 mb-0">Le formulaire POST sera implémenté côté backend avec JWT.</p>
         </form>
     </div>
 </section>

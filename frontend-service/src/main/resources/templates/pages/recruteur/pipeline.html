@@ -16,7 +16,10 @@
             </ol>
         </nav>
         <h1 class="page-hero-title">Pipeline</h1>
-        <p class="page-hero-sub">Gestion des statuts et historique.</p>
+        <p class="page-hero-sub">Suivez les candidatures reçues pour cette offre.</p>
+
+        <div class="alert alert-danger border-0 shadow-sm" th:if="${error}" th:text="${error}"></div>
+
         <div class="hh-table-wrap">
             <table class="table table-hover mb-0">
                 <thead>
@@ -29,12 +32,24 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td>Jean Dupont</td>
-                    <td>10/03/2026</td>
-                    <td><a href="#">PDF</a></td>
-                    <td><span class="badge badge-statut-encours">En cours</span></td>
-                    <td><a class="btn btn-sm btn-outline-primary rounded-pill" th:href="@{/recruteur/entretiens}">Entretien</a></td>
+                <tr th:if="${#lists.isEmpty(candidatures)}">
+                    <td colspan="5" class="text-center text-muted py-4">Aucune candidature pour cette offre.</td>
+                </tr>
+                <tr th:each="c : ${candidatures}">
+                    <td th:text="${c.candidatId}">candidat-id</td>
+                    <td th:text="${c.dateSoumissionFormatted}">date</td>
+                    <td>
+                        <a th:if="${c.hasCv()}"
+                           th:href="@{/recruteur/candidature/{id}/download(id=${c.candidatureId}, type='cv')}">PDF</a>
+                        <span th:unless="${c.hasCv()}" class="text-muted">-</span>
+                    </td>
+                    <td>
+                        <span th:class="${c.statusBadgeClass}" th:text="${c.statusLabel}">Statut</span>
+                    </td>
+                    <td>
+                        <a class="btn btn-sm btn-outline-primary rounded-pill"
+                           th:href="@{/recruteur/candidature/{id}(id=${c.candidatureId})}">Detail</a>
+                    </td>
                 </tr>
                 </tbody>
             </table>

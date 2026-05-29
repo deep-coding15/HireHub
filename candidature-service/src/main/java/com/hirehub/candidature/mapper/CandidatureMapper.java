@@ -40,6 +40,8 @@ public final class CandidatureMapper {
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
 
         candidatureResponseDTO.setStatus(candidature.getStatus().getLabel());
+        candidatureResponseDTO.setCvPath(candidature.getCvPath());
+        candidatureResponseDTO.setLettreMotivationPath(candidature.getLettreMotivationPath());
 
         return candidatureResponseDTO;
     }

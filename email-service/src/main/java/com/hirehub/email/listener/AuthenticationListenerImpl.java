@@ -54,6 +54,9 @@ public class AuthenticationListenerImpl {
                 case "AUTH.LOGOUT":
                     handleLogoutEvent(event);
                     break;
+                case "AUTH.REGISTER":
+                    handleRegisterEvent(event);
+                    break;
                 default:
                     log.warn("[AUTH] Événement non reconnu: {}", eventType);
                     return;
@@ -110,12 +113,21 @@ public class AuthenticationListenerImpl {
      * Traite l'événement de déconnexion (logout).
      */
     private void handleLogoutEvent(EmailEventDTO event) {
-        String logoutDateTime = (String) event.getPayload().get("logoutDateTime");
+        String logoutDateTime = event.getPayload() != null && event.getPayload().get("logoutDateTime") != null
+                ? (String) event.getPayload().get("logoutDateTime")
+                : "";
 
         emailService.sendLogoutInfo(
                 event.getRecipientEmail(),
                 event.getRecipientName(),
                 logoutDateTime
+        );
+    }
+
+    private void handleRegisterEvent(EmailEventDTO event) {
+        emailService.sendRegisterWelcome(
+                event.getRecipientEmail(),
+                event.getRecipientName()
         );
     }
 

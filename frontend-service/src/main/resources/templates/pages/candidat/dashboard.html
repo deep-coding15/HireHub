@@ -8,25 +8,23 @@
 <section layout:fragment="content" class="page-inner">
     <div class="container">
         <h1 class="page-hero-title">Bonjour, candidat</h1>
-        <p class="page-hero-sub">Vue d’ensemble de vos candidatures et prochains entretiens.</p>
+        <p class="page-hero-sub">Vue d'ensemble de votre parcours candidat.</p>
+
+        <div class="alert alert-warning border-0 shadow-sm" th:if="${apiError}">
+            Certaines informations sont temporairement indisponibles.
+        </div>
 
         <div class="row g-3 mb-4">
             <div class="col-md-4">
                 <div class="hh-kpi">
-                    <div class="hh-kpi-value">3</div>
-                    <div class="hh-kpi-label">Candidatures actives</div>
+                    <div class="hh-kpi-value" th:text="${candidaturesCount}">0</div>
+                    <div class="hh-kpi-label">Candidatures</div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="hh-kpi">
-                    <div class="hh-kpi-value">1</div>
-                    <div class="hh-kpi-label">Entretien à venir</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="hh-kpi">
-                    <div class="hh-kpi-value">2</div>
-                    <div class="hh-kpi-label">Réponses en attente</div>
+                    <div class="hh-kpi-value" th:text="${entretiensCount}">0</div>
+                    <div class="hh-kpi-label">Entretiens planifies</div>
                 </div>
             </div>
         </div>
@@ -34,21 +32,15 @@
         <div class="row g-4">
             <div class="col-lg-7">
                 <div class="hh-card">
-                    <h2 class="h5 mb-3" style="color: var(--hh-violet-900);">Activité récente</h2>
-                    <ul class="list-unstyled mb-0">
-                        <li class="d-flex justify-content-between py-2 border-bottom border-light">
-                            <span>Statut mis à jour — <strong>Offre Java</strong></span>
-                            <span class="badge badge-statut-encours">En cours</span>
-                        </li>
-                        <li class="d-flex justify-content-between py-2 border-bottom border-light">
-                            <span>Confirmation d’entretien</span>
-                            <span class="badge badge-statut-entretien">Entretien</span>
-                        </li>
-                        <li class="d-flex justify-content-between py-2">
-                            <span>Candidature soumise — <strong>Stage PFE</strong></span>
-                            <span class="badge badge-statut-soumise">Soumise</span>
+                    <h2 class="h5 mb-3" style="color: var(--hh-violet-900);">Candidatures recentes</h2>
+                    <ul class="list-unstyled mb-0" th:if="${!#lists.isEmpty(candidatures)}">
+                        <li class="d-flex justify-content-between py-2 border-bottom border-light"
+                            th:each="c : ${candidatures}">
+                            <span>Offre #<strong th:text="${c.offreId}">1</strong></span>
+                            <span th:class="${c.statusBadgeClass}" th:text="${c.statusLabel}">Statut</span>
                         </li>
                     </ul>
+                    <p class="text-muted mb-0" th:if="${#lists.isEmpty(candidatures)}">Aucune candidature pour le moment.</p>
                 </div>
             </div>
             <div class="col-lg-5">

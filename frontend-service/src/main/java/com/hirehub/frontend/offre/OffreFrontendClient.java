@@ -1,15 +1,16 @@
 package com.hirehub.frontend.offre;
 
 import com.hirehub.frontend.auth.HirehubUserDetails;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -24,8 +25,7 @@ import java.util.Optional;
 @Service
 public class OffreFrontendClient {
 
-    private static final String DEMO_RECRUITER_ID = "10";
-    private static final String DEMO_RECRUITER_EMAIL = "rh@example.com";
+    private static final Logger log = LoggerFactory.getLogger(OffreFrontendClient.class);
 
     private final RestTemplate restTemplate = new RestTemplate();
     private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -50,21 +50,34 @@ public class OffreFrontendClient {
         try {
             return restTemplate.getForObject(offreBaseUrl + "/api/offres/" + id, OffreView.class);
         } catch (RestClientException ex) {
+            log.warn("Detail offre {} impossible: {}", id, ex.getMessage());
             return null;
         }
     }
 
     public OffrePageResponse mesOffres() {
+        HirehubUserDetails recruiter = RecruiterContext.requireRecruiter();
         String url = offreBaseUrl + "/api/offres/mes-offres?page=0&size=50";
-        return getPage(url, recruiterEntity(null, false));
+        return getPage(url, recruiterEntity(null, recruiter, false));
     }
 
     public OffreView creer(OffreForm form) {
-        return restTemplate.postForObject(
-                offreBaseUrl + "/api/offres",
-                recruiterEntity(form, true),
-                OffreView.class
-        );
+        HirehubUserDetails recruiter = RecruiterContext.requireRecruiter();
+        OffreCreateRequest body = OffreCreateRequest.fromForm(form);
+        try {
+            return restTemplate.postForObject(
+                    offreBaseUrl + "/api/offres",
+                    recruiterEntity(body, recruiter, true),
+                    OffreView.class
+            );
+        } catch (HttpStatusCodeException ex) {
+            String responseBody = ex.getResponseBodyAsString();
+            log.warn("Creation offre refusee ({}): {}", ex.getStatusCode(), responseBody);
+            throw new OffreServiceException("Creation offre refusee: " + responseBody, ex);
+        } catch (RestClientException ex) {
+            log.warn("Creation offre impossible: {}", ex.getMessage());
+            throw new OffreServiceException("Impossible de joindre offre-service", ex);
+        }
     }
 
     public void publier(Long id) {
@@ -81,56 +94,47 @@ public class OffreFrontendClient {
                 OffrePageResponse response = restTemplate.getForObject(url, OffrePageResponse.class);
                 return response != null ? response : new OffrePageResponse();
             }
-            ResponseEntity<OffrePageResponse> response = restTemplate.exchange(url, HttpMethod.GET, entity, OffrePageResponse.class);
+            ResponseEntity<OffrePageResponse> response = restTemplate.exchange(
+                    url, HttpMethod.GET, entity, OffrePageResponse.class
+            );
             return response.getBody() != null ? response.getBody() : new OffrePageResponse();
+        } catch (HttpStatusCodeException ex) {
+            log.warn("Liste offres refusee ({}): {}", ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new OffreServiceException("Liste offres refusee", ex);
         } catch (RestClientException ex) {
-            return new OffrePageResponse();
+            log.warn("Liste offres impossible: {}", ex.getMessage());
+            throw new OffreServiceException("Impossible de joindre offre-service", ex);
         }
     }
 
     private void patch(String path) {
+        HirehubUserDetails recruiter = RecruiterContext.requireRecruiter();
         HttpRequest request = HttpRequest.newBuilder(URI.create(offreBaseUrl + path))
-                .header("X-User-Id", currentUserId())
-                .header("X-User-Email", currentEmail())
+                .header("X-User-Id", recruiter.getId().toString())
+                .header("X-User-Email", recruiter.getUsername())
                 .method("PATCH", HttpRequest.BodyPublishers.noBody())
                 .build();
         try {
             HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new RestClientException("Offre PATCH failed with status " + response.statusCode());
+                throw new OffreServiceException("PATCH " + path + " -> HTTP " + response.statusCode(), null);
             }
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
-            throw new RestClientException("Offre PATCH interrupted", ex);
+            throw new OffreServiceException("PATCH interrompu", ex);
         } catch (IOException ex) {
-            throw new RestClientException("Offre PATCH failed", ex);
+            throw new OffreServiceException("PATCH impossible", ex);
         }
     }
 
-    private <T> HttpEntity<T> recruiterEntity(T body, boolean json) {
+    private <T> HttpEntity<T> recruiterEntity(T body, HirehubUserDetails recruiter, boolean json) {
         HttpHeaders headers = new HttpHeaders();
-        headers.add("X-User-Id", currentUserId());
-        headers.add("X-User-Email", currentEmail());
+        headers.add("X-User-Id", recruiter.getId().toString());
+        headers.add("X-User-Email", recruiter.getUsername());
         if (json) {
             headers.setContentType(MediaType.APPLICATION_JSON);
         }
         return new HttpEntity<>(body, headers);
-    }
-
-    private String currentEmail() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof HirehubUserDetails userDetails) {
-            return userDetails.getUsername();
-        }
-        return DEMO_RECRUITER_EMAIL;
-    }
-
-    private String currentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication != null && authentication.getPrincipal() instanceof HirehubUserDetails userDetails) {
-            return userDetails.getId().toString();
-        }
-        return DEMO_RECRUITER_ID;
     }
 
     private Optional<String> text(String value) {

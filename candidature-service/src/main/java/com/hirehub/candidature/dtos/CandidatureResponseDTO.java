@@ -16,4 +16,6 @@ public class CandidatureResponseDTO {
     private String status;
     private String message;
     private String createdAt;
+    private String cvPath;
+    private String lettreMotivationPath;
 }

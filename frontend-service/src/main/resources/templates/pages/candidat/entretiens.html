@@ -8,30 +8,37 @@
 <section layout:fragment="content" class="page-inner">
     <div class="container">
         <h1 class="page-hero-title">Mes entretiens</h1>
-        <p class="page-hero-sub">Créneaux et lieux communiqués par le recruteur (<code>entretien-service</code>).</p>
+        <p class="page-hero-sub">Vos prochains entretiens avec les recruteurs.</p>
+
+        <div class="alert alert-warning border-0 shadow-sm" th:if="${apiError}">
+            Impossible de charger vos entretiens pour le moment.
+        </div>
 
         <div class="hh-table-wrap">
             <table class="table table-hover mb-0">
                 <thead>
                 <tr>
-                    <th>Poste</th>
+                    <th>Candidature</th>
                     <th>Date &amp; heure</th>
                     <th>Lieu / lien</th>
+                    <th>Type</th>
                     <th>Statut</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td class="fw-medium">Développeur Java / Spring</td>
-                    <td>05/04/2026 · 14:00</td>
-                    <td>Teams — <a href="#">Rejoindre</a></td>
-                    <td><span class="badge bg-success rounded-pill">Confirmé</span></td>
+                <tr th:if="${#lists.isEmpty(entretiens)}">
+                    <td colspan="5" class="text-center text-muted py-4">Aucun entretien planifie.</td>
                 </tr>
-                <tr>
-                    <td class="fw-medium">Ingénieur DevOps</td>
-                    <td>12/04/2026 · 10:30</td>
-                    <td>Siège Tanger</td>
-                    <td><span class="badge bg-secondary rounded-pill">À confirmer</span></td>
+                <tr th:each="e : ${entretiens}">
+                    <td class="fw-medium" th:text="${e.candidatureId}">candidature</td>
+                    <td th:text="${e.dateHeureFormatted}">date</td>
+                    <td>
+                        <span th:text="${e.lieuOuVisio}">lieu</span>
+                        <a th:if="${e.lienVisio != null and !#strings.isEmpty(e.lienVisio)}"
+                           th:href="${e.lienVisio}" target="_blank" rel="noopener">Rejoindre</a>
+                    </td>
+                    <td th:text="${e.type}">type</td>
+                    <td><span class="badge bg-success rounded-pill" th:text="${e.status}">statut</span></td>
                 </tr>
                 </tbody>
             </table>

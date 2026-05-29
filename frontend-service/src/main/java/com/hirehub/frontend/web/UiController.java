@@ -3,9 +3,17 @@ package com.hirehub.frontend.web;
 import com.hirehub.frontend.admin.AdminDashboardStats;
 import com.hirehub.frontend.admin.AdminSpaceService;
 import com.hirehub.frontend.admin.AdminUserDetailVm;
+import com.hirehub.frontend.entretien.EntretienFrontendClient;
 import com.hirehub.frontend.offre.OffreForm;
 import com.hirehub.frontend.offre.OffreFrontendClient;
 import com.hirehub.frontend.offre.OffreView;
+import com.hirehub.frontend.recruteur.RecruteurStatsService;
+import com.hirehub.frontend.recruteur.RecruteurStatsView;
+import com.hirehub.common.enums.UserRole;
+import com.hirehub.frontend.auth.HirehubUserDetails;
+import com.hirehub.frontend.candidature.ApplicationUploadService;
+import com.hirehub.frontend.candidature.CandidatureFrontendClient;
+import com.hirehub.frontend.candidature.CandidatureServiceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -15,14 +23,16 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.security.core.Authentication;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
 
 
 /**
- * Routes UI Thymeleaf — toutes les pages par acteur (données mock, branchement API plus tard).
+ * Routes UI Thymeleaf — pages publiques, candidat, recruteur et admin.
  */
 @Controller
 public class UiController {
@@ -31,10 +41,25 @@ public class UiController {
 
     private final AdminSpaceService adminSpaceService;
     private final OffreFrontendClient offreFrontendClient;
+    private final EntretienFrontendClient entretienFrontendClient;
+    private final RecruteurStatsService recruteurStatsService;
+    private final CandidatureFrontendClient candidatureFrontendClient;
+    private final ApplicationUploadService applicationUploadService;
 
-    public UiController(AdminSpaceService adminSpaceService, OffreFrontendClient offreFrontendClient) {
+    public UiController(
+            AdminSpaceService adminSpaceService,
+            OffreFrontendClient offreFrontendClient,
+            EntretienFrontendClient entretienFrontendClient,
+            RecruteurStatsService recruteurStatsService,
+            CandidatureFrontendClient candidatureFrontendClient,
+            ApplicationUploadService applicationUploadService
+    ) {
         this.adminSpaceService = adminSpaceService;
         this.offreFrontendClient = offreFrontendClient;
+        this.entretienFrontendClient = entretienFrontendClient;
+        this.recruteurStatsService = recruteurStatsService;
+        this.candidatureFrontendClient = candidatureFrontendClient;
+        this.applicationUploadService = applicationUploadService;
     }
 
     /* ---------- Public ---------- */
@@ -68,6 +93,40 @@ public class UiController {
     public String postuler(@PathVariable("id") Long id, Model model) {
         model.addAttribute("offreId", id);
         return "pages/public/postuler";
+    }
+
+    @PostMapping("/offres/{id}/postuler")
+    public String postulerSubmit(
+            @PathVariable("id") Long id,
+            @RequestParam(value = "lettre", required = false) String lettre,
+            @RequestParam(value = "cv", required = false) MultipartFile cv,
+            Authentication auth,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (auth == null || !(auth.getPrincipal() instanceof HirehubUserDetails user)) {
+            return "redirect:/login?flow=candidat";
+        }
+        if (user.getRole() != UserRole.CANDIDAT) {
+            redirectAttributes.addFlashAttribute("postulerError", "Seuls les comptes candidat peuvent postuler.");
+            return "redirect:/offres/" + id;
+        }
+        try {
+            String cvPath = applicationUploadService.storeCv(user.getId(), id.toString(), cv);
+            String lettrePath = applicationUploadService.storeLettre(user.getId(), id.toString(), lettre);
+            candidatureFrontendClient.create(id.toString(), cvPath, lettrePath, user);
+            redirectAttributes.addFlashAttribute("success", "Votre candidature a bien été envoyée.");
+            return "redirect:/candidat/mes-candidatures";
+        } catch (IllegalArgumentException ex) {
+            redirectAttributes.addFlashAttribute("postulerError", ex.getMessage());
+            return "redirect:/offres/" + id + "/postuler";
+        } catch (CandidatureServiceException ex) {
+            redirectAttributes.addFlashAttribute("postulerError", ex.getMessage());
+            return "redirect:/offres/" + id + "/postuler";
+        } catch (Exception ex) {
+            log.error("Postulation offre {}", id, ex);
+            redirectAttributes.addFlashAttribute("postulerError", "Envoi impossible pour le moment. Réessayez plus tard.");
+            return "redirect:/offres/" + id + "/postuler";
+        }
     }
 
     @GetMapping("/login")
@@ -108,13 +167,20 @@ public class UiController {
 
     /* ---------- Candidat ---------- */
 
-    @GetMapping("/candidat/dashboard")
-    public String candidatDashboard() {
-        return "pages/candidat/dashboard";
-    }
-
     @GetMapping("/candidat/entretiens")
-    public String candidatEntretiens() {
+    public String candidatEntretiens(Model model, org.springframework.security.core.Authentication auth) {
+        try {
+            if (auth != null && auth.getPrincipal() instanceof HirehubUserDetails details) {
+                model.addAttribute("entretiens", entretienFrontendClient.listForCandidat(details));
+            } else {
+                model.addAttribute("entretiens", java.util.List.of());
+            }
+            model.addAttribute("apiError", false);
+        } catch (Exception ex) {
+            log.warn("Entretiens candidat: {}", ex.getMessage());
+            model.addAttribute("entretiens", java.util.List.of());
+            model.addAttribute("apiError", true);
+        }
         return "pages/candidat/entretiens";
     }
 
@@ -131,7 +197,16 @@ public class UiController {
     /* ---------- Recruteur ---------- */
 
     @GetMapping("/recruteur/dashboard")
-    public String recruteurDashboard() {
+    public String recruteurDashboard(Model model) {
+        try {
+            var offresPage = offreFrontendClient.mesOffres();
+            model.addAttribute("offresCount", offresPage.getTotalElements());
+            model.addAttribute("offresRecentes", offresPage.getContent());
+        } catch (Exception ex) {
+            log.warn("Dashboard recruteur: impossible de charger les offres: {}", ex.getMessage());
+            model.addAttribute("offresCount", 0);
+            model.addAttribute("offresRecentes", java.util.List.of());
+        }
         return "pages/recruteur/dashboard";
     }
 
@@ -142,7 +217,14 @@ public class UiController {
             @RequestParam(value = "error", required = false) String error,
             Model model
     ) {
-        model.addAttribute("offresPage", offreFrontendClient.mesOffres());
+        try {
+            model.addAttribute("offresPage", offreFrontendClient.mesOffres());
+            model.addAttribute("offreApiError", false);
+        } catch (Exception ex) {
+            log.warn("Liste offres recruteur: {}", ex.getMessage());
+            model.addAttribute("offresPage", new com.hirehub.frontend.offre.OffrePageResponse());
+            model.addAttribute("offreApiError", true);
+        }
         model.addAttribute("offreCreated", created != null);
         model.addAttribute("offreUpdated", updated != null);
         model.addAttribute("offreError", error != null);
@@ -160,8 +242,8 @@ public class UiController {
         try {
             offreFrontendClient.creer(offreForm);
             return "redirect:/recruteur/offres?created=1";
-        } catch (Throwable ex) {
-            log.warn("Recruiter offer creation failed: {}", ex.toString());
+        } catch (Exception ex) {
+            log.warn("Recruiter offer creation failed: {}", ex.getMessage());
             return "redirect:/recruteur/offres?error=action_failed";
         }
     }
@@ -189,18 +271,34 @@ public class UiController {
     }
 
     @GetMapping("/recruteur/offres/{id}/pipeline")
-    public String recruteurPipeline(@PathVariable("id") Long id, Model model) {
-        model.addAttribute("offreId", id);
-        return "pages/recruteur/pipeline";
+    public String recruteurPipelineLegacy(@PathVariable("id") Long id) {
+        return "redirect:/recruteur/pipeline/" + id;
     }
 
     @GetMapping("/recruteur/entretiens")
-    public String recruteurEntretiens() {
+    public String recruteurEntretiens(Model model) {
+        try {
+            model.addAttribute("entretiens", entretienFrontendClient.listForRecruiter());
+            model.addAttribute("apiError", false);
+        } catch (Exception ex) {
+            log.warn("Entretiens recruteur: {}", ex.getMessage());
+            model.addAttribute("entretiens", java.util.List.of());
+            model.addAttribute("apiError", true);
+        }
         return "pages/recruteur/entretiens";
     }
 
     @GetMapping("/recruteur/statistiques")
-    public String recruteurStatistiques() {
+    public String recruteurStatistiques(Model model) {
+        try {
+            RecruteurStatsView stats = recruteurStatsService.compute();
+            model.addAttribute("stats", stats);
+            model.addAttribute("apiError", false);
+        } catch (Exception ex) {
+            log.warn("Statistiques recruteur: {}", ex.getMessage());
+            model.addAttribute("stats", new RecruteurStatsView());
+            model.addAttribute("apiError", true);
+        }
         return "pages/recruteur/statistiques";
     }
 

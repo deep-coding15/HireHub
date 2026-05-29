@@ -1,5 +1,8 @@
 server:
   port: 8086
+  tomcat:
+    max-http-form-post-size: 6MB
+    max-swallow-size: 6MB
   error:
     include-message: always
     include-binding-errors: always
@@ -8,6 +11,10 @@ spring:
   # Secrets locaux : creez application-local.yml (non versionne) avec vos cles Google / SMTP / reCAPTCHA
   config:
     import: optional:classpath:application-local.yml
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 6MB
   application:
     name: frontend-service
   thymeleaf:
@@ -57,7 +64,13 @@ spring:
 hirehub:
   api-base-url: http://localhost:8081
   offre-service-base-url: http://localhost:8089/offre-service
+  candidature-service-base-url: http://localhost:8089/candidature-service
+  entretien-service-base-url: http://localhost:8089/entretien-service
   public-base-url: http://localhost:8086
+  upload-dir: ./data/uploads
+  jwt:
+    secret: ${HIREHUB_JWT_SECRET:hirehub-local-dev-jwt-secret-change-me-32b}
+    expiration-seconds: ${HIREHUB_JWT_EXPIRATION_SECONDS:3600}
   recaptcha:
     site-key: ${RECAPTCHA_SITE_KEY:}
 

@@ -1,5 +1,6 @@
 package com.hirehub.frontend.config;
 
+import com.hirehub.frontend.auth.SessionAuthSupport;
 import feign.RequestInterceptor;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
@@ -46,12 +47,10 @@ public class FeignClientConfig {
                 }
             }
 
-            // Alternative si le token est dans le contexte de sécurité
+            SessionAuthSupport.accessToken().ifPresent(token ->
+                    requestTemplate.header("Authorization", "Bearer " + token));
+
             Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            if (authentication != null && authentication.getCredentials() != null) {
-                String token = authentication.getCredentials().toString();
-                requestTemplate.header("Authorization", "Bearer " + token);
-            }
             if (authentication != null && authentication.getPrincipal() != null) {
                 // Cas OAuth2 / Google : on cherche l'IdToken ou l'AccessToken
                 if (authentication instanceof OAuth2AuthenticationToken oauth2Token) {

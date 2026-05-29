@@ -1,7 +1,7 @@
 package com.hirehub.frontend.web;
 
+import com.hirehub.frontend.candidature.CandidatureFrontendClient;
 import com.hirehub.frontend.clients.CandidatureDTO;
-import com.hirehub.frontend.clients.CandidatureServiceClient;
 import com.hirehub.frontend.viewmodels.CandidatureViewModel;
 import com.hirehub.frontend.viewmodels.PipelineViewModel;
 import lombok.extern.slf4j.Slf4j;
@@ -23,10 +23,10 @@ import java.util.List;
 @Slf4j
 public class PipelineController {
 
-    private final CandidatureServiceClient candidatureServiceClient;
+    private final CandidatureFrontendClient candidatureFrontendClient;
 
-    public PipelineController(CandidatureServiceClient candidatureServiceClient) {
-        this.candidatureServiceClient = candidatureServiceClient;
+    public PipelineController(CandidatureFrontendClient candidatureFrontendClient) {
+        this.candidatureFrontendClient = candidatureFrontendClient;
     }
 
     /**
@@ -38,7 +38,7 @@ public class PipelineController {
         try {
             log.info("Récupération du pipeline pour l'offre {}", offreId);
 
-            List<CandidatureDTO> candidaturesDTO = candidatureServiceClient.getCandidaturesByOffre(offreId);
+            List<CandidatureDTO> candidaturesDTO = candidatureFrontendClient.getCandidaturesByOffre(offreId);
 
             // Convertir DTO en ViewModel
             List<PipelineViewModel> candidatures = new ArrayList<>();
@@ -54,6 +54,7 @@ public class PipelineController {
         } catch (Exception e) {
             log.error("Erreur lors de la récupération du pipeline", e);
             model.addAttribute("error", "Erreur lors de la récupération du pipeline");
+            model.addAttribute("candidatures", java.util.List.of());
             return "pages/recruteur/pipeline";
         }
     }
@@ -67,7 +68,7 @@ public class PipelineController {
         try {
             log.info("Récupération des détails de la candidature {}", id);
 
-            CandidatureDTO candidatureDTO = candidatureServiceClient.getCandidature(id);
+            CandidatureDTO candidatureDTO = candidatureFrontendClient.getCandidature(id).orElse(null);
             if (candidatureDTO == null) {
                 model.addAttribute("error", "Candidature non trouvée");
                 return "pages/recruteur/candidature-detail";
@@ -96,11 +97,11 @@ public class PipelineController {
         try {
             log.info("Changement du statut de la candidature {} vers {}", id, status);
 
-            candidatureServiceClient.updateStatus(id, status);
+            candidatureFrontendClient.updateStatus(id, status);
             redirectAttributes.addFlashAttribute("success", "Statut mis à jour avec succès");
 
             // Récupérer l'offre ID pour retourner au pipeline
-            CandidatureDTO candidature = candidatureServiceClient.getCandidature(id);
+            CandidatureDTO candidature = candidatureFrontendClient.getCandidature(id).orElse(null);
             if (candidature != null) {
                 return "redirect:/recruteur/pipeline/" + candidature.getOffreId();
             }
@@ -124,7 +125,7 @@ public class PipelineController {
             Model model) {
         try {
             log.info("Téléchargement du fichier {} pour candidature {}", fileType, id);
-            candidatureServiceClient.downloadFile(id, fileType);
+            // telechargement fichier : a brancher sur candidature-service
             model.addAttribute("success", "Fichier disponible au téléchargement");
             return "pages/recruteur/candidature-detail";
         } catch (Exception e) {

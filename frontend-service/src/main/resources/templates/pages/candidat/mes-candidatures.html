@@ -8,39 +8,30 @@
 <section layout:fragment="content" class="page-inner">
     <div class="container">
         <h1 class="page-hero-title">Mes candidatures</h1>
-        <p class="page-hero-sub">Fil d’étapes par candidature — données mock.</p>
+        <p class="page-hero-sub">Suivez l'état de vos candidatures en cours.</p>
 
-        <div class="hh-card mb-4">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                <div>
-                    <h2 class="h5 mb-0" style="color: var(--hh-violet-900);">Développeur Java / Spring</h2>
-                    <small class="text-muted">Tétouan · CDI</small>
-                </div>
-                <span class="badge badge-statut-encours rounded-pill">En cours</span>
-            </div>
-            <div class="hh-timeline">
-                <div class="hh-timeline-item">
-                    <strong>Soumise</strong>
-                    <div class="small text-muted">10/03/2026 — CV reçu</div>
-                </div>
-                <div class="hh-timeline-item">
-                    <strong>En cours d’étude</strong>
-                    <div class="small text-muted">12/03/2026 — équipe RH</div>
-                </div>
-                <div class="hh-timeline-item mb-0">
-                    <strong>Entretien planifié</strong>
-                    <div class="small text-muted">Voir <a th:href="@{/candidat/entretiens}">Mes entretiens</a></div>
-                </div>
-            </div>
+        <div class="alert alert-success border-0 shadow-sm" th:if="${success}" th:text="${success}"></div>
+        <div class="alert alert-danger border-0 shadow-sm" th:if="${error}" th:text="${error}"></div>
+
+        <div th:if="${#lists.isEmpty(candidatures)}" class="hh-card text-center text-muted py-4">
+            Aucune candidature. <a th:href="@{/offres}">Parcourir les offres</a>.
         </div>
 
-        <div class="hh-card">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-0">
+        <div class="hh-card mb-4" th:each="c : ${candidatures}">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                 <div>
-                    <h2 class="h5 mb-0" style="color: var(--hh-violet-900);">Stage PFE — Full-stack</h2>
-                    <small class="text-muted">Rabat · Stage</small>
+                    <h2 class="h5 mb-0" style="color: var(--hh-violet-900);">
+                        Offre #<span th:text="${c.offreId}">1</span>
+                    </h2>
+                    <small class="text-muted">Soumise le <span th:text="${c.dateSoumissionFormatted}">-</span></small>
                 </div>
-                <span class="badge badge-statut-soumise rounded-pill">Soumise</span>
+                <span th:class="${c.statusBadgeClass}" th:text="${c.statusLabel}">Statut</span>
+            </div>
+            <div class="d-flex gap-2 flex-wrap">
+                <a class="btn btn-sm btn-outline-primary rounded-pill"
+                   th:href="@{/candidat/candidature/{id}(id=${c.id})}">Detail</a>
+                <a class="btn btn-sm btn-outline-secondary rounded-pill"
+                   th:href="@{/candidat/candidature/{id}/historique(id=${c.id})}">Historique</a>
             </div>
         </div>
     </div>

@@ -1,6 +1,9 @@
 package com.hirehub.frontend.config;
 
 import com.hirehub.frontend.auth.HirehubUserDetailsService;
+import com.hirehub.frontend.auth.JwtSessionEnrichmentFilter;
+import com.hirehub.frontend.auth.LogoutNotificationHandler;
+import com.hirehub.frontend.auth.SessionAuthSupport;
 import com.hirehub.frontend.oauth.GoogleOAuth2LoginSuccessHandler;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -66,9 +69,12 @@ public class SecurityConfig {
             HttpSecurity http,
             DaoAuthenticationProvider authenticationProvider,
             ObjectProvider<ClientRegistrationRepository> clientRegistrations,
-            GoogleOAuth2LoginSuccessHandler googleOAuth2LoginSuccessHandler
+            GoogleOAuth2LoginSuccessHandler googleOAuth2LoginSuccessHandler,
+            JwtSessionEnrichmentFilter jwtSessionEnrichmentFilter,
+            LogoutNotificationHandler logoutNotificationHandler
     ) throws Exception {
         http.authenticationProvider(authenticationProvider);
+        http.addFilterAfter(jwtSessionEnrichmentFilter, org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter.class);
         http.csrf(csrf -> csrf.disable());
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(
@@ -103,6 +109,8 @@ public class SecurityConfig {
         http.logout(logout -> logout
                 .logoutUrl("/logout")
                 .logoutSuccessUrl("/")
+                .addLogoutHandler(logoutNotificationHandler)
+                .addLogoutHandler((request, response, authentication) -> SessionAuthSupport.clearAccessToken())
                 .permitAll());
         return http.build();
     }

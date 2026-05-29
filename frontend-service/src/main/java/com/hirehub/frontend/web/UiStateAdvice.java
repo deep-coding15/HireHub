@@ -68,8 +68,8 @@ public class UiStateAdvice {
         boolean candidat = role == UserRole.CANDIDAT;
         boolean recruteur = role == UserRole.RECRUTEUR;
 
-        boolean recruteurPending = false;
-        boolean recruteurApprouve = recruteur;
+        boolean recruteurApprouve = recruteur && details.isRecruiterApproved();
+        boolean recruteurPending = recruteur && !recruteurApprouve;
 
         RecruiterVerificationStatus verificationStatus = null;
         if (details.getVerificationStatus() != null) {

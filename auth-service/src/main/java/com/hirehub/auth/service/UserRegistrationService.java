@@ -2,6 +2,7 @@ package com.hirehub.auth.service;
 
 import com.hirehub.auth.dto.RegisterCandidateForm;
 import com.hirehub.auth.dto.RegisterRecruiterForm;
+import com.hirehub.auth.messaging.AuthNotificationService;
 import com.hirehub.auth.model.UserAccount;
 import com.hirehub.auth.repo.UserAccountRepository;
 import com.hirehub.common.enums.RecruiterVerificationStatus;
@@ -17,10 +18,16 @@ public class UserRegistrationService {
 
     private final UserAccountRepository userAccountRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuthNotificationService authNotificationService;
 
-    public UserRegistrationService(UserAccountRepository userAccountRepository, PasswordEncoder passwordEncoder) {
+    public UserRegistrationService(
+            UserAccountRepository userAccountRepository,
+            PasswordEncoder passwordEncoder,
+            AuthNotificationService authNotificationService
+    ) {
         this.userAccountRepository = userAccountRepository;
         this.passwordEncoder = passwordEncoder;
+        this.authNotificationService = authNotificationService;
     }
 
     @Transactional
@@ -38,7 +45,9 @@ public class UserRegistrationService {
                 false,
                 null
         );
-        return userAccountRepository.save(user);
+        UserAccount saved = userAccountRepository.save(user);
+        authNotificationService.publishRegister(saved);
+        return saved;
     }
 
     @Transactional
@@ -61,7 +70,9 @@ public class UserRegistrationService {
             user.setCompanySiret(form.getSiret().trim());
         }
         user.setCompanyPresentation(form.getPresentation().trim());
-        return userAccountRepository.save(user);
+        UserAccount saved = userAccountRepository.save(user);
+        authNotificationService.publishRegister(saved);
+        return saved;
     }
 
     @Transactional

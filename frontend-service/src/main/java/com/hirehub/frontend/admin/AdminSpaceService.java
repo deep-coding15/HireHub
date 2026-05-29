@@ -1,15 +1,17 @@
 package com.hirehub.frontend.admin;
 
+import com.hirehub.common.constants.EventType;
 import com.hirehub.common.enums.UserRole;
-import com.hirehub.common.events.UserAdminActionEvent;
 import com.hirehub.frontend.auth.FrontendUserAccount;
 import com.hirehub.frontend.auth.FrontendUserRepository;
 import com.hirehub.common.notification.RabbitMQConstants;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import com.hirehub.frontend.notification.FrontendEmailEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -17,11 +19,14 @@ import java.util.UUID;
 public class AdminSpaceService {
 
     private final FrontendUserRepository frontendUserRepository;
-    private final RabbitTemplate rabbitTemplate;
+    private final FrontendEmailEventPublisher emailEventPublisher;
 
-    public AdminSpaceService(FrontendUserRepository frontendUserRepository, RabbitTemplate rabbitTemplate) {
+    public AdminSpaceService(
+            FrontendUserRepository frontendUserRepository,
+            FrontendEmailEventPublisher emailEventPublisher
+    ) {
         this.frontendUserRepository = frontendUserRepository;
-        this.rabbitTemplate = rabbitTemplate;
+        this.emailEventPublisher = emailEventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -82,17 +87,22 @@ public class AdminSpaceService {
     }
 
     private void publishAdminAction(FrontendUserAccount account, String action, String routingKey) {
-        UserAdminActionEvent event = new UserAdminActionEvent(
-                account.getId().toString(),
-                account.getEmail(),
-                account.getRole().name(),
-                action,
-                "frontend-service-admin"
-        );
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("userId", account.getId().toString());
+        payload.put("action", action);
+        payload.put("role", account.getRole().name());
+        payload.put("source", "frontend-service-admin");
+
         try {
-            rabbitTemplate.convertAndSend(RabbitMQConstants.EXCHANGE, routingKey, event);
+            emailEventPublisher.publish(
+                    EventType.ADMIN_USER_ACTION,
+                    account.getEmail(),
+                    account.getFullName(),
+                    routingKey,
+                    payload
+            );
         } catch (Exception ignored) {
-            // Action locale deja appliquee; la publication event est best-effort.
+            // Action locale déjà appliquée; la publication event est best-effort.
         }
     }
 }

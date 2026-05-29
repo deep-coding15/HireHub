@@ -36,21 +36,25 @@ public class PipelineViewModel {
 
         if (dto.getStatus() != null) {
             switch (dto.getStatus()) {
+                case "SOUMISE":
+                    vm.setStatusLabel("Soumise");
+                    vm.setStatusBadgeClass("badge bg-secondary");
+                    break;
                 case "EN_COURS":
                     vm.setStatusLabel("En cours");
-                    vm.setStatusBadgeClass("badge bg-warning");
+                    vm.setStatusBadgeClass("badge bg-warning text-dark");
                     break;
-                case "ACCEPTÉE":
-                    vm.setStatusLabel("Acceptée");
+                case "ENTRETIEN":
+                    vm.setStatusLabel("Entretien");
+                    vm.setStatusBadgeClass("badge bg-info");
+                    break;
+                case "ACCEPTEE":
+                    vm.setStatusLabel("Acceptee");
                     vm.setStatusBadgeClass("badge bg-success");
                     break;
-                case "REJETÉE":
-                    vm.setStatusLabel("Rejetée");
+                case "REFUSEE":
+                    vm.setStatusLabel("Refusee");
                     vm.setStatusBadgeClass("badge bg-danger");
-                    break;
-                case "EN_ATTENTE":
-                    vm.setStatusLabel("En attente");
-                    vm.setStatusBadgeClass("badge bg-info");
                     break;
                 default:
                     vm.setStatusLabel(dto.getStatus());

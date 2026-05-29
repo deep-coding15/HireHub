@@ -113,5 +113,23 @@ public class EmailTemplateForAuthentification {
         """.formatted(userName, logoutDateTime);
     }
 
+    public static String buildRegisterWelcomeTemplate(String userName) {
+        return """
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head><meta charset="UTF-8"><style>
+        body{font-family:Arial,sans-serif;background:#f5f5f5}
+        .container{max-width:600px;margin:0 auto;background:#fff;padding:20px;border-radius:8px}
+        .header{background:#2563eb;color:#fff;padding:20px;text-align:center;border-radius:8px 8px 0 0}
+        </style></head>
+        <body><div class="container">
+        <div class="header"><h1>Bienvenue sur HireHub</h1></div>
+        <p>Bonjour <strong>%s</strong>,</p>
+        <p>Votre compte a été créé avec succès. Connectez-vous pour accéder à la plateforme.</p>
+        <p>Cordialement,<br>L'équipe HireHub</p>
+        </div></body></html>
+        """.formatted(userName);
+    }
+
 }
 

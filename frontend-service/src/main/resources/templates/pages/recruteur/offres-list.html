@@ -12,14 +12,19 @@
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
                 <div>
                     <h1 class="page-hero-title mb-0">Mes offres</h1>
-                    <p class="page-hero-sub mb-0">CRUD et publication via <code>offre-service</code>.</p>
+                    <p class="page-hero-sub mb-0">Gérez vos annonces et publiez-les en un clic.</p>
                 </div>
                 <a class="hh-btn-primary" th:href="@{/recruteur/offres/nouvelle}">+ Nouvelle offre</a>
             </div>
 
-            <div class="alert alert-success border-0 shadow-sm" th:if="${offreCreated}">Offre creee et publiee.</div>
+            <div class="alert alert-success border-0 shadow-sm" th:if="${offreCreated}">Offre creee (brouillon).</div>
             <div class="alert alert-success border-0 shadow-sm" th:if="${offreUpdated}">Offre mise a jour.</div>
-            <div class="alert alert-danger border-0 shadow-sm" th:if="${offreError}">Action impossible sur l'offre.</div>
+            <div class="alert alert-danger border-0 shadow-sm" th:if="${offreError}">
+                Action impossible. Vérifiez les champs (date d'expiration future obligatoire).
+            </div>
+            <div class="alert alert-warning border-0 shadow-sm" th:if="${offreApiError}">
+                Impossible de charger vos offres pour le moment. Réessayez dans quelques instants.
+            </div>
 
             <div class="hh-table-wrap">
                 <table class="table table-hover mb-0 align-middle">
@@ -56,7 +61,7 @@
                                     <button type="submit" class="btn btn-sm btn-outline-secondary rounded-pill">Fermer</button>
                                 </form>
                                 <a class="btn btn-sm btn-outline-primary rounded-pill"
-                                   th:href="@{/recruteur/offres/{id}/pipeline(id=${offre.id})}">Pipeline</a>
+                                   th:href="@{/recruteur/pipeline/{id}(id=${offre.id})}">Pipeline</a>
                             </div>
                         </td>
                     </tr>
