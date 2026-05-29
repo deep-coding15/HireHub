@@ -1,75 +1,69 @@
 # HireHub — PROJET JEE
 
-Application type **ATS** : les entreprises publient des offres, les candidats postulent avec un CV (PDF), les recruteurs gèrent le pipeline (statuts, entretiens), l’admin supervise la plateforme (comptes, KPIs, logs).
+Application **ATS** : offres d'emploi, candidatures (CV PDF), pipeline recruteur, entretiens, admin, e-mails et audit via RabbitMQ.
 
-**Dépôt GitHub :** [anadouae/HireHub---PROJET-JEE](https://github.com/anadouae/HireHub---PROJET-JEE)
+**Dépôt :** [anadouae/HireHub---PROJET-JEE](https://github.com/anadouae/HireHub---PROJET-JEE)
 
-## Architecture adoptée
+## Démarrage rapide
 
-- **Monorepo Maven multi-modules** : un module par microservice + `hirehub-common` pour les DTO partagés — idéal pour travailler en binôme sans conflits permanents.
-- **Spring Boot 3.2** + **Spring Cloud 2023** : Eureka, Config Server, Gateway, OpenFeign.
-- **PostgreSQL** : une base logique par service (initialisation via Docker).
-- **Documentation** : `docs/PROJET_HIREHUB_COMPLET.md` (vision + **répartition 4 personnes**), `docs/Repartition_par_microservices.md` (**répartition par microservice** + CSV `Repartition_microservices.csv`), `docs/API-CONTRACTS.md` (REST inscription / validation recruteur), `docs/ARCHITECTURE.md`, `docs/COLLABORATION.md`, `docs/Repartition_taches_HireHub.md`, `docs/PARCOURS_RECRUTEUR.md` (inscription recruteur + **lock UI** jusqu’à approbation admin + emails), `docs/ROUTES_UI.md`, `docs/ESPACES_ET_PAGES.md` (**quel espace pour quelle page** : accueil, public, candidat, recruteur, admin).
+Voir **`DEMARRAGE_RAPIDE.md`** et **`VERSION_FINALE.md`**.
 
-## Structure du dépôt
+```powershell
+docker compose up -d
+.\scripts\setup-databases.ps1
+.\mvnw.cmd -DskipTests package
+# Puis lancer les services dans IntelliJ (ordre dans DEMARRAGE_RAPIDE.md)
+```
+
+Site : http://localhost:8086 — Mailpit : http://localhost:8025
+
+## Architecture
+
+- Monorepo Maven multi-modules + `hirehub-common`
+- Spring Boot 3.2, Spring Cloud (Eureka, Gateway, OpenFeign)
+- PostgreSQL (une base par service), RabbitMQ, Mailpit
+- **email-service** = envoi d'e-mails (rôle « notification-service » métier)
+- **event-service** = audit des actions critiques
+
+## Structure
 
 ```
-hirehub-parent (pom.xml)
-├── hirehub-common/          # DTO / contrats partagés
-├── eureka-server/           # :8761
-├── config-server/           # :8888 (config native)
-├── api-gateway/             # :8080
-├── auth-service/            # :8081
-├── offre-service/           # :8082
-├── candidature-service/     # :8083 (+ Feign notification)
-├── notification-service/    # :8084
-├── entretien-service/       # :8085 (+ Feign notification)
-├── frontend-service/        # :8086 Thymeleaf
-├── docker/postgres/init/    # création des 4 bases PostgreSQL
-├── docker-compose.yml       # PostgreSQL 17 + Mailpit
+hirehub-parent/
+├── hirehub-common/
+├── eureka-server/          :8761
+├── config-server/          :8888
+├── api-gateway/            :8089
+├── auth-service/           :8081
+├── verification-service/   :8090
+├── offre-service/          :8092
+├── candidature-service/    :8083
+├── event-service/          :8084
+├── email-service/          :8093  (notifications e-mail)
+├── entretien-service/      :8085
+├── frontend-service/       :8086
+├── docker-compose.yml
 └── docs/
 ```
 
 ## Prérequis
 
-- JDK **17** (`JAVA_HOME` pointant vers le JDK sous Windows)
-- Docker (PostgreSQL **17** + Mailpit en local)
-- **Maven** : pas besoin d’installation globale — le dépôt inclut le **Maven Wrapper** (`mvnw` / `mvnw.cmd`).
+- JDK **17**
+- Docker (PostgreSQL 55432, RabbitMQ, Mailpit)
+- Maven Wrapper : `.\mvnw.cmd` (Windows) ou `./mvnw` (Linux/macOS)
 
-## Commandes utiles
+## Documentation
 
-**Windows (PowerShell ou CMD), à la racine du projet :**
+| Document | Description |
+|----------|-------------|
+| `VERSION_FINALE.md` | État final + schémas |
+| `DEMARRAGE_RAPIDE.md` | Lancement des services |
+| `docs/SCHEMA_BASES_DONNEES.md` | Schéma BDD |
+| `docs/API-CONTRACTS.md` | Contrats REST |
+| `docs/ARCHITECTURE.md` | Vue d'ensemble |
 
-```text
-.\mvnw.cmd -DskipTests package
-```
+## Équipe
 
-**Linux / macOS :**
-
-```bash
-./mvnw -DskipTests package
-chmod +x ./mvnw   # une seule fois si besoin
-```
-
-**Infra locale :**
-
-```bash
-docker compose up -d
-```
-
-**JDBC (exemple pour chaque service avec JPA) :**  
-`jdbc:postgresql://localhost:5432/hirehub_auth` (adapter le nom de base : `hirehub_offre`, `hirehub_candidature`, `hirehub_entretien`). Utilisateur : `hirehub`, mot de passe : `hirehub` (développement uniquement — à externaliser en prod).
-
-Interface Mailpit (emails de test) : http://localhost:8025  
-
-## Publier sur GitHub
-
-Depuis ce dossier (déjà relié à `origin`) :
-
-```bash
-git add .
-git commit -m "chore: squelette architecture microservices HireHub"
-git push origin main
-```
-
-Voir `CONTRIBUTING.md` pour le flux de collaboration.
+- **Douae El Assal** — Frontend, Auth, Verification, Admin
+- **Imane El Bouzidi** — Offre-service
+- **Lydivine Merveille** — Candidature, Email/notification, Pipeline
+- **Wissal Khalid** — Entretien-service

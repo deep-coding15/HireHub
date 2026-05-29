@@ -10,10 +10,14 @@
     <div th:classappend="${uiRecruteurPending} ? 'hh-recruteur-locked'">
     <div class="container">
         <h1 class="page-hero-title">Statistiques par offre</h1>
-        <p class="page-hero-sub">Graphiques — données agrégées via les microservices (exemple Chart.js).</p>
+        <p class="page-hero-sub">Vue d'ensemble de votre activité de recrutement.</p>
+
+        <div class="alert alert-warning border-0 shadow-sm" th:if="${apiError}">
+            Impossible de calculer les statistiques pour le moment.
+        </div>
 
         <div class="hh-card mb-4">
-            <h2 class="h6 text-uppercase mb-3" style="color: var(--hh-violet-800);">Candidatures par semaine</h2>
+            <h2 class="h6 text-uppercase mb-3" style="color: var(--hh-violet-800);">Candidatures par offre</h2>
             <div style="max-height: 420px;">
                 <canvas id="chartRecruteur"></canvas>
             </div>
@@ -22,35 +26,37 @@
         <div class="row g-3">
             <div class="col-md-4">
                 <div class="hh-kpi">
-                    <div class="hh-kpi-value">34%</div>
-                    <div class="hh-kpi-label">Passage entretien</div>
+                    <div class="hh-kpi-value" th:text="${stats.offresCount}">0</div>
+                    <div class="hh-kpi-label">Offres totales</div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="hh-kpi">
-                    <div class="hh-kpi-value">12%</div>
-                    <div class="hh-kpi-label">Taux d’embauche</div>
+                    <div class="hh-kpi-value" th:text="${stats.candidaturesCount}">0</div>
+                    <div class="hh-kpi-label">Candidatures</div>
                 </div>
             </div>
             <div class="col-md-4">
                 <div class="hh-kpi">
-                    <div class="hh-kpi-value">6j</div>
-                    <div class="hh-kpi-label">Délai moyen de réponse</div>
+                    <div class="hh-kpi-value" th:text="${stats.offresPubliees}">0</div>
+                    <div class="hh-kpi-label">Offres publiees</div>
                 </div>
             </div>
         </div>
     </div>
-    <script>
+    <script th:inline="javascript">
         document.addEventListener('DOMContentLoaded', function () {
             const el = document.getElementById('chartRecruteur');
             if (!el || typeof Chart === 'undefined') return;
+            const labels = /*[[${stats.chartLabelsJson}]]*/ [];
+            const data = /*[[${stats.chartDataJson}]]*/ [];
             new Chart(el, {
                 type: 'bar',
                 data: {
-                    labels: ['S1', 'S2', 'S3', 'S4'],
+                    labels: labels,
                     datasets: [{
                         label: 'Candidatures',
-                        data: [12, 19, 15, 22],
+                        data: data,
                         backgroundColor: 'rgba(109, 40, 217, 0.65)',
                         borderRadius: 8
                     }]

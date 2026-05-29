@@ -9,10 +9,6 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * ViewModel pour afficher une candidature dans les templates Thymeleaf
- * Enrichit le DTO avec des données formatées pour l'affichage
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,13 +23,9 @@ public class CandidatureViewModel {
     private LocalDateTime dateSoumission;
     private LocalDateTime dateModification;
 
-    // Propriétés calculées pour l'affichage
     private String statusLabel;
-    private String statusBadgeClass; // Pour CSS Bootstrap
+    private String statusBadgeClass;
 
-    /**
-     * Crée un ViewModel à partir d'un DTO
-     */
     public static CandidatureViewModel fromDTO(CandidatureDTO dto) {
         CandidatureViewModel vm = new CandidatureViewModel();
         vm.setId(dto.getId());
@@ -53,7 +45,7 @@ public class CandidatureViewModel {
                     break;
                 case "EN_COURS":
                     vm.setStatusLabel("En cours");
-                    vm.setStatusBadgeClass("badge bg-warning");
+                    vm.setStatusBadgeClass("badge bg-warning text-dark");
                     break;
                 case "ENTRETIEN":
                     vm.setStatusLabel("Entretien");
@@ -76,25 +68,16 @@ public class CandidatureViewModel {
         return vm;
     }
 
-    /**
-     * Retourne la date de soumission formatée pour l'affichage
-     */
     public String getDateSoumissionFormatted() {
         if (dateSoumission == null) return "-";
         return dateSoumission.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
     }
 
-    /**
-     * Retourne la date de modification formatée pour l'affichage
-     */
     public String getDateModificationFormatted() {
         if (dateModification == null) return "-";
         return dateModification.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
     }
 
-    /**
-     * Vérifie si un fichier existe (CV ou lettre)
-     */
     public boolean hasCv() {
         return cvPath != null && !cvPath.isEmpty();
     }
@@ -103,4 +86,3 @@ public class CandidatureViewModel {
         return lettreMotivationPath != null && !lettreMotivationPath.isEmpty();
     }
 }
-

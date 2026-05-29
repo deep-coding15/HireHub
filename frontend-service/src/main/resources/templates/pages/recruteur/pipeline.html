@@ -16,16 +16,12 @@
             </ol>
         </nav>
         <h1 class="page-hero-title">Pipeline</h1>
-        <p class="page-hero-sub">Gestion des statuts des candidatures pour cette offre.</p>
+        <p class="page-hero-sub">Suivez les candidatures reçues pour cette offre.</p>
 
-        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
-        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+        <div class="alert alert-danger border-0 shadow-sm" th:if="${error}" th:text="${error}"></div>
+        <div class="alert alert-success border-0 shadow-sm" th:if="${success}" th:text="${success}"></div>
 
-        <div th:if="${candidatures != null and candidatures.isEmpty()}" class="alert alert-info">
-            Aucune candidature pour cette offre.
-        </div>
-
-        <div th:unless="${candidatures == null or candidatures.isEmpty()}" class="hh-table-wrap">
+        <div class="hh-table-wrap">
             <table class="table table-hover mb-0">
                 <thead>
                 <tr>
@@ -37,9 +33,12 @@
                 </tr>
                 </thead>
                 <tbody>
+                <tr th:if="${#lists.isEmpty(candidatures)}">
+                    <td colspan="5" class="text-center text-muted py-4">Aucune candidature pour cette offre.</td>
+                </tr>
                 <tr th:each="c : ${candidatures}">
                     <td th:text="${c.candidatId}">—</td>
-                    <td th:text="${c.getDateSoumissionFormatted()}">—</td>
+                    <td th:text="${c.dateSoumissionFormatted}">—</td>
                     <td>
                         <a th:if="${c.hasCv()}"
                            th:href="@{/recruteur/candidature/{id}/download(id=${c.candidatureId},type=cv)}"
@@ -51,8 +50,7 @@
                     </td>
                     <td>
                         <a th:href="@{/recruteur/candidature/{id}(id=${c.candidatureId})}"
-                           class="btn btn-sm btn-outline-primary me-1">Détails</a>
-                        <!-- Changement de statut rapide -->
+                           class="btn btn-sm btn-outline-primary rounded-pill me-1">Détails</a>
                         <form th:action="@{/recruteur/candidature/{id}/statut(id=${c.candidatureId})}"
                               method="POST" class="d-inline">
                             <select name="status" class="form-select form-select-sm d-inline-block w-auto"

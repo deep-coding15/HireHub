@@ -27,6 +27,8 @@ application-local.yml
 
 # Uploads (CV dev)
 uploads/
+frontend-service/data/
+data/uploads/
 
 # Logs and temp files
 logs/

@@ -77,7 +77,4 @@ public final class CandidatureMapper {
         entity.setLettreMotivationPath(dto.getLettreMotivationPath());
         return entity;
     }
-
-
-
 }

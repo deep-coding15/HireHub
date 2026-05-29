@@ -314,7 +314,7 @@ public class CandidatureServiceImpl implements ICandidatureService {
                 return;
             }
 
-            String offreTitre = candidature.getOffreId(); // fallback si Feign échoue
+            String offreTitre = candidature.getOffreId();
             try {
                 OffreDTO offre = iOffreServiceClient.getOffre(candidature.getOffreId());
                 if (offre != null && offre.getTitre() != null) {
@@ -326,6 +326,7 @@ public class CandidatureServiceImpl implements ICandidatureService {
 
             Map<String, Object> payload = new HashMap<>();
             payload.put("candidatureId", candidature.getId());
+            payload.put("candidatId", candidature.getCandidatId());
             payload.put("offerId", candidature.getOffreId());
             payload.put("offerTitle", offreTitre);
             payload.put("oldStatus", oldStatus.name());

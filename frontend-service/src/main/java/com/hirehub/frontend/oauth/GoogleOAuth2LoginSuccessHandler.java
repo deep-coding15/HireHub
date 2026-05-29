@@ -1,6 +1,8 @@
 package com.hirehub.frontend.oauth;
 
+import com.hirehub.frontend.auth.FrontendJwtService;
 import com.hirehub.frontend.auth.HirehubUserDetails;
+import com.hirehub.frontend.auth.SessionAuthSupport;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,13 +23,16 @@ public class GoogleOAuth2LoginSuccessHandler implements AuthenticationSuccessHan
 
     private final GoogleOAuthAccountService googleOAuthAccountService;
     private final SecurityContextRepository securityContextRepository;
+    private final FrontendJwtService frontendJwtService;
 
     public GoogleOAuth2LoginSuccessHandler(
             GoogleOAuthAccountService googleOAuthAccountService,
-            SecurityContextRepository securityContextRepository
+            SecurityContextRepository securityContextRepository,
+            FrontendJwtService frontendJwtService
     ) {
         this.googleOAuthAccountService = googleOAuthAccountService;
         this.securityContextRepository = securityContextRepository;
+        this.frontendJwtService = frontendJwtService;
     }
 
     @Override
@@ -64,6 +69,7 @@ public class GoogleOAuth2LoginSuccessHandler implements AuthenticationSuccessHan
         context.setAuthentication(sessionAuth);
         SecurityContextHolder.setContext(context);
         securityContextRepository.saveContext(context, request, response);
+        SessionAuthSupport.storeAccessToken(frontendJwtService.generateAccessToken(userDetails));
 
         response.sendRedirect(request.getContextPath() + "/");
     }

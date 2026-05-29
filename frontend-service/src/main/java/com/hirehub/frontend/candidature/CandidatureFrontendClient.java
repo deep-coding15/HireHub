@@ -1,0 +1,205 @@
+package com.hirehub.frontend.candidature;
+
+import com.hirehub.common.dtos.ApiResponse;
+import com.hirehub.common.enums.CandidatureStatus;
+import com.hirehub.frontend.auth.HirehubUserDetails;
+import com.hirehub.frontend.offre.RecruiterContext;
+import com.hirehub.frontend.auth.SessionAuthSupport;
+import com.hirehub.frontend.clients.CandidatureDTO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestTemplate;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+public class CandidatureFrontendClient {
+
+    private static final Logger log = LoggerFactory.getLogger(CandidatureFrontendClient.class);
+
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final String candidatureBaseUrl;
+
+    public CandidatureFrontendClient(
+            @Value("${hirehub.candidature-service-base-url}") String candidatureBaseUrl
+    ) {
+        this.candidatureBaseUrl = candidatureBaseUrl;
+    }
+
+    public List<CandidatureDTO> getMyCandidatures() {
+        return fetchList(candidatureBaseUrl + "/candidatures/moi");
+    }
+
+    public List<CandidatureDTO> getCandidaturesByOffre(String offreId) {
+        RecruiterContext.requireRecruiter();
+        return fetchList(candidatureBaseUrl + "/candidatures/offre/" + offreId);
+    }
+
+    public Optional<CandidatureDTO> getCandidature(String id) {
+        try {
+            ResponseEntity<ApiResponse<CandidatureApiItem>> response = restTemplate.exchange(
+                    candidatureBaseUrl + "/candidatures/" + id,
+                    HttpMethod.GET,
+                    authEntity(null),
+                    new ParameterizedTypeReference<ApiResponse<CandidatureApiItem>>() {}
+            );
+            ApiResponse<CandidatureApiItem> body = response.getBody();
+            if (body != null && body.getData() != null) {
+                return Optional.of(toDto(body.getData()));
+            }
+            return Optional.empty();
+        } catch (HttpStatusCodeException ex) {
+            log.warn("Candidature {} : HTTP {}", id, ex.getStatusCode());
+            return Optional.empty();
+        } catch (RestClientException ex) {
+            log.warn("Candidature {} : {}", id, ex.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    public CandidatureDTO create(String offreId, String cvPath, String lettrePath, HirehubUserDetails candidat) {
+        CandidatureCreateRequest body = new CandidatureCreateRequest(
+                UUID.randomUUID().toString(),
+                candidat.getId().toString(),
+                offreId,
+                cvPath,
+                lettrePath,
+                CandidatureStatus.SOUMISE
+        );
+        try {
+            ResponseEntity<ApiResponse<CandidatureApiItem>> response = restTemplate.exchange(
+                    candidatureBaseUrl + "/candidatures",
+                    HttpMethod.POST,
+                    authEntity(body),
+                    new ParameterizedTypeReference<ApiResponse<CandidatureApiItem>>() {}
+            );
+            ApiResponse<CandidatureApiItem> apiBody = response.getBody();
+            if (apiBody != null && apiBody.getData() != null) {
+                return toDto(apiBody.getData());
+            }
+            throw new CandidatureServiceException("Réponse candidature invalide");
+        } catch (HttpStatusCodeException ex) {
+            log.warn("Création candidature offre {} : {} {}", offreId, ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new CandidatureServiceException(parseError(ex), ex);
+        } catch (RestClientException ex) {
+            throw new CandidatureServiceException("Service candidatures indisponible", ex);
+        }
+    }
+
+    public void updateStatus(String candidatureId, String status) {
+        String url = candidatureBaseUrl + "/candidatures/" + candidatureId + "/status?status=" + status;
+        try {
+            restTemplate.exchange(url, HttpMethod.PUT, authEntity(null), Void.class);
+        } catch (HttpStatusCodeException ex) {
+            throw new CandidatureServiceException("Changement de statut refusé", ex);
+        } catch (RestClientException ex) {
+            throw new CandidatureServiceException("Service candidatures indisponible", ex);
+        }
+    }
+
+    public void delete(String candidatureId) {
+        try {
+            restTemplate.exchange(
+                    candidatureBaseUrl + "/candidatures/" + candidatureId,
+                    HttpMethod.DELETE,
+                    authEntity(null),
+                    Void.class
+            );
+        } catch (HttpStatusCodeException ex) {
+            throw new CandidatureServiceException("Suppression refusée", ex);
+        } catch (RestClientException ex) {
+            throw new CandidatureServiceException("Service candidatures indisponible", ex);
+        }
+    }
+
+    public List<HistoriqueApiItem> getHistorique(String candidatureId) {
+        try {
+            ResponseEntity<ApiResponse<List<HistoriqueApiItem>>> response = restTemplate.exchange(
+                    candidatureBaseUrl + "/candidatures/" + candidatureId + "/historique",
+                    HttpMethod.GET,
+                    authEntity(null),
+                    new ParameterizedTypeReference<ApiResponse<List<HistoriqueApiItem>>>() {}
+            );
+            ApiResponse<List<HistoriqueApiItem>> body = response.getBody();
+            if (body == null || body.getData() == null) {
+                return Collections.emptyList();
+            }
+            return body.getData();
+        } catch (HttpStatusCodeException ex) {
+            log.warn("Historique candidature {} : HTTP {}", candidatureId, ex.getStatusCode());
+            throw new CandidatureServiceException("Impossible de charger l'historique", ex);
+        } catch (RestClientException ex) {
+            throw new CandidatureServiceException("Service candidatures indisponible", ex);
+        }
+    }
+
+    private List<CandidatureDTO> fetchList(String url) {
+        try {
+            ResponseEntity<ApiResponse<List<CandidatureApiItem>>> response = restTemplate.exchange(
+                    url,
+                    HttpMethod.GET,
+                    authEntity(null),
+                    new ParameterizedTypeReference<ApiResponse<List<CandidatureApiItem>>>() {}
+            );
+            ApiResponse<List<CandidatureApiItem>> body = response.getBody();
+            if (body == null || body.getData() == null) {
+                return Collections.emptyList();
+            }
+            return body.getData().stream().map(this::toDto).collect(Collectors.toList());
+        } catch (HttpStatusCodeException ex) {
+            log.warn("Liste candidatures {} : HTTP {} {}", url, ex.getStatusCode(), ex.getResponseBodyAsString());
+            throw new CandidatureServiceException("Impossible de charger les candidatures", ex);
+        } catch (RestClientException ex) {
+            log.warn("Liste candidatures {} : {}", url, ex.getMessage());
+            throw new CandidatureServiceException("Service candidatures indisponible", ex);
+        }
+    }
+
+    private HttpEntity<?> authEntity(Object body) {
+        String token = SessionAuthSupport.accessToken()
+                .orElseThrow(() -> new CandidatureServiceException("Session expirée — reconnectez-vous"));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        if (body != null) {
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            return new HttpEntity<>(body, headers);
+        }
+        return new HttpEntity<>(headers);
+    }
+
+    private CandidatureDTO toDto(CandidatureApiItem item) {
+        CandidatureDTO dto = new CandidatureDTO();
+        dto.setId(item.getId());
+        dto.setOffreId(item.getOffreId());
+        dto.setCandidatId(item.getCandidatId());
+        dto.setStatus(item.getStatus());
+        dto.setCvPath(item.getCvPath());
+        dto.setLettreMotivationPath(item.getLettreMotivationPath());
+        return dto;
+    }
+
+    private String parseError(HttpStatusCodeException ex) {
+        String raw = ex.getResponseBodyAsString();
+        if (raw != null && raw.contains("deja postule")) {
+            return "Vous avez déjà postulé à cette offre.";
+        }
+        if (raw != null && raw.contains("message")) {
+            return "Candidature refusée : vérifiez que l'offre est publiée et que vous êtes connecté en tant que candidat.";
+        }
+        return "Impossible d'enregistrer la candidature.";
+    }
+}

@@ -10,7 +10,7 @@
     <div th:classappend="${uiRecruteurPending} ? 'hh-recruteur-locked'">
         <div class="container" style="max-width: 720px;">
             <h1 class="page-hero-title">Nouvelle offre</h1>
-            <p class="page-hero-sub">Creation et publication via <code>offre-service</code>.</p>
+            <p class="page-hero-sub">Rédigez votre annonce et publiez-la quand vous êtes prêt.</p>
 
             <form class="hh-card" method="post" th:action="@{/recruteur/offres}" th:object="${offreForm}">
                 <div class="mb-3">
@@ -43,7 +43,7 @@
                     </div>
                     <div class="col-md-6">
                         <label class="hh-form-label" for="dateExpiration">Date expiration</label>
-                        <input type="datetime-local" id="dateExpiration" th:field="*{dateExpiration}"
+                        <input type="datetime-local" id="dateExpiration" th:field="*{dateExpiration}" required
                                class="form-control rounded-3 border-0 shadow-sm"/>
                     </div>
                 </div>

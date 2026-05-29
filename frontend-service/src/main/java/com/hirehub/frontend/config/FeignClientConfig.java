@@ -15,7 +15,6 @@ public class FeignClientConfig {
     @Bean
     public RequestInterceptor requestInterceptor() {
         return requestTemplate -> {
-            // 1. Propagate correlation ID for distributed tracing
             String correlationId = MDC.get("correlationId");
             if (correlationId != null) {
                 requestTemplate.header(SecurityConstants.HEADER_CORRELATION_ID, correlationId);

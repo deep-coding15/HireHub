@@ -8,39 +8,33 @@
 <section layout:fragment="content" class="page-inner">
     <div class="container">
         <h1 class="page-hero-title">Mes candidatures</h1>
+        <p class="page-hero-sub">Suivez l'état de vos candidatures en cours.</p>
 
-        <div th:if="${error}" class="alert alert-danger">
-            <span th:text="${error}"></span>
+        <div class="alert alert-success border-0 shadow-sm" th:if="${success}" th:text="${success}"></div>
+        <div class="alert alert-danger border-0 shadow-sm" th:if="${error}" th:text="${error}"></div>
+
+        <div th:if="${#lists.isEmpty(candidatures)}" class="hh-card text-center text-muted py-4">
+            Aucune candidature. <a th:href="@{/offres}">Parcourir les offres</a>.
         </div>
 
-        <div th:if="${success}" class="alert alert-success">
-            <span th:text="${success}"></span>
-        </div>
-
-        <div th:if="${candidatures != null and candidatures.isEmpty()}" class="alert alert-info">
-            Vous n'avez pas encore de candidature.
-        </div>
-
-        <div th:each="candidature : ${candidatures}" class="hh-card mb-4">
+        <div class="hh-card mb-4" th:each="c : ${candidatures}">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                 <div>
                     <h2 class="h5 mb-0" style="color: var(--hh-violet-900);">
-                        Offre <code th:text="${candidature.offreId}"></code>
+                        Offre #<span th:text="${c.offreId}">1</span>
                     </h2>
-                    <small class="text-muted"
-                           th:text="'Soumise le ' + ${candidature.getDateSoumissionFormatted()}"></small>
+                    <small class="text-muted">Soumise le <span th:text="${c.dateSoumissionFormatted}">-</span></small>
                 </div>
-                <span th:class="${candidature.statusBadgeClass}"
-                      th:text="${candidature.statusLabel}"></span>
+                <span th:class="${c.statusBadgeClass}" th:text="${c.statusLabel}">Statut</span>
             </div>
-            <div class="d-flex gap-2 mt-3">
-                <a th:href="@{/candidat/candidature/{id}(id=${candidature.id})}"
-                   class="btn btn-sm btn-outline-primary">Détails</a>
-                <a th:href="@{/candidat/candidature/{id}/historique(id=${candidature.id})}"
-                   class="btn btn-sm btn-outline-secondary">Historique</a>
-                <form th:action="@{/candidat/candidature/{id}/delete(id=${candidature.id})}"
+            <div class="d-flex gap-2 flex-wrap">
+                <a class="btn btn-sm btn-outline-primary rounded-pill"
+                   th:href="@{/candidat/candidature/{id}(id=${c.id})}">Détails</a>
+                <a class="btn btn-sm btn-outline-secondary rounded-pill"
+                   th:href="@{/candidat/candidature/{id}/historique(id=${c.id})}">Historique</a>
+                <form th:action="@{/candidat/candidature/{id}/delete(id=${c.id})}"
                       method="POST" class="d-inline">
-                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill"
                             onclick="return confirm('Retirer cette candidature ?')">
                         Retirer
                     </button>

@@ -3,6 +3,8 @@ package com.hirehub.email.listener;
 import com.hirehub.common.notification.RabbitMQConstants;
 import com.hirehub.common.notification.EmailEventDTO;
 import com.hirehub.email.EmailBusinessServiceImpl;
+import com.hirehub.email.feign.AuthServiceClientAPI;
+import com.hirehub.email.feign.UserInfoDTO;
 import com.hirehub.email.service.IdempotenceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,7 @@ public class CandidatureListener {
 
     private final EmailBusinessServiceImpl emailService;
     private final IdempotenceService idempotenceService;
+    private final AuthServiceClientAPI authServiceClientAPI;
 
     /**
      * Écoute les événements de création de candidature.
@@ -43,21 +46,17 @@ public class CandidatureListener {
 
             log.info("[CANDIDATURE.CREATED] Traitement de l'événement {} pour: {}", eventId, event.getRecipientEmail());
 
-            // Extraire les données du payload
-            log.info("Contenu complet du payload : {}", event.getPayload());
-            String offerTitle = (String) event.getPayload().get("offerTitle");
-            Long offerId = Long.valueOf(event.getPayload().get("offerId").toString());
+            String offerTitle = event.getPayload() != null && event.getPayload().get("offerTitle") != null
+                    ? event.getPayload().get("offerTitle").toString()
+                    : "Offre";
+            String candidateName = event.getRecipientName() != null && !event.getRecipientName().isBlank()
+                    ? event.getRecipientName()
+                    : "Candidat";
 
-            emailService.sendCandidatureConfirmation(
-                    new com.hirehub.common.dtos.candidatures.CandidatureRabbitDTO(
-                            event.getPayload().get("candidatureId").toString(),
-                            offerId.toString(),
-                            offerTitle,
-                            event.getRecipientEmail(),
-                            event.getPayload().get("status").toString(),
-                            event.getPayload().get("cvPath").toString(),
-                            event.getPayload().get("lettreMotivation").toString()
-                    )
+            emailService.sendCandidatureCreatedEmail(
+                    event.getRecipientEmail(),
+                    candidateName,
+                    offerTitle
             );
 
             // Marquer comme traité avec succès
@@ -95,9 +94,20 @@ public class CandidatureListener {
             String newStatus = (String) event.getPayload().get("newStatus");
             String comment = (String) event.getPayload().get("comment");
 
+            String candidatEmail = event.getRecipientEmail();
+            String candidatName = event.getRecipientName();
+            if (event.getPayload().get("candidatId") != null) {
+                UserInfoDTO user = authServiceClientAPI.getUserById(
+                        event.getPayload().get("candidatId").toString());
+                if (user != null && user.getEmail() != null && !user.getEmail().isBlank()) {
+                    candidatEmail = user.getEmail();
+                    candidatName = user.getFirstName() != null ? user.getFirstName() : candidatName;
+                }
+            }
+
             emailService.sendCandidatureStatutChangedNotification(
-                    event.getRecipientEmail(),
-                    event.getRecipientName(),
+                    candidatEmail,
+                    candidatName,
                     offerTitle,
                     oldStatus,
                     newStatus,

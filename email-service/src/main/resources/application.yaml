@@ -72,7 +72,7 @@ notification:
     retry-delay-ms: 1000
 
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:8093}
 
 springdoc:
   api-docs:

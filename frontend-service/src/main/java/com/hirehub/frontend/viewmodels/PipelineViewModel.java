@@ -9,9 +9,6 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
-/**
- * ViewModel pour afficher les candidatures dans le pipeline recruteur
- */
 @Getter
 @Setter
 @NoArgsConstructor
@@ -42,7 +39,7 @@ public class PipelineViewModel {
                     break;
                 case "EN_COURS":
                     vm.setStatusLabel("En cours");
-                    vm.setStatusBadgeClass("badge bg-warning");
+                    vm.setStatusBadgeClass("badge bg-warning text-dark");
                     break;
                 case "ENTRETIEN":
                     vm.setStatusLabel("Entretien");
@@ -74,4 +71,3 @@ public class PipelineViewModel {
         return cvPath != null && !cvPath.isEmpty();
     }
 }
-
