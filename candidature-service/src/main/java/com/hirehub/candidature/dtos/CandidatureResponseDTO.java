@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @AllArgsConstructor
@@ -14,6 +16,8 @@ public class CandidatureResponseDTO {
     private String offreId;
     private String candidatId;
     private String status;
-    private String message;
-    private String createdAt;
+    private String cvPath;
+    private String lettreMotivationPath;
+    private LocalDateTime dateSoumission;
+    private LocalDateTime dateModification;
 }

@@ -5,23 +5,18 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-
 /**
- * DTO pour l'historique des changements de statut
- * Correspond à l'entité HistoriqueStatus du candidature-service
+ * Mirrors candidature-service's HistoriqueStatusDTO output:
+ * {timestamp, ancienStatut, nouveauStatut, auteur, commentaire}
  */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class HistoriqueStatutDTO {
-    private String id;
-    private String candidatureId;
-    private String ancienStatus;
-    private String nouveauStatus;
+    private String timestamp;
+    private String ancienStatut;
+    private String nouveauStatut;
+    private String auteur;
     private String commentaire;
-    private LocalDateTime dateChangement;
-    private String utilisateurId;
 }
-

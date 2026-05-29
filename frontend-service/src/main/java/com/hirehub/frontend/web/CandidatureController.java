@@ -1,5 +1,6 @@
 package com.hirehub.frontend.web;
 
+import com.hirehub.common.dtos.ApiResponse;
 import com.hirehub.frontend.clients.CandidatureDTO;
 import com.hirehub.frontend.clients.CandidatureServiceClient;
 import com.hirehub.frontend.clients.HistoriqueStatutDTO;
@@ -13,12 +14,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-/**
- * Contrôleur pour les routes candidat liées aux candidatures
- * Gère l'affichage et les opérations sur les candidatures
- */
 @Controller
 @RequestMapping("/candidat")
 @Slf4j
@@ -30,18 +28,15 @@ public class CandidatureController {
         this.candidatureServiceClient = candidatureServiceClient;
     }
 
-    /**
-     * GET /candidat/mes-candidatures
-     * Affiche la liste des candidatures du candidat
-     */
     @GetMapping("/mes-candidatures")
     public String myCandidatures(Authentication auth, Model model) {
         try {
-            log.info("Récupération des candidatures pour candidat");
+            log.info("Récupération des candidatures du candidat");
 
-            List<CandidatureDTO> candidaturesDTO = candidatureServiceClient.getMyCandidatures();
+            ApiResponse<List<CandidatureDTO>> response = candidatureServiceClient.getMyCandidatures();
+            List<CandidatureDTO> candidaturesDTO = response != null && response.getData() != null
+                    ? response.getData() : Collections.emptyList();
 
-            // Convertir DTO en ViewModel
             List<CandidatureViewModel> candidatures = new ArrayList<>();
             for (CandidatureDTO dto : candidaturesDTO) {
                 candidatures.add(CandidatureViewModel.fromDTO(dto));
@@ -49,7 +44,6 @@ public class CandidatureController {
 
             model.addAttribute("candidatures", candidatures);
             log.info("Affichage de {} candidatures", candidatures.size());
-
             return "pages/candidat/mes-candidatures";
         } catch (Exception e) {
             log.error("Erreur lors de la récupération des candidatures", e);
@@ -58,24 +52,19 @@ public class CandidatureController {
         }
     }
 
-    /**
-     * GET /candidat/candidature/{id}
-     * Affiche les détails d'une candidature
-     */
     @GetMapping("/candidature/{id}")
     public String candidatureDetail(@PathVariable String id, Model model) {
         try {
             log.info("Récupération des détails de la candidature {}", id);
 
-            CandidatureDTO candidatureDTO = candidatureServiceClient.getCandidature(id);
+            ApiResponse<CandidatureDTO> response = candidatureServiceClient.getCandidature(id);
+            CandidatureDTO candidatureDTO = response != null ? response.getData() : null;
             if (candidatureDTO == null) {
                 model.addAttribute("error", "Candidature non trouvée");
                 return "pages/candidat/candidature-detail";
             }
 
-            CandidatureViewModel candidature = CandidatureViewModel.fromDTO(candidatureDTO);
-            model.addAttribute("candidature", candidature);
-
+            model.addAttribute("candidature", CandidatureViewModel.fromDTO(candidatureDTO));
             return "pages/candidat/candidature-detail";
         } catch (Exception e) {
             log.error("Erreur lors de la récupération de la candidature", e);
@@ -84,18 +73,15 @@ public class CandidatureController {
         }
     }
 
-    /**
-     * GET /candidat/candidature/{id}/historique
-     * Affiche l'historique des changements de statut
-     */
     @GetMapping("/candidature/{id}/historique")
     public String candidatureHistorique(@PathVariable String id, Model model) {
         try {
             log.info("Récupération de l'historique de la candidature {}", id);
 
-            List<HistoriqueStatutDTO> historiqueDTO = candidatureServiceClient.getHistorique(id);
+            ApiResponse<List<HistoriqueStatutDTO>> response = candidatureServiceClient.getHistorique(id);
+            List<HistoriqueStatutDTO> historiqueDTO = response != null && response.getData() != null
+                    ? response.getData() : Collections.emptyList();
 
-            // Convertir DTO en ViewModel
             List<HistoriqueStatutViewModel> historique = new ArrayList<>();
             for (HistoriqueStatutDTO dto : historiqueDTO) {
                 historique.add(HistoriqueStatutViewModel.fromDTO(dto));
@@ -103,7 +89,6 @@ public class CandidatureController {
 
             model.addAttribute("historique", historique);
             model.addAttribute("candidatureId", id);
-
             return "pages/candidat/candidature-historique";
         } catch (Exception e) {
             log.error("Erreur lors de la récupération de l'historique", e);
@@ -112,28 +97,20 @@ public class CandidatureController {
         }
     }
 
-    /**
-     * POST /candidat/candidature/{id}/delete
-     * Supprime une candidature
-     */
     @PostMapping("/candidature/{id}/delete")
     public String deleteCandidature(@PathVariable String id, RedirectAttributes redirectAttributes) {
         try {
-            log.info("Suppression de la candidature {}", id);
+            log.info("Retrait de la candidature {}", id);
             candidatureServiceClient.deleteCandidature(id);
-            redirectAttributes.addFlashAttribute("success", "Candidature supprimée avec succès");
+            redirectAttributes.addFlashAttribute("success", "Candidature retirée avec succès");
             return "redirect:/candidat/mes-candidatures";
         } catch (Exception e) {
-            log.error("Erreur lors de la suppression de la candidature", e);
-            redirectAttributes.addFlashAttribute("error", "Erreur lors de la suppression");
+            log.error("Erreur lors du retrait de la candidature", e);
+            redirectAttributes.addFlashAttribute("error", "Erreur lors du retrait");
             return "redirect:/candidat/mes-candidatures";
         }
     }
 
-    /**
-     * GET /candidat/candidature/{id}/download
-     * Télécharge les fichiers d'une candidature
-     */
     @GetMapping("/candidature/{id}/download")
     public String downloadFile(
             @PathVariable String id,
@@ -151,10 +128,6 @@ public class CandidatureController {
         }
     }
 
-    /**
-     * GET /candidat/postuler/{offreId}
-     * Affiche le formulaire de candidature
-     */
     @GetMapping("/postuler/{offreId}")
     public String postulerForm(@PathVariable String offreId, Model model) {
         log.info("Affichage du formulaire de candidature pour offre {}", offreId);
@@ -162,10 +135,6 @@ public class CandidatureController {
         return "pages/candidat/postuler";
     }
 
-    /**
-     * POST /candidat/postuler
-     * Crée une nouvelle candidature
-     */
     @PostMapping("/postuler")
     public String postuler(
             @RequestParam String offreId,
@@ -180,7 +149,7 @@ public class CandidatureController {
             candidatureDTO.setCvPath(cvPath);
             candidatureDTO.setLettreMotivationPath(lettreMotivationPath);
 
-            CandidatureDTO created = candidatureServiceClient.createCandidature(candidatureDTO);
+            candidatureServiceClient.createCandidature(candidatureDTO);
 
             redirectAttributes.addFlashAttribute("success", "Candidature créée avec succès!");
             return "redirect:/candidat/mes-candidatures";
@@ -191,4 +160,3 @@ public class CandidatureController {
         }
     }
 }
-

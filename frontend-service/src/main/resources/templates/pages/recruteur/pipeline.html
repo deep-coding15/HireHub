@@ -12,29 +12,59 @@
         <nav aria-label="breadcrumb" class="mb-3">
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item"><a th:href="@{/recruteur/offres}">Mes offres</a></li>
-                <li class="breadcrumb-item active">Offre #<span th:text="${offreId}">1</span></li>
+                <li class="breadcrumb-item active">Offre #<span th:text="${offreId}">—</span></li>
             </ol>
         </nav>
         <h1 class="page-hero-title">Pipeline</h1>
-        <p class="page-hero-sub">Gestion des statuts et historique.</p>
-        <div class="hh-table-wrap">
+        <p class="page-hero-sub">Gestion des statuts des candidatures pour cette offre.</p>
+
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
+
+        <div th:if="${candidatures != null and candidatures.isEmpty()}" class="alert alert-info">
+            Aucune candidature pour cette offre.
+        </div>
+
+        <div th:unless="${candidatures == null or candidatures.isEmpty()}" class="hh-table-wrap">
             <table class="table table-hover mb-0">
                 <thead>
                 <tr>
                     <th>Candidat</th>
-                    <th>Date</th>
+                    <th>Date de soumission</th>
                     <th>CV</th>
                     <th>Statut</th>
-                    <th></th>
+                    <th>Actions</th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr>
-                    <td>Jean Dupont</td>
-                    <td>10/03/2026</td>
-                    <td><a href="#">PDF</a></td>
-                    <td><span class="badge badge-statut-encours">En cours</span></td>
-                    <td><a class="btn btn-sm btn-outline-primary rounded-pill" th:href="@{/recruteur/entretiens}">Entretien</a></td>
+                <tr th:each="c : ${candidatures}">
+                    <td th:text="${c.candidatId}">—</td>
+                    <td th:text="${c.getDateSoumissionFormatted()}">—</td>
+                    <td>
+                        <a th:if="${c.hasCv()}"
+                           th:href="@{/recruteur/candidature/{id}/download(id=${c.candidatureId},type=cv)}"
+                           class="btn btn-sm btn-outline-secondary">CV</a>
+                        <span th:unless="${c.hasCv()}" class="text-muted">—</span>
+                    </td>
+                    <td>
+                        <span th:class="${c.statusBadgeClass}" th:text="${c.statusLabel}"></span>
+                    </td>
+                    <td>
+                        <a th:href="@{/recruteur/candidature/{id}(id=${c.candidatureId})}"
+                           class="btn btn-sm btn-outline-primary me-1">Détails</a>
+                        <!-- Changement de statut rapide -->
+                        <form th:action="@{/recruteur/candidature/{id}/statut(id=${c.candidatureId})}"
+                              method="POST" class="d-inline">
+                            <select name="status" class="form-select form-select-sm d-inline-block w-auto"
+                                    onchange="this.form.submit()">
+                                <option value="">Changer…</option>
+                                <option value="EN_COURS">En cours</option>
+                                <option value="ENTRETIEN">Entretien</option>
+                                <option value="ACCEPTEE">Acceptée</option>
+                                <option value="REFUSEE">Refusée</option>
+                            </select>
+                        </form>
+                    </td>
                 </tr>
                 </tbody>
             </table>

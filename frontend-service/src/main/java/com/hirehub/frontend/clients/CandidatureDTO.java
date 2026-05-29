@@ -21,7 +21,7 @@ public class CandidatureDTO {
     private String offreId;
     private String cvPath;
     private String lettreMotivationPath;
-    private String status; // EN_COURS, ACCEPTÉE, REJETÉE, EN_ATTENTE
+    private String status; // SOUMISE, EN_COURS, ENTRETIEN, ACCEPTEE, REFUSEE
     private LocalDateTime dateSoumission;
     private LocalDateTime dateModification;
 }

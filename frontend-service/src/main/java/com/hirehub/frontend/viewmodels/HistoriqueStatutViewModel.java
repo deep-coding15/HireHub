@@ -6,24 +6,17 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-
-/**
- * ViewModel pour afficher l'historique des statuts
- */
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class HistoriqueStatutViewModel {
-    private String id;
-    private String candidatureId;
     private String ancienStatus;
     private String nouveauStatus;
+    private String auteur;
     private String commentaire;
-    private LocalDateTime dateChangement;
-    private String utilisateurId;
+    private String timestamp;
+    // Computed display properties
     private String ancienStatusLabel;
     private String nouveauStatusLabel;
     private String ancienStatusBadgeClass;
@@ -31,47 +24,46 @@ public class HistoriqueStatutViewModel {
 
     public static HistoriqueStatutViewModel fromDTO(HistoriqueStatutDTO dto) {
         HistoriqueStatutViewModel vm = new HistoriqueStatutViewModel();
-        vm.setId(dto.getId());
-        vm.setCandidatureId(dto.getCandidatureId());
-        vm.setAncienStatus(dto.getAncienStatus());
-        vm.setNouveauStatus(dto.getNouveauStatus());
+        vm.setAncienStatus(dto.getAncienStatut());
+        vm.setNouveauStatus(dto.getNouveauStatut());
+        vm.setAuteur(dto.getAuteur());
         vm.setCommentaire(dto.getCommentaire());
-        vm.setDateChangement(dto.getDateChangement());
-        vm.setUtilisateurId(dto.getUtilisateurId());
+        vm.setTimestamp(dto.getTimestamp());
 
-        vm.setAncienStatusLabel(formatStatus(dto.getAncienStatus()));
-        vm.setNouveauStatusLabel(formatStatus(dto.getNouveauStatus()));
-        vm.setAncienStatusBadgeClass(getStatusBadgeClass(dto.getAncienStatus()));
-        vm.setNouveauStatusBadgeClass(getStatusBadgeClass(dto.getNouveauStatus()));
+        vm.setAncienStatusLabel(formatStatus(dto.getAncienStatut()));
+        vm.setNouveauStatusLabel(formatStatus(dto.getNouveauStatut()));
+        vm.setAncienStatusBadgeClass(getStatusBadgeClass(dto.getAncienStatut()));
+        vm.setNouveauStatusBadgeClass(getStatusBadgeClass(dto.getNouveauStatut()));
 
         return vm;
     }
 
+    /** Retourne le timestamp déjà formaté par le service ("yyyy-MM-dd HH:mm:ss"). */
     public String getDateChangementFormatted() {
-        if (dateChangement == null) return "-";
-        return dateChangement.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm"));
+        return timestamp != null ? timestamp : "-";
     }
 
     private static String formatStatus(String status) {
         if (status == null) return "-";
         return switch (status) {
-            case "EN_COURS" -> "En cours";
-            case "ACCEPTÉE" -> "Acceptée";
-            case "REJETÉE" -> "Rejetée";
-            case "EN_ATTENTE" -> "En attente";
-            default -> status;
+            case "SOUMISE"   -> "Soumise";
+            case "EN_COURS"  -> "En cours";
+            case "ENTRETIEN" -> "Entretien";
+            case "ACCEPTEE"  -> "Acceptée";
+            case "REFUSEE"   -> "Refusée";
+            default          -> status;
         };
     }
 
     private static String getStatusBadgeClass(String status) {
         if (status == null) return "badge bg-secondary";
         return switch (status) {
-            case "EN_COURS" -> "badge bg-warning";
-            case "ACCEPTÉE" -> "badge bg-success";
-            case "REJETÉE" -> "badge bg-danger";
-            case "EN_ATTENTE" -> "badge bg-info";
-            default -> "badge bg-secondary";
+            case "SOUMISE"   -> "badge bg-info";
+            case "EN_COURS"  -> "badge bg-warning";
+            case "ENTRETIEN" -> "badge bg-primary";
+            case "ACCEPTEE"  -> "badge bg-success";
+            case "REFUSEE"   -> "badge bg-danger";
+            default          -> "badge bg-secondary";
         };
     }
 }
-

@@ -45,24 +45,27 @@ public class CandidatureViewModel {
         vm.setDateSoumission(dto.getDateSoumission());
         vm.setDateModification(dto.getDateModification());
 
-        // Définir le label et la classe CSS du statut
         if (dto.getStatus() != null) {
             switch (dto.getStatus()) {
+                case "SOUMISE":
+                    vm.setStatusLabel("Soumise");
+                    vm.setStatusBadgeClass("badge bg-info");
+                    break;
                 case "EN_COURS":
                     vm.setStatusLabel("En cours");
                     vm.setStatusBadgeClass("badge bg-warning");
                     break;
-                case "ACCEPTÉE":
+                case "ENTRETIEN":
+                    vm.setStatusLabel("Entretien");
+                    vm.setStatusBadgeClass("badge bg-primary");
+                    break;
+                case "ACCEPTEE":
                     vm.setStatusLabel("Acceptée");
                     vm.setStatusBadgeClass("badge bg-success");
                     break;
-                case "REJETÉE":
-                    vm.setStatusLabel("Rejetée");
+                case "REFUSEE":
+                    vm.setStatusLabel("Refusée");
                     vm.setStatusBadgeClass("badge bg-danger");
-                    break;
-                case "EN_ATTENTE":
-                    vm.setStatusLabel("En attente");
-                    vm.setStatusBadgeClass("badge bg-info");
                     break;
                 default:
                     vm.setStatusLabel(dto.getStatus());

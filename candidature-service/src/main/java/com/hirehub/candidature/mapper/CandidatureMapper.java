@@ -6,7 +6,6 @@ import com.hirehub.candidature.entities.Candidature;
 import com.hirehub.common.dtos.candidatures.CandidatureDTO;
 import org.springframework.stereotype.Component;
 
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Component
@@ -29,17 +28,16 @@ public final class CandidatureMapper {
 
     public CandidatureResponseDTO toResponseDTO(Candidature candidature) {
 
-        CandidatureResponseDTO candidatureResponseDTO =new CandidatureResponseDTO();
+        CandidatureResponseDTO candidatureResponseDTO = new CandidatureResponseDTO();
 
         candidatureResponseDTO.setId(candidature.getId());
         candidatureResponseDTO.setOffreId(candidature.getOffreId());
         candidatureResponseDTO.setCandidatId(candidature.getCandidatId());
-        candidatureResponseDTO.setMessage("Candidature crée");
-
-        candidatureResponseDTO.setCreatedAt(candidature.getDateModification()
-                .format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-
         candidatureResponseDTO.setStatus(candidature.getStatus().getLabel());
+        candidatureResponseDTO.setCvPath(candidature.getCvPath());
+        candidatureResponseDTO.setLettreMotivationPath(candidature.getLettreMotivationPath());
+        candidatureResponseDTO.setDateSoumission(candidature.getDateSoumission());
+        candidatureResponseDTO.setDateModification(candidature.getDateModification());
 
         return candidatureResponseDTO;
     }

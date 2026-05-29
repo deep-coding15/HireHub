@@ -8,39 +8,43 @@
 <section layout:fragment="content" class="page-inner">
     <div class="container">
         <h1 class="page-hero-title">Mes candidatures</h1>
-        <p class="page-hero-sub">Fil d’étapes par candidature — données mock.</p>
 
-        <div class="hh-card mb-4">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                <div>
-                    <h2 class="h5 mb-0" style="color: var(--hh-violet-900);">Développeur Java / Spring</h2>
-                    <small class="text-muted">Tétouan · CDI</small>
-                </div>
-                <span class="badge badge-statut-encours rounded-pill">En cours</span>
-            </div>
-            <div class="hh-timeline">
-                <div class="hh-timeline-item">
-                    <strong>Soumise</strong>
-                    <div class="small text-muted">10/03/2026 — CV reçu</div>
-                </div>
-                <div class="hh-timeline-item">
-                    <strong>En cours d’étude</strong>
-                    <div class="small text-muted">12/03/2026 — équipe RH</div>
-                </div>
-                <div class="hh-timeline-item mb-0">
-                    <strong>Entretien planifié</strong>
-                    <div class="small text-muted">Voir <a th:href="@{/candidat/entretiens}">Mes entretiens</a></div>
-                </div>
-            </div>
+        <div th:if="${error}" class="alert alert-danger">
+            <span th:text="${error}"></span>
         </div>
 
-        <div class="hh-card">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-0">
+        <div th:if="${success}" class="alert alert-success">
+            <span th:text="${success}"></span>
+        </div>
+
+        <div th:if="${candidatures != null and candidatures.isEmpty()}" class="alert alert-info">
+            Vous n'avez pas encore de candidature.
+        </div>
+
+        <div th:each="candidature : ${candidatures}" class="hh-card mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
                 <div>
-                    <h2 class="h5 mb-0" style="color: var(--hh-violet-900);">Stage PFE — Full-stack</h2>
-                    <small class="text-muted">Rabat · Stage</small>
+                    <h2 class="h5 mb-0" style="color: var(--hh-violet-900);">
+                        Offre <code th:text="${candidature.offreId}"></code>
+                    </h2>
+                    <small class="text-muted"
+                           th:text="'Soumise le ' + ${candidature.getDateSoumissionFormatted()}"></small>
                 </div>
-                <span class="badge badge-statut-soumise rounded-pill">Soumise</span>
+                <span th:class="${candidature.statusBadgeClass}"
+                      th:text="${candidature.statusLabel}"></span>
+            </div>
+            <div class="d-flex gap-2 mt-3">
+                <a th:href="@{/candidat/candidature/{id}(id=${candidature.id})}"
+                   class="btn btn-sm btn-outline-primary">Détails</a>
+                <a th:href="@{/candidat/candidature/{id}/historique(id=${candidature.id})}"
+                   class="btn btn-sm btn-outline-secondary">Historique</a>
+                <form th:action="@{/candidat/candidature/{id}/delete(id=${candidature.id})}"
+                      method="POST" class="d-inline">
+                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                            onclick="return confirm('Retirer cette candidature ?')">
+                        Retirer
+                    </button>
+                </form>
             </div>
         </div>
     </div>
