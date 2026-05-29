@@ -1,0 +1,30 @@
+# Exclure du contexte de build Docker pour accélérer les transferts
+
+.git
+.gitignore
+.github
+
+# Docs & scripts
+docs/
+scripts/
+postman/
+*.md
+
+# Artefacts Maven (reconstruits dans le builder)
+**/target/
+**/.mvn/
+
+# Configs Docker (non nécessaires dans le builder)
+docker/
+docker-compose*.yml
+
+# Logs et temporaires
+*.log
+*.tmp
+**/*.log
+
+# Environnements locaux
+.env
+.env.*
+**/application-local.yml
+**/application-local.yaml

@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS entretiens (
-                                          id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     candidature_id VARCHAR(255) NOT NULL,
     candidat_id    VARCHAR(255) NOT NULL,
     recruteur_id   VARCHAR(255) NOT NULL,
