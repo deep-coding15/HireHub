@@ -1,5 +1,6 @@
 # Exclure du contexte de build Docker pour accélérer les transferts
 
+.claude
 .git
 .gitignore
 .github

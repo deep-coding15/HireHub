@@ -112,6 +112,7 @@ services:
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: eureka-server
+        SERVER_PORT: 8761
     container_name: hirehub-eureka
     restart: unless-stopped
     ports:
@@ -135,6 +136,7 @@ services:
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: config-server
+        SERVER_PORT: 8888
     container_name: hirehub-config
     restart: unless-stopped
     ports:
@@ -158,6 +160,7 @@ services:
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: api-gateway
+        SERVER_PORT: 8089
     container_name: hirehub-gateway
     restart: unless-stopped
     ports:
@@ -182,6 +185,7 @@ services:
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: auth-service
+        SERVER_PORT: 8081
     container_name: hirehub-auth
     restart: unless-stopped
     ports:
@@ -220,6 +224,7 @@ services:
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: verification-service
+        SERVER_PORT: 8090
     container_name: hirehub-verification
     restart: unless-stopped
     ports:
@@ -251,6 +256,7 @@ services:
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: offre-service
+        SERVER_PORT: 8092
     container_name: hirehub-offre
     restart: unless-stopped
     ports:
@@ -280,6 +286,7 @@ services:
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: candidature-service
+        SERVER_PORT: 8083
     container_name: hirehub-candidature
     restart: unless-stopped
     ports:
@@ -320,6 +327,7 @@ services:
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: event-service
+        SERVER_PORT: 8084
     container_name: hirehub-event
     restart: unless-stopped
     ports:
@@ -356,6 +364,7 @@ services:
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: email-service
+        SERVER_PORT: 8093
     container_name: hirehub-email
     restart: unless-stopped
     ports:
@@ -402,6 +411,7 @@ services:
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: entretien-service
+        SERVER_PORT: 8085
     container_name: hirehub-entretien
     restart: unless-stopped
     ports:
@@ -438,6 +448,7 @@ services:
       dockerfile: Dockerfile
       args:
         SERVICE_NAME: frontend-service
+        SERVER_PORT: 8086
     container_name: hirehub-frontend
     restart: unless-stopped
     ports:
