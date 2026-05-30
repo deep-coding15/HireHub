@@ -27,6 +27,10 @@ spring:
         format_sql: true
     show-sql: false
     open-in-view: false
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
 
   # RabbitMQ Configuration
 
