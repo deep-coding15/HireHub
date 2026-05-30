@@ -1,0 +1,516 @@
+services:
+
+  # ── Infrastructure ───────────────────────────────────────────────────────────
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: hirehub-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hirehub
+      POSTGRES_PASSWORD: hirehub
+    ports:
+      - "55432:5432"
+    volumes:
+      - hirehub-pg-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hirehub -d hirehub_auth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: hirehub-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  rabbitmq:
+    image: rabbitmq:4.3-rc-management-alpine
+    container_name: hirehub-rabbitmq
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: hirehub
+      RABBITMQ_DEFAULT_PASS: hirehub
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - "5672:5672"      # AMQP protocol
+      - "15672:15672"    # Management UI
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - hirehub-rabbitmq-data:/var/lib/rabbitmq
+      - hirehub-rabbitmq-logs:/var/log/rabbitmq
+
+  # ── Observabilité ────────────────────────────────────────────────────────────
+
+  loki:
+    image: grafana/loki:3.0.0
+    container_name: hirehub-loki
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./docker/loki/loki-config.yml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --tries=1 -O- http://localhost:3100/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  promtail:
+    image: grafana/promtail:3.0.0
+    container_name: hirehub-promtail
+    restart: unless-stopped
+    volumes:
+      - ./docker/promtail/promtail-config.yml:/etc/promtail/config.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: -config.file=/etc/promtail/config.yml
+    depends_on:
+      loki:
+        condition: service_healthy
+
+  grafana:
+    image: grafana/grafana:11.0.0
+    container_name: hirehub-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: hirehub
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      loki:
+        condition: service_healthy
+
+  # ── Services applicatifs ─────────────────────────────────────────────────────
+  #
+  # Tous les services sont buildés depuis la racine du monorepo (context: .)
+  # via le Dockerfile multi-stage de la racine. Le build arg SERVICE_NAME
+  # sélectionne quel module Maven packager et quel JAR copier dans l'image.
+  #
+  # Ordre de démarrage :
+  #   1. eureka-server
+  #   2. config-server, api-gateway, et tous les services métier (en parallèle)
+  #   3. frontend-service (attend api-gateway)
+
+  eureka-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: eureka-server
+        SERVER_PORT: 8761
+    container_name: hirehub-eureka
+    restart: unless-stopped
+    ports:
+      - "8761:8761"
+    environment:
+      SERVER_PORT: 8761
+      EUREKA_INSTANCE_HOSTNAME: eureka-server
+      EUREKA_CLIENT_REGISTERWITHEUREKA: "false"
+      EUREKA_CLIENT_FETCHREGISTRY: "false"
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8761/actuator/health || curl -sf http://localhost:8761/"]
+      interval: 15s
+      timeout: 10s
+      start_period: 40s
+      retries: 5
+
+  config-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: config-server
+        SERVER_PORT: 8888
+    container_name: hirehub-config
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    environment:
+      SERVER_PORT: 8888
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 40s
+      retries: 5
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: api-gateway
+        SERVER_PORT: 8089
+    container_name: hirehub-gateway
+    restart: unless-stopped
+    ports:
+      - "8089:8089"
+    environment:
+      SERVER_PORT: 8089
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      HIREHUB_JWT_SECRET: ${HIREHUB_JWT_SECRET:-hirehub-local-dev-jwt-secret-change-me-32b}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8089/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 40s
+      retries: 5
+    depends_on:
+      eureka-server:
+        condition: service_healthy
+
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: auth-service
+        SERVER_PORT: 8081
+    container_name: hirehub-auth
+    restart: unless-stopped
+    ports:
+      - "8081:8081"
+    environment:
+      SERVER_PORT: 8081
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hirehub_auth
+      SPRING_DATASOURCE_USERNAME: hirehub
+      SPRING_DATASOURCE_PASSWORD: hirehub
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: hirehub
+      SPRING_RABBITMQ_PASSWORD: hirehub
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_PREFERIPADDRESS: "true"
+      HIREHUB_JWT_SECRET: ${HIREHUB_JWT_SECRET:-hirehub-local-dev-jwt-secret-change-me-32b}
+      HIREHUB_FRONTEND_BASE_URL: http://frontend-service:8086
+      HIREHUB_RECAPTCHA_ENABLED: "false"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  verification-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: verification-service
+        SERVER_PORT: 8090
+    container_name: hirehub-verification
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    environment:
+      SERVER_PORT: 8090
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: hirehub
+      SPRING_RABBITMQ_PASSWORD: hirehub
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_PREFERIPADDRESS: "true"
+      OCR_SPACE_API_KEY: ${OCR_SPACE_API_KEY:-}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  offre-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: offre-service
+        SERVER_PORT: 8092
+    container_name: hirehub-offre
+    restart: unless-stopped
+    ports:
+      - "8092:8092"
+    environment:
+      SERVER_PORT: 8092
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hirehub_offre
+      SPRING_DATASOURCE_USERNAME: hirehub
+      SPRING_DATASOURCE_PASSWORD: hirehub
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_PREFERIPADDRESS: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8092/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  candidature-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: candidature-service
+        SERVER_PORT: 8083
+    container_name: hirehub-candidature
+    restart: unless-stopped
+    ports:
+      - "8083:8083"
+    environment:
+      SERVER_PORT: 8083
+      # Désactive le profil sandbox (qui coupe OpenFeign) pour Docker
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hirehub_candidature
+      SPRING_DATASOURCE_USERNAME: hirehub
+      SPRING_DATASOURCE_PASSWORD: hirehub
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: hirehub
+      SPRING_RABBITMQ_PASSWORD: hirehub
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_PREFERIPADDRESS: "true"
+      HIREHUB_JWT_SECRET: ${HIREHUB_JWT_SECRET:-hirehub-local-dev-jwt-secret-change-me-32b}
+    volumes:
+      - candidature-uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  event-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: event-service
+        SERVER_PORT: 8084
+    container_name: hirehub-event
+    restart: unless-stopped
+    ports:
+      - "8084:8084"
+    environment:
+      SERVER_PORT: 8084
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: hirehub
+      DB_PASSWORD: hirehub
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: hirehub
+      SPRING_RABBITMQ_PASSWORD: hirehub
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_PREFERIPADDRESS: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  email-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: email-service
+        SERVER_PORT: 8093
+    container_name: hirehub-email
+    restart: unless-stopped
+    ports:
+      - "8093:8093"
+    environment:
+      SERVER_PORT: 8093
+      SPRING_PROFILES_ACTIVE: docker
+      # Override le datasource du profil docker (qui pointe sur hirehub_notification)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hirehub_email
+      SPRING_DATASOURCE_USERNAME: hirehub
+      SPRING_DATASOURCE_PASSWORD: hirehub
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: hirehub
+      RABBITMQ_PASSWORD: hirehub
+      RABBITMQ_VHOST: /
+      # SMTP → mailpit (pas d'auth, pas de TLS)
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      MAIL_FROM: noreply@hirehub.com
+      EUREKA_HOST: eureka-server
+      EUREKA_PORT: 8761
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8093/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+      eureka-server:
+        condition: service_healthy
+
+  entretien-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: entretien-service
+        SERVER_PORT: 8085
+    container_name: hirehub-entretien
+    restart: unless-stopped
+    ports:
+      - "8085:8085"
+    environment:
+      SERVER_PORT: 8085
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hirehub_entretien
+      SPRING_DATASOURCE_USERNAME: hirehub
+      SPRING_DATASOURCE_PASSWORD: hirehub
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: hirehub
+      SPRING_RABBITMQ_PASSWORD: hirehub
+      SPRING_RABBITMQ_VIRTUALHOST: /
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_PREFERIPADDRESS: "true"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+
+  frontend-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: frontend-service
+        SERVER_PORT: 8086
+    container_name: hirehub-frontend
+    restart: unless-stopped
+    ports:
+      - "8086:8086"
+    environment:
+      SERVER_PORT: 8086
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/hirehub_auth
+      SPRING_DATASOURCE_USERNAME: hirehub
+      SPRING_DATASOURCE_PASSWORD: hirehub
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: hirehub
+      SPRING_RABBITMQ_PASSWORD: hirehub
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
+      EUREKA_INSTANCE_PREFERIPADDRESS: "true"
+      HIREHUB_JWT_SECRET: ${HIREHUB_JWT_SECRET:-hirehub-local-dev-jwt-secret-change-me-32b}
+      HIREHUB_API_BASE_URL: http://api-gateway:8089
+      HIREHUB_OFFRE_SERVICE_BASE_URL: http://api-gateway:8089/offre-service
+      HIREHUB_CANDIDATURE_SERVICE_BASE_URL: http://api-gateway:8089/candidature-service
+      HIREHUB_ENTRETIEN_SERVICE_BASE_URL: http://api-gateway:8089/entretien-service
+      HIREHUB_PUBLIC_BASE_URL: http://localhost:8086
+      HIREHUB_UPLOAD_DIR: /app/uploads
+      # Google OAuth2 : renseigner dans un .env ou via les variables d'env de l'hôte
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      # SMTP direct (optionnel si tout passe par email-service via RabbitMQ)
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+    volumes:
+      - frontend-uploads:/app/uploads
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8086/actuator/health"]
+      interval: 20s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+      api-gateway:
+        condition: service_healthy
+
+# ── Volumes ──────────────────────────────────────────────────────────────────
+
+volumes:
+  hirehub-pg-data:
+  hirehub-rabbitmq-data:
+  hirehub-rabbitmq-logs:
+  loki-data:
+  grafana-data:
+  candidature-uploads:
+  frontend-uploads:
+
+# ── Réseau ───────────────────────────────────────────────────────────────────
+
+networks:
+  default:
+    name: hirehub-network
+    driver: bridge

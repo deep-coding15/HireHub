@@ -17,7 +17,7 @@ postman/
 
 # Configs Docker (non nécessaires dans le builder)
 docker/
-docker-compose*.yml
+docker-compose-full.yml
 
 # Logs et temporaires
 *.log

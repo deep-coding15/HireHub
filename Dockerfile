@@ -77,7 +77,7 @@ RUN mvn -pl ${SERVICE_NAME} clean package -DskipTests -q --no-transfer-progress 
 # =============================================================================
 FROM eclipse-temurin:17-jre-alpine
 ARG SERVICE_NAME
-ARG SERVER_PORT=8080
+ARG SERVER_PORT
 
 WORKDIR /app
 
