@@ -217,6 +217,8 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
+      config-server:          
+        condition: service_healthy
 
   verification-service:
     build:
@@ -249,6 +251,8 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
+      config-server:          
+        condition: service_healthy
 
   offre-service:
     build:
@@ -278,6 +282,8 @@ services:
       postgres:
         condition: service_healthy
       eureka-server:
+        condition: service_healthy
+      config-server:          
         condition: service_healthy
 
   candidature-service:
@@ -320,7 +326,8 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
-
+      config-server:          
+        condition: service_healthy
   event-service:
     build:
       context: .
@@ -357,7 +364,8 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
-
+      config-server:
+        condition: service_healthy
   email-service:
     build:
       context: .
@@ -404,6 +412,8 @@ services:
         condition: service_started
       eureka-server:
         condition: service_healthy
+      config-server:          
+        condition: service_healthy
 
   entretien-service:
     build:
@@ -441,7 +451,8 @@ services:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
-
+      config-server:
+        condition: service_healthy
   frontend-service:
     build:
       context: .
@@ -472,13 +483,13 @@ services:
       HIREHUB_PUBLIC_BASE_URL: http://localhost:8086
       HIREHUB_UPLOAD_DIR: /app/uploads
       # Google OAuth2 : renseigner dans un .env ou via les variables d'env de l'hôte
-      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
-      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-1047789248061-nf38bc60ftnjjr5rncuerj6ijb7gffmf.apps.googleusercontent.com}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-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}
       # SMTP direct (optionnel si tout passe par email-service via RabbitMQ)
       MAIL_HOST: mailpit
       MAIL_PORT: 1025
-      MAIL_USERNAME: ""
-      MAIL_PASSWORD: ""
+      MAIL_USERNAME: "da805632@gmail.com"
+      MAIL_PASSWORD: "yqjj ioww stak epjg"
     volumes:
       - frontend-uploads:/app/uploads
     healthcheck:
@@ -493,6 +504,8 @@ services:
       rabbitmq:
         condition: service_healthy
       eureka-server:
+        condition: service_healthy
+      config-server:
         condition: service_healthy
       api-gateway:
         condition: service_healthy

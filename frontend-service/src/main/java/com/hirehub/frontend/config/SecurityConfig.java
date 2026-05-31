@@ -5,16 +5,18 @@ import com.hirehub.frontend.auth.JwtSessionEnrichmentFilter;
 import com.hirehub.frontend.auth.LogoutNotificationHandler;
 import com.hirehub.frontend.auth.SessionAuthSupport;
 import com.hirehub.frontend.oauth.GoogleOAuth2LoginSuccessHandler;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.oauth2.client.CommonOAuth2Provider;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.SecurityContextRepository;
@@ -26,6 +28,28 @@ public class SecurityConfig {
 
     @Value("${spring.security.oauth2.client.registration.google.client-id:}")
     private String googleOAuthClientId;
+
+    @Value("${spring.security.oauth2.client.registration.google.client-secret:}")
+    private String googleOAuthClientSecret;
+
+    /**
+     * Provide our own ClientRegistrationRepository so Spring Boot's
+     * OAuth2ClientRegistrationRepositoryConfiguration (@ConditionalOnMissingBean) is skipped.
+     * That auto-config validates OAuth2ClientProperties eagerly and crashes with
+     * "Client id must not be empty" when GOOGLE_OAUTH_CLIENT_ID is not set.
+     */
+    @Bean
+    public ClientRegistrationRepository clientRegistrationRepository() {
+        if (StringUtils.hasText(googleOAuthClientId) && StringUtils.hasText(googleOAuthClientSecret)) {
+            ClientRegistration google = CommonOAuth2Provider.GOOGLE.getBuilder("google")
+                    .clientId(googleOAuthClientId)
+                    .clientSecret(googleOAuthClientSecret)
+                    .scope("openid", "profile", "email")
+                    .build();
+            return new InMemoryClientRegistrationRepository(google);
+        }
+        return registrationId -> null;
+    }
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -68,7 +92,6 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             DaoAuthenticationProvider authenticationProvider,
-            ObjectProvider<ClientRegistrationRepository> clientRegistrations,
             GoogleOAuth2LoginSuccessHandler googleOAuth2LoginSuccessHandler,
             JwtSessionEnrichmentFilter jwtSessionEnrichmentFilter,
             LogoutNotificationHandler logoutNotificationHandler
@@ -103,7 +126,7 @@ public class SecurityConfig {
                 .loginPage("/login")
                 .permitAll()
                 .defaultSuccessUrl("/", true));
-        if (StringUtils.hasText(googleOAuthClientId) && clientRegistrations.getIfAvailable() != null) {
+        if (StringUtils.hasText(googleOAuthClientId) && StringUtils.hasText(googleOAuthClientSecret)) {
             http.oauth2Login(o -> o.loginPage("/login").successHandler(googleOAuth2LoginSuccessHandler));
         }
         http.logout(logout -> logout

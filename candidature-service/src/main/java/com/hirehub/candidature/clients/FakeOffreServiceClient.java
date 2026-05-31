@@ -3,7 +3,6 @@ package com.hirehub.candidature.clients;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -23,27 +22,21 @@ public class FakeOffreServiceClient implements IOffreServiceClient {
                 "Développeur Java Spring Boot",
                 "Créer et maintenir des microservices HireHub",
                 "recruteur-1",
-                true,
-                Instant.now().toEpochMilli(),
-                Instant.now().toEpochMilli()));
+                "PUBLIEE"));
 
         offers.put("1002", new OffreDTO(
                 "1002",
                 "Développeur Frontend Angular",
                 "Intégration frontend avec les API microservices",
                 "recruteur-2",
-                true,
-                Instant.now().toEpochMilli(),
-                Instant.now().toEpochMilli()));
+                "PUBLIEE"));
 
         offers.put("1003", new OffreDTO(
                 "1003",
                 "Offre brouillon non publiée",
                 "Cette offre sert à tester le cas non publié",
                 "recruteur-1",
-                false,
-                Instant.now().toEpochMilli(),
-                Instant.now().toEpochMilli()));
+                "BROUILLON"));
     }
 
     @Override

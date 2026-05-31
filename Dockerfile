@@ -66,7 +66,7 @@ RUN mvn -pl hirehub-common clean install -DskipTests -q --no-transfer-progress \
 # ── 5. Build du service cible (SPÉCIFIQUE au service) ────────────────────────
 #    ARG déclaré ici → tout ce qui précède est en cache et partagé !
 ARG SERVICE_NAME
-RUN mvn -pl ${SERVICE_NAME} clean package -DskipTests -q --no-transfer-progress \
+RUN mvn -T 1C -pl ${SERVICE_NAME} clean package -DskipTests -q --no-transfer-progress \
       -Dmaven.wagon.http.retryHandler.count=5 \
       -Dmaven.wagon.httpconnectionManager.ttlSeconds=25 \
       -Dmaven.wagon.http.pool=false \
@@ -84,6 +84,9 @@ WORKDIR /app
 RUN apk add --no-cache curl && \
     addgroup -g 1001 appgroup && \
     adduser  -D -u 1001 -G appgroup appuser
+
+# Convertir l'ARG en ENV pour qu'il soit disponible au runtime
+ENV SERVER_PORT=${SERVER_PORT}
 
 COPY --from=builder /workspace/${SERVICE_NAME}/target/*.jar app.jar
 RUN chown appuser:appgroup app.jar

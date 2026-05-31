@@ -197,9 +197,17 @@ public class CandidatureFrontendClient {
         if (raw != null && raw.contains("deja postule")) {
             return "Vous avez déjà postulé à cette offre.";
         }
-        if (raw != null && raw.contains("message")) {
-            return "Candidature refusée : vérifiez que l'offre est publiée et que vous êtes connecté en tant que candidat.";
+        if (raw != null && raw.contains("déjà postulé")) {
+            return "Vous avez déjà postulé à cette offre.";
         }
-        return "Impossible d'enregistrer la candidature.";
+        try {
+            com.fasterxml.jackson.databind.JsonNode node =
+                    new com.fasterxml.jackson.databind.ObjectMapper().readTree(raw);
+            com.fasterxml.jackson.databind.JsonNode msg = node.get("message");
+            if (msg != null && !msg.asText().isBlank()) {
+                return msg.asText();
+            }
+        } catch (Exception ignored) {}
+        return "Impossible d'enregistrer la candidature (HTTP " + ex.getStatusCode().value() + ").";
     }
 }

@@ -6,7 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 /**
- * DTO pour les offres d'emploi (depuis offre-service)
+ * DTO pour les offres d'emploi (depuis offre-service).
+ * Miroir de OffreResponse : le champ {@code statut} vaut "PUBLIEE", "BROUILLON" ou "FERMEE".
  */
 @Getter
 @Setter
@@ -17,8 +18,10 @@ public class OffreDTO {
     private String titre;
     private String description;
     private String recruteurId;
-    private boolean published;
-    private long createdAt;
-    private long updatedAt;
+    private String statut;
+
+    public boolean isPublished() {
+        return "PUBLIEE".equals(statut);
+    }
 }
 
