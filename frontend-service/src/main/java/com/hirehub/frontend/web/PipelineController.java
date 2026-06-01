@@ -123,9 +123,13 @@ public class PipelineController {
                 return "redirect:/recruteur/pipeline/" + candidature.getOffreId();
             }
             return "redirect:/recruteur/offres";
+        } catch (com.hirehub.frontend.candidature.CandidatureServiceException e) {
+            log.warn("Changement statut refusé pour candidature {} : {}", id, e.getMessage());
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
+            return "redirect:/recruteur/candidature/" + id;
         } catch (Exception e) {
-            log.error("Erreur lors du changement de statut", e);
-            redirectAttributes.addFlashAttribute("error", "Erreur : " + e.getMessage());
+            log.error("Erreur inattendue changement statut candidature {}", id, e);
+            redirectAttributes.addFlashAttribute("error", "Une erreur est survenue. Veuillez réessayer.");
             return "redirect:/recruteur/candidature/" + id;
         }
     }
@@ -215,11 +219,36 @@ public class PipelineController {
             CandidatureDTO dto = candidatureFrontendClient.getCandidature(id).orElse(null);
             if (dto != null) return "redirect:/recruteur/pipeline/" + dto.getOffreId();
             return "redirect:/recruteur/offres";
+        } catch (com.hirehub.frontend.entretien.EntretienException e) {
+            log.warn("Planification entretien refusée : {}", e.getMessage());
+            redirectAttributes.addFlashAttribute("error", toUserMessage(e.getMessage()));
+            return "redirect:/recruteur/candidature/" + id + "/planifier-entretien";
         } catch (Exception e) {
-            log.error("Erreur planification entretien", e);
-            redirectAttributes.addFlashAttribute("error", "Erreur : " + e.getMessage());
+            log.error("Erreur inattendue planification entretien", e);
+            redirectAttributes.addFlashAttribute("error", "Une erreur est survenue. Veuillez réessayer.");
             return "redirect:/recruteur/candidature/" + id + "/planifier-entretien";
         }
+    }
+
+    private static String toUserMessage(String serverMsg) {
+        if (serverMsg == null) return "Une erreur est survenue. Veuillez réessayer.";
+        return switch (serverMsg) {
+            case "Le recruteur a deja un entretien sur ce creneau" ->
+                    "Vous avez déjà un entretien prévu à ce créneau. Veuillez choisir une autre heure.";
+            case "Le candidat a deja un entretien sur ce creneau" ->
+                    "Ce candidat a déjà un entretien prévu à ce créneau. Veuillez choisir une autre heure.";
+            case "Un entretien est deja planifie pour cette candidature" ->
+                    "Un entretien est déjà planifié pour ce candidat.";
+            case "La date de l'entretien doit etre dans le futur" ->
+                    "La date et l'heure de l'entretien doivent être dans le futur.";
+            case "Le lieu est obligatoire pour un entretien presentiel" ->
+                    "Veuillez saisir l'adresse pour un entretien en présentiel.";
+            case "Le lien visio est obligatoire pour un entretien visio" ->
+                    "Veuillez fournir le lien de la réunion pour un entretien en visioconférence.";
+            case "candidatureId est obligatoire", "recruteurId est obligatoire", "type est obligatoire" ->
+                    "Données manquantes. Veuillez compléter tous les champs.";
+            default -> serverMsg;
+        };
     }
 
     private void enrichWithOffre(CandidatureViewModel vm) {

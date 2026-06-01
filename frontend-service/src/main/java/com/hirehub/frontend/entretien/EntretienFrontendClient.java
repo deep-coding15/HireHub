@@ -57,11 +57,25 @@ public class EntretienFrontendClient {
             if (body != null && body.getData() != null) return body.getData();
             throw new EntretienException("Réponse invalide du service entretien");
         } catch (HttpStatusCodeException ex) {
-            log.warn("Création entretien : {} {}", ex.getStatusCode(), ex.getResponseBodyAsString());
-            throw new EntretienException("Impossible de planifier l'entretien : " + ex.getStatusCode());
+            String msg = extractMessage(ex);
+            log.warn("Création entretien : {} — {}", ex.getStatusCode(), msg);
+            throw new EntretienException(msg);
         } catch (RestClientException ex) {
             throw new EntretienException("Service entretien indisponible", ex);
         }
+    }
+
+    private static String extractMessage(HttpStatusCodeException ex) {
+        try {
+            com.fasterxml.jackson.databind.JsonNode node =
+                    new com.fasterxml.jackson.databind.ObjectMapper()
+                            .readTree(ex.getResponseBodyAsString());
+            com.fasterxml.jackson.databind.JsonNode msg = node.get("message");
+            if (msg != null && !msg.isNull() && !msg.asText().isBlank()) {
+                return msg.asText();
+            }
+        } catch (Exception ignored) {}
+        return "Impossible de planifier l'entretien (erreur " + ex.getStatusCode().value() + ")";
     }
 
     public List<EntretienView> listByCandidature(String candidatureId) {

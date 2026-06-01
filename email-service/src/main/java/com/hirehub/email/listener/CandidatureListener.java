@@ -76,8 +76,12 @@ public class CandidatureListener {
         }
     }
 
+    private static final java.util.Set<String> STATUTS_AVEC_EMAIL =
+            java.util.Set.of("ACCEPTEE", "REFUSEE", "ENTRETIEN");
+
     /**
      * Écoute les événements de changement de statut de candidature.
+     * Envoie un email uniquement pour ACCEPTEE, REFUSEE et ENTRETIEN.
      */
     @RabbitListener(queues = RabbitMQConstants.QUEUE_NOTIFICATION_STATUT)
     public void handleCandidatureStatutChanged(@Payload EmailEventDTO event) {
@@ -85,20 +89,34 @@ public class CandidatureListener {
             if (event.getCorrelationId() != null) {
                 MDC.put("correlationId", event.getCorrelationId());
             }
-            String eventId = event.getEventId();
-            log.info("[CANDIDATURE.STATUT.CHANGED] Traitement de l'événement {} pour: {}", eventId, event.getRecipientEmail());
+            String eventId   = event.getEventId();
+            String newStatus = event.getPayload() != null
+                    ? (String) event.getPayload().get("newStatus") : null;
 
-            // Extraire les données du payload
+            // Ignorer silencieusement les statuts sans email (ex : EN_COURS)
+            if (newStatus == null || !STATUTS_AVEC_EMAIL.contains(newStatus.toUpperCase())) {
+                log.debug("[CANDIDATURE.STATUT.CHANGED] Statut {} sans notification email — ignoré", newStatus);
+                return;
+            }
+
+            // Idempotence
+            if (idempotenceService.isAlreadyProcessed(eventId)) {
+                log.warn("[CANDIDATURE.STATUT.CHANGED] Événement {} déjà traité, abandon", eventId);
+                return;
+            }
+
+            log.info("[CANDIDATURE.STATUT.CHANGED] Traitement '{}' eventId={} pour: {}",
+                    newStatus, eventId, event.getRecipientEmail());
+
             String offerTitle = (String) event.getPayload().get("offerTitle");
-            String oldStatus = (String) event.getPayload().get("oldStatus");
-            String newStatus = (String) event.getPayload().get("newStatus");
-            String comment = (String) event.getPayload().get("comment");
+            String oldStatus  = (String) event.getPayload().get("oldStatus");
+            String comment    = (String) event.getPayload().get("comment");
 
-            // L'email du candidat vient du payload — c'est la source de vérité
+            // L'email du candidat vient du payload — source de vérité
             String candidatEmail = event.getRecipientEmail();
-            String candidatName = event.getRecipientName();
+            String candidatName  = event.getRecipientName();
 
-            // Feign : enrichir uniquement le NOM d'affichage (best-effort, jamais bloquant)
+            // Feign : enrichir le NOM uniquement (best-effort, jamais bloquant)
             if (event.getPayload().get("candidatId") != null) {
                 try {
                     UserInfoDTO user = authServiceClientAPI.getUserById(
@@ -107,23 +125,23 @@ public class CandidatureListener {
                         candidatName = user.getFirstName();
                     }
                 } catch (Exception ex) {
-                    log.warn("[CANDIDATURE.STATUT.CHANGED] Impossible de récupérer le nom du candidat: {}", ex.getMessage());
+                    log.warn("[CANDIDATURE.STATUT.CHANGED] Nom candidat indisponible: {}", ex.getMessage());
                 }
             }
 
             emailService.sendCandidatureStatutChangedNotification(
-                    candidatEmail,
-                    candidatName,
-                    offerTitle,
-                    oldStatus,
-                    newStatus,
-                    comment
-            );
+                    candidatEmail, candidatName, offerTitle, oldStatus, newStatus, comment);
 
-            log.info("[CANDIDATURE.STATUT.CHANGED] OK - Email envoye a: {}", event.getRecipientEmail());
+            idempotenceService.markAsProcessed(eventId, event.getEventType(), candidatEmail);
+            log.info("[CANDIDATURE.STATUT.CHANGED] OK '{}' → {}", newStatus, candidatEmail);
 
         } catch (Exception e) {
             log.error("[CANDIDATURE.STATUT.CHANGED] ERREUR lors du traitement", e);
+            try {
+                idempotenceService.markAsFailed(
+                        event.getEventId(), event.getEventType(),
+                        event.getRecipientEmail(), e.getMessage());
+            } catch (Exception ignored) {}
             throw new RuntimeException("Erreur traitement changement statut", e);
         } finally {
             MDC.clear();

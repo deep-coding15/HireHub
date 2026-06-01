@@ -15,6 +15,7 @@ spring:
           auth: false
           starttls:
             enable: false
+            required: false
 
   datasource:
     url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/hirehub_notification

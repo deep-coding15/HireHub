@@ -106,7 +106,7 @@ public class CandidatureFrontendClient {
         try {
             restTemplate.exchange(url, HttpMethod.PUT, authEntity(null), Void.class);
         } catch (HttpStatusCodeException ex) {
-            throw new CandidatureServiceException("Changement de statut refusé", ex);
+            throw new CandidatureServiceException(parseError(ex), ex);
         } catch (RestClientException ex) {
             throw new CandidatureServiceException("Service candidatures indisponible", ex);
         }
@@ -208,20 +208,33 @@ public class CandidatureFrontendClient {
 
     private String parseError(HttpStatusCodeException ex) {
         String raw = ex.getResponseBodyAsString();
-        if (raw != null && raw.contains("deja postule")) {
-            return "Vous avez déjà postulé à cette offre.";
-        }
-        if (raw != null && raw.contains("déjà postulé")) {
-            return "Vous avez déjà postulé à cette offre.";
-        }
+        // Extraire le champ "message" du JSON si présent
         try {
             com.fasterxml.jackson.databind.JsonNode node =
                     new com.fasterxml.jackson.databind.ObjectMapper().readTree(raw);
             com.fasterxml.jackson.databind.JsonNode msg = node.get("message");
-            if (msg != null && !msg.asText().isBlank()) {
-                return msg.asText();
+            if (msg != null && !msg.isNull() && !msg.asText().isBlank()) {
+                return translateCandidatureError(msg.asText());
             }
         } catch (Exception ignored) {}
-        return "Impossible d'enregistrer la candidature (HTTP " + ex.getStatusCode().value() + ").";
+        return "Une erreur est survenue (HTTP " + ex.getStatusCode().value() + ").";
+    }
+
+    private static String translateCandidatureError(String serverMsg) {
+        if (serverMsg == null) return "Une erreur est survenue.";
+        if (serverMsg.contains("deja postule") || serverMsg.contains("déjà postulé")
+                || serverMsg.contains("Vous avez déjà postulé")) {
+            return "Vous avez déjà postulé à cette offre.";
+        }
+        if (serverMsg.startsWith("Transition invalide")) {
+            return "Cette action n'est pas autorisée pour l'état actuel de la candidature.";
+        }
+        if (serverMsg.contains("non trouvée") || serverMsg.contains("introuvable")) {
+            return "Candidature introuvable.";
+        }
+        if (serverMsg.contains("Statut invalide")) {
+            return "Statut invalide.";
+        }
+        return serverMsg;
     }
 }
