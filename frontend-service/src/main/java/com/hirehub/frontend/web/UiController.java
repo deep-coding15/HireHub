@@ -30,6 +30,7 @@ import org.springframework.security.core.Authentication;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.UUID;
+import java.util.List;
 
 
 /**
@@ -175,7 +176,30 @@ public class UiController {
     public String candidatEntretiens(Model model, org.springframework.security.core.Authentication auth) {
         try {
             if (auth != null && auth.getPrincipal() instanceof HirehubUserDetails details) {
-                model.addAttribute("entretiens", entretienFrontendClient.listForCandidat(details));
+                List<com.hirehub.frontend.entretien.EntretienView> entretiens = entretienFrontendClient.listForCandidat(details);
+                
+                // Enrichir avec le nom de l'offre
+                for (com.hirehub.frontend.entretien.EntretienView e : entretiens) {
+                    try {
+                        // Récupérer la candidature pour obtenir l'ID de l'offre
+                        var candidature = candidatureFrontendClient.getCandidature(e.getCandidatureId());
+                        if (candidature.isPresent() && candidature.get().getOffreId() != null) {
+                            // Récupérer les détails de l'offre pour le nom
+                            Long offreId = Long.parseLong(candidature.get().getOffreId());
+                            OffreView offre = offreFrontendClient.detail(offreId);
+                            if (offre != null && offre.getTitre() != null) {
+                                e.setOffreNom(offre.getTitre());
+                            } else {
+                                e.setOffreNom("Offre indisponible");
+                            }
+                        }
+                    } catch (Exception ex) {
+                        log.warn("Impossible de récupérer l'offre pour l'entretien {}: {}", e.getId(), ex.getMessage());
+                        e.setOffreNom("Offre indisponible");
+                    }
+                }
+                
+                model.addAttribute("entretiens", entretiens);
             } else {
                 model.addAttribute("entretiens", java.util.List.of());
             }

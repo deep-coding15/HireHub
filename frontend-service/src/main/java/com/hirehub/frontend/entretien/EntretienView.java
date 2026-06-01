@@ -15,6 +15,7 @@ public class EntretienView {
     private String type;
     private String notesInternes;
     private String status;
+    private String offreNom; // Nom de l'offre d'emploi
 
     public String getId() {
         return id;
@@ -89,6 +90,14 @@ public class EntretienView {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getOffreNom() {
+        return offreNom;
+    }
+
+    public void setOffreNom(String offreNom) {
+        this.offreNom = offreNom;
     }
 
     public String getTypeLabel() {
