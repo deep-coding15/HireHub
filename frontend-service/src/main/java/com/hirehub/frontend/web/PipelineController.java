@@ -16,6 +16,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.hirehub.frontend.entretien.EntretienView;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -82,6 +84,18 @@ public class PipelineController {
             vm.enrichWithOffre(offre);
 
             model.addAttribute("candidature", vm);
+
+            // Charger l'entretien associé (planifié ou annulé) pour l'afficher dans "Décision"
+            try {
+                entretienFrontendClient.listByCandidature(id).stream()
+                        .filter(e -> "PLANIFIE".equals(e.getStatus()) || "ANNULE".equals(e.getStatus()))
+                        .max(java.util.Comparator.comparing(
+                                e -> e.getDateHeure() != null ? e.getDateHeure() : java.time.LocalDateTime.MIN))
+                        .ifPresent(e -> model.addAttribute("entretien", e));
+            } catch (Exception ex) {
+                log.warn("Entretien non disponible pour la candidature {}: {}", id, ex.getMessage());
+            }
+
             return "pages/recruteur/candidature-detail";
         } catch (Exception e) {
             log.error("Erreur lors de la récupération de la candidature", e);
@@ -127,6 +141,16 @@ public class PipelineController {
             CandidatureViewModel vm = CandidatureViewModel.fromDTO(dto);
             enrichWithOffre(vm);
             model.addAttribute("candidature", vm);
+
+            EntretienView entretienExistant = entretienFrontendClient.listByCandidature(id)
+                    .stream()
+                    .filter(e -> "PLANIFIE".equals(e.getStatus()))
+                    .findFirst()
+                    .orElse(null);
+            if (entretienExistant != null) {
+                model.addAttribute("entretienExistant", entretienExistant);
+            }
+
             return "pages/recruteur/planifier-entretien";
         } catch (Exception e) {
             log.error("Erreur chargement formulaire entretien", e);
@@ -154,13 +178,26 @@ public class PipelineController {
             String normalized = dateHeure.length() == 16 ? dateHeure + ":00" : dateHeure;
             java.time.LocalDateTime dt = java.time.LocalDateTime.parse(normalized);
 
-            // Récupérer le candidatId depuis la candidature pour éviter l'appel Feign interne
+            // Récupérer les données candidature + offre pour la notification email
             CandidatureDTO candidatureDTO = candidatureFrontendClient.getCandidature(id).orElse(null);
-            String candidatId = candidatureDTO != null ? candidatureDTO.getCandidatId() : null;
+            String candidatId    = candidatureDTO != null ? candidatureDTO.getCandidatId()    : null;
+            String candidatEmail = candidatureDTO != null ? candidatureDTO.getCandidatEmail() : null;
+
+            // Titre de l'offre (best-effort)
+            String offreTitre = null;
+            if (candidatureDTO != null && candidatureDTO.getOffreId() != null) {
+                try {
+                    var offre = offreFrontendClient.detail(Long.parseLong(candidatureDTO.getOffreId()));
+                    if (offre != null) offreTitre = offre.getTitre();
+                } catch (Exception ignored) {}
+            }
 
             EntretienCreateRequest req = new EntretienCreateRequest();
             req.setCandidatureId(id);
             req.setCandidatId(candidatId);
+            req.setCandidatEmail(candidatEmail);
+            req.setCandidatNom(candidatEmail);   // fallback : email comme nom si nom absent
+            req.setOffreTitre(offreTitre);
             req.setRecruteurId(recruteur.getId().toString());
             req.setDateHeure(dt);
             req.setType(type);

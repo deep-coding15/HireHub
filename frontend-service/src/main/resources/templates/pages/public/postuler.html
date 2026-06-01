@@ -12,7 +12,23 @@
 
         <div class="alert alert-danger border-0 shadow-sm" th:if="${postulerError}" th:text="${postulerError}"></div>
 
-        <form class="hh-card" method="post" th:action="@{/offres/{id}/postuler(id=${offreId})}" enctype="multipart/form-data">
+        <!-- Candidature déjà soumise : informer avant le formulaire -->
+        <div th:if="${alreadyApplied}" class="hh-card border-warning mb-4" style="border-left: 4px solid #f59e0b;">
+            <div class="d-flex align-items-start gap-3">
+                <span style="font-size:2rem; line-height:1;">⚠️</span>
+                <div>
+                    <h2 class="h5 fw-bold mb-1" style="color:#92400e;">Candidature déjà soumise</h2>
+                    <p class="mb-2 text-muted small">
+                        Vous avez déjà postulé à cette offre. Retrouvez votre dossier dans vos candidatures.
+                    </p>
+                    <a href="/candidat/mes-candidatures" class="btn btn-sm btn-outline-warning rounded-pill">
+                        Voir mes candidatures
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <form th:unless="${alreadyApplied}" class="hh-card" method="post" th:action="@{/offres/{id}/postuler(id=${offreId})}" enctype="multipart/form-data">
             <div class="mb-3">
                 <label class="hh-form-label" for="lettre">Lettre de motivation</label>
                 <textarea id="lettre" name="lettre" class="form-control rounded-3 border-0 shadow-sm" rows="6"

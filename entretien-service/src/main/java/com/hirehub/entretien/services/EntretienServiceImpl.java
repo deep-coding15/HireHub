@@ -83,12 +83,17 @@ public class EntretienServiceImpl implements EntretienService {
         entretien.setLienVisio(request.getLienVisio());
         entretien.setType(request.getType());
         entretien.setNotesInternes(request.getNotesInternes());
+        entretien.setCandidatEmail(request.getCandidatEmail());
+        entretien.setOffreTitre(request.getOffreTitre());
         entretien.setStatus(InterviewStatus.PLANIFIE);
 
         Entretien saved = entretienRepository.save(entretien);
-        // Le changement de statut de la candidature est géré par le frontend (via API Gateway
-        // avec le bon JWT). On ne le fait pas ici pour éviter un appel service-à-service sans auth.
-        notificationPublisher.publish(saved, false);
+        // Le changement de statut est géré par le frontend (API Gateway + JWT).
+        notificationPublisher.publish(saved,
+                request.getCandidatEmail(),
+                request.getCandidatNom(),
+                request.getOffreTitre(),
+                false);
         log.info("[ENTRETIEN] Cree avec succes: entretienId={}, candidatId={}", saved.getId(), saved.getCandidatId());
         return saved;
     }
@@ -138,7 +143,11 @@ public class EntretienServiceImpl implements EntretienService {
         entretien.setStatus(InterviewStatus.ANNULE);
         entretien.setDateAnnulation(LocalDateTime.now(clock));
         Entretien saved = entretienRepository.save(entretien);
-        notificationPublisher.publish(saved, true);
+        notificationPublisher.publish(saved,
+                saved.getCandidatEmail(),
+                saved.getCandidatEmail(),
+                saved.getOffreTitre(),
+                true);
         log.info("[ENTRETIEN] Annule avec succes: entretienId={}", saved.getId());
         return saved;
     }

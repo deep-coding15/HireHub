@@ -48,6 +48,12 @@ public class Entretien {
     @Column(name = "notes_internes", length = 2000)
     private String notesInternes;
 
+    @Column(name = "candidat_email")
+    private String candidatEmail;
+
+    @Column(name = "offre_titre", length = 500)
+    private String offreTitre;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private InterviewStatus status;

@@ -31,7 +31,7 @@ import java.util.Map;
  * ╚══════════════════════════════════════════════════════════════╝
  * </pre>
  */
-@Component
+// Désactivé : remplacé par EntretienPlanifieListenerImpl (EmailEventDTO + idempotence)
 @Slf4j
 @RequiredArgsConstructor
 public class EntretienPlanifieListener {

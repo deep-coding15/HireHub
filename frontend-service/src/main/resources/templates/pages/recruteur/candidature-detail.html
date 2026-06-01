@@ -131,20 +131,92 @@
                         <h5 class="mb-3" style="color: var(--hh-violet-700);">Décision</h5>
 
                         <!-- Statut actuel -->
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <p class="text-muted small mb-1">Statut actuel</p>
                             <span th:class="${candidature.statusBadgeClass}"
                                   th:text="${candidature.statusLabel}">—</span>
                         </div>
 
-                        <!-- Formulaire changement statut -->
-                        <div th:if="${candidature.terminal}"
-                             class="alert alert-secondary py-2 text-center small mb-3">
-                            État final — aucune modification possible.
+                        <!-- ═══ Détails de l'entretien (PLANIFIE ou ANNULE) ═══ -->
+                        <div th:if="${entretien != null}" class="mb-4 pt-3 border-top">
+                            <p class="text-muted small text-uppercase fw-semibold mb-2">
+                                Entretien
+                                <span th:if="${entretien.status == 'ANNULE'}"
+                                      class="badge bg-danger ms-1 fw-normal text-lowercase">annulé</span>
+                            </p>
+
+                            <!-- Date & heure -->
+                            <div class="mb-2 d-flex align-items-start gap-2">
+                                <span class="text-muted" style="min-width:20px;">📅</span>
+                                <div>
+                                    <div class="small text-muted">Date et heure</div>
+                                    <strong th:text="${entretien.dateHeureFormatted}">—</strong>
+                                </div>
+                            </div>
+
+                            <!-- Type -->
+                            <div class="mb-2 d-flex align-items-start gap-2">
+                                <span class="text-muted" style="min-width:20px;"
+                                      th:text="${entretien.type == 'VISIO' ? '🎥' : (entretien.type == 'PRESENTIEL' ? '🏢' : '📞')}">—</span>
+                                <div>
+                                    <div class="small text-muted">Type</div>
+                                    <strong th:text="${entretien.typeLabel}">—</strong>
+                                </div>
+                            </div>
+
+                            <!-- Lien visio -->
+                            <div th:if="${entretien.lienVisio != null and !#strings.isEmpty(entretien.lienVisio)}"
+                                 class="mb-2 d-flex align-items-start gap-2">
+                                <span class="text-muted" style="min-width:20px;">🔗</span>
+                                <div style="min-width:0;">
+                                    <div class="small text-muted">Lien de la réunion</div>
+                                    <a th:href="${entretien.lienVisio}" target="_blank"
+                                       class="small text-break"
+                                       th:text="${entretien.lienVisio}">—</a>
+                                </div>
+                            </div>
+
+                            <!-- Lieu présentiel -->
+                            <div th:if="${entretien.lieu != null and !#strings.isEmpty(entretien.lieu)}"
+                                 class="mb-2 d-flex align-items-start gap-2">
+                                <span class="text-muted" style="min-width:20px;">📍</span>
+                                <div>
+                                    <div class="small text-muted">Adresse</div>
+                                    <strong th:text="${entretien.lieu}">—</strong>
+                                </div>
+                            </div>
+
+                            <!-- Consignes / notes internes -->
+                            <div th:if="${entretien.notesInternes != null and !#strings.isEmpty(entretien.notesInternes)}"
+                                 class="mb-2 d-flex align-items-start gap-2">
+                                <span class="text-muted" style="min-width:20px;">📝</span>
+                                <div>
+                                    <div class="small text-muted">Consignes transmises</div>
+                                    <p class="mb-0 small" style="white-space: pre-line;"
+                                       th:text="${entretien.notesInternes}">—</p>
+                                </div>
+                            </div>
+
+                            <!-- Lien vers le formulaire de planification si annulé -->
+                            <a th:if="${entretien.status == 'ANNULE'}"
+                               th:href="@{/recruteur/candidature/{id}/planifier-entretien(id=${candidature.id})}"
+                               class="btn btn-sm btn-outline-primary rounded-pill mt-1">
+                                Replanifier un entretien
+                            </a>
                         </div>
+
+                        <!-- ═══ Statut terminal ═══ -->
+                        <div th:if="${candidature.terminal}"
+                             class="alert py-2 text-center small mb-3"
+                             th:classappend="${candidature.status == 'ACCEPTEE'} ? 'alert-success' : 'alert-danger'">
+                            <span th:if="${candidature.status == 'ACCEPTEE'}">✔ Candidat retenu — dossier clos.</span>
+                            <span th:if="${candidature.status == 'REFUSEE'}">✘ Candidat non retenu — dossier clos.</span>
+                        </div>
+
+                        <!-- ═══ Formulaire changement statut ═══ -->
                         <form th:unless="${candidature.terminal}"
                               th:action="@{/recruteur/candidature/{id}/statut(id=${candidature.id})}"
-                              method="POST">
+                              method="POST" class="mt-3">
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Prochaine étape</label>
                                 <select name="status" class="form-select" required>

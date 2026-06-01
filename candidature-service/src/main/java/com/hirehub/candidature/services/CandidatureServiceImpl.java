@@ -291,7 +291,7 @@ public class CandidatureServiceImpl implements ICandidatureService {
             notificationPublisher.publishEmailEvent(
                     EventType.CANDIDATURE_CREATED,
                     candidateEmail,
-                    candidateEmail,
+                    "Candidat",
                     RabbitMQConstants.ROUTING_CANDIDATURE_CREATED,
                     payload
             );
@@ -336,7 +336,7 @@ public class CandidatureServiceImpl implements ICandidatureService {
             notificationPublisher.publishEmailEvent(
                     EventType.CANDIDATURE_STATUT_CHANGED,
                     candidateEmail,
-                    candidateEmail,
+                    "Candidat",
                     RabbitMQConstants.ROUTING_CANDIDATURE_STATUT_CHANGED,
                     payload
             );

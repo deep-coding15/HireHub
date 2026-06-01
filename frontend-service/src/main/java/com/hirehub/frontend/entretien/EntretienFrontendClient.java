@@ -1,5 +1,8 @@
 package com.hirehub.frontend.entretien;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.hirehub.common.dtos.ApiResponse;
 import com.hirehub.frontend.auth.HirehubUserDetails;
 import com.hirehub.frontend.auth.SessionAuthSupport;
@@ -13,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
@@ -26,11 +30,19 @@ public class EntretienFrontendClient {
 
     private static final Logger log = LoggerFactory.getLogger(EntretienFrontendClient.class);
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final String entretienBaseUrl;
 
     public EntretienFrontendClient(@Value("${hirehub.entretien-service-base-url}") String entretienBaseUrl) {
         this.entretienBaseUrl = entretienBaseUrl;
+        // RestTemplate configuré avec JavaTimeModule pour sérialiser LocalDateTime en ISO 8601
+        ObjectMapper mapper = new ObjectMapper()
+                .registerModule(new JavaTimeModule())
+                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+        RestTemplate rt = new RestTemplate();
+        rt.getMessageConverters().removeIf(c -> c instanceof MappingJackson2HttpMessageConverter);
+        rt.getMessageConverters().add(0, new MappingJackson2HttpMessageConverter(mapper));
+        this.restTemplate = rt;
     }
 
     public EntretienView create(EntretienCreateRequest request) {
@@ -50,6 +62,10 @@ public class EntretienFrontendClient {
         } catch (RestClientException ex) {
             throw new EntretienException("Service entretien indisponible", ex);
         }
+    }
+
+    public List<EntretienView> listByCandidature(String candidatureId) {
+        return fetchList(entretienBaseUrl + "/entretiens/candidature/" + candidatureId);
     }
 
     public List<EntretienView> listForRecruiter() {

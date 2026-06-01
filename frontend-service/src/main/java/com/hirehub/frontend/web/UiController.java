@@ -95,8 +95,18 @@ public class UiController {
     }
 
     @GetMapping("/offres/{id}/postuler")
-    public String postuler(@PathVariable("id") Long id, Model model) {
+    public String postuler(@PathVariable("id") Long id, Model model, Authentication auth) {
         model.addAttribute("offreId", id);
+        if (auth != null && auth.getPrincipal() instanceof HirehubUserDetails user
+                && user.getRole() == com.hirehub.common.enums.UserRole.CANDIDAT) {
+            try {
+                boolean dejaPostule = candidatureFrontendClient.getMyCandidatures().stream()
+                        .anyMatch(c -> id.toString().equals(c.getOffreId()));
+                if (dejaPostule) {
+                    model.addAttribute("alreadyApplied", true);
+                }
+            } catch (Exception ignored) {}
+        }
         return "pages/public/postuler";
     }
 

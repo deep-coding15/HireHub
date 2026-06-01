@@ -29,7 +29,7 @@ public class MailService implements EmailService {
 
     private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username}")
+    @Value("${spring.mail.from:noreply@hirehub.com}")
     private String fromEmail;
 
     public MailService(JavaMailSender mailSender) {

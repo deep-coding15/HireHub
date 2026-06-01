@@ -12,9 +12,8 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 
 /**
- * Listener pour les événements d'entretien.
- * Consomme les événements RabbitMQ et envoie les emails de planification/annulation.
- * Utilise l'idempotence pour éviter les envois en double.
+ * Listener pour les événements d'entretien (planifié / annulé).
+ * Un seul @RabbitListener sur la queue — dispatch par eventType.
  */
 @Component
 @Slf4j
@@ -24,95 +23,76 @@ public class EntretienPlanifieListenerImpl {
     private final EmailBusinessServiceImpl emailService;
     private final IdempotenceService idempotenceService;
 
-    /**
-     * Écoute les événements de planification d'entretien.
-     */
     @RabbitListener(queues = RabbitMQConstants.QUEUE_NOTIFICATION_ENTRETIEN)
-    public void handleEntretienPlanifie(@Payload EmailEventDTO event) {
+    public void handleEntretienEvent(@Payload EmailEventDTO event) {
         try {
             if (event.getCorrelationId() != null) {
                 MDC.put("correlationId", event.getCorrelationId());
             }
-            String eventId = event.getEventId();
 
-            // Vérifier l'idempotence
+            String eventId   = event.getEventId();
+            String eventType = event.getEventType();
+
             if (idempotenceService.isAlreadyProcessed(eventId)) {
-                log.warn("[ENTRETIEN.PLANIFIE] Événement {} déjà traité, abandon", eventId);
+                log.warn("[ENTRETIEN] Événement {} déjà traité, abandon", eventId);
                 return;
             }
 
-            log.info("[ENTRETIEN.PLANIFIE] Traitement de l'événement {} pour: {}", eventId, event.getRecipientEmail());
+            log.info("[ENTRETIEN] Traitement '{}' eventId={} → {}", eventType, eventId, event.getRecipientEmail());
 
-            // Extraire les données du payload
-            String offerTitle = (String) event.getPayload().get("offerTitle");
-            String interviewDate = (String) event.getPayload().get("interviewDate");
-            String interviewLocation = (String) event.getPayload().get("interviewLocation");
-            String interviewerName = (String) event.getPayload().get("interviewerName");
+            switch (eventType != null ? eventType : "") {
+                case "ENTRETIEN_PLANIFIE" -> handlePlanifie(event);
+                case "ENTRETIEN_ANNULE"   -> handleAnnule(event);
+                default -> log.warn("[ENTRETIEN] Type non reconnu: {}", eventType);
+            }
 
-            emailService.sendEntretienPlanification(
-                    event.getRecipientEmail(),
-                    event.getRecipientName(),
-                    offerTitle,
-                    interviewDate,
-                    interviewLocation,
-                    interviewerName
-            );
-
-            // Marquer comme traité avec succès
-            idempotenceService.markAsProcessed(eventId, event.getEventType(), event.getRecipientEmail());
-            log.info("[ENTRETIEN.PLANIFIE] OK - Email de planification envoye a: {}", event.getRecipientEmail());
+            idempotenceService.markAsProcessed(eventId, eventType, event.getRecipientEmail());
+            log.info("[ENTRETIEN] OK '{}' → {}", eventType, event.getRecipientEmail());
 
         } catch (Exception e) {
-            log.error("[ENTRETIEN.PLANIFIE] ERREUR lors du traitement", e);
-            idempotenceService.markAsFailed(event.getEventId(), event.getEventType(), event.getRecipientEmail(), e.getMessage());
-            throw new RuntimeException("Erreur traitement entretien planifié", e);
+            log.error("[ENTRETIEN] ERREUR lors du traitement", e);
+            idempotenceService.markAsFailed(
+                    event.getEventId(), event.getEventType(),
+                    event.getRecipientEmail(), e.getMessage());
+            throw new RuntimeException("Erreur traitement événement entretien", e);
         } finally {
             MDC.clear();
         }
     }
 
-    /**
-     * Écoute les événements d'annulation d'entretien.
-     */
-    @RabbitListener(queues = RabbitMQConstants.QUEUE_NOTIFICATION_ENTRETIEN)
-    public void handleEntretienAnnulation(@Payload EmailEventDTO event) {
-        try {
-            if (event.getCorrelationId() != null) {
-                MDC.put("correlationId", event.getCorrelationId());
-            }
-            String eventId = event.getEventId();
+    private void handlePlanifie(EmailEventDTO event) {
+        var p = event.getPayload();
+        String offerTitle        = str(p.get("offerTitle"));
+        String interviewDate     = str(p.get("interviewDate"));
+        String interviewLocation = str(p.get("interviewLocation"));
+        String consignes         = str(p.get("consignes"));
 
-            // Vérifier l'idempotence
-            if (idempotenceService.isAlreadyProcessed(eventId)) {
-                log.warn("[ENTRETIEN.ANNULATION] Événement {} déjà traité, abandon", eventId);
-                return;
-            }
+        // Enrichir la location avec le type si visio
+        String lienVisio = str(p.get("lienVisio"));
+        String location  = (lienVisio != null && !lienVisio.isBlank()) ? lienVisio
+                         : (interviewLocation != null ? interviewLocation : "Téléphonique");
 
-            log.info("[ENTRETIEN.ANNULATION] Traitement de l'événement {} pour: {}", eventId, event.getRecipientEmail());
-
-            // Extraire les données du payload
-            String offerTitle = (String) event.getPayload().get("offerTitle");
-            String comment = (String) event.getPayload().get("comment"); // Raison de l'annulation
-
-            emailService.sendEntretienAnnulation(
-                    event.getRecipientEmail(),
-                    event.getRecipientName(),
-                    offerTitle,
-                    comment
-            );
-
-            // Marquer comme traité avec succès
-            idempotenceService.markAsProcessed(eventId, event.getEventType(), event.getRecipientEmail());
-            log.info("[ENTRETIEN.ANNULATION] OK - Email d'annulation envoye a: {}", event.getRecipientEmail());
-
-        } catch (Exception e) {
-            log.error("[ENTRETIEN.ANNULATION] ERREUR lors du traitement", e);
-            idempotenceService.markAsFailed(event.getEventId(), event.getEventType(), event.getRecipientEmail(), e.getMessage());
-            throw new RuntimeException("Erreur traitement annulation d'entretien", e);
-        } finally {
-            MDC.clear();
-        }
+        emailService.sendEntretienPlanification(
+                event.getRecipientEmail(),
+                event.getRecipientName(),
+                offerTitle,
+                interviewDate,
+                location,
+                consignes   // dernier param = consignes (renommé depuis "interviewer" dans le template)
+        );
     }
 
+    private void handleAnnule(EmailEventDTO event) {
+        var p = event.getPayload();
+        emailService.sendEntretienAnnulation(
+                event.getRecipientEmail(),
+                event.getRecipientName(),
+                str(p.get("offerTitle")),
+                str(p.get("comment"))
+        );
+    }
+
+    private static String str(Object o) {
+        return o instanceof String s ? s : (o != null ? o.toString() : null);
+    }
 }
-

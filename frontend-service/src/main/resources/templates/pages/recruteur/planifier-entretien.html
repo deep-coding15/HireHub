@@ -67,7 +67,25 @@
 
     <div class="alert alert-danger border-0 rounded-3" th:if="${error}" th:text="${error}"></div>
 
-    <form th:if="${candidature != null}"
+    <!-- Entretien déjà planifié : bloquer le formulaire et informer clairement -->
+    <div th:if="${entretienExistant != null}" class="hh-card border-warning mb-4" style="border-left: 4px solid #f59e0b;">
+        <div class="d-flex align-items-start gap-3">
+            <span style="font-size:2rem; line-height:1;">⚠️</span>
+            <div>
+                <h2 class="h5 fw-bold mb-1" style="color:#92400e;">Un entretien est déjà planifié</h2>
+                <p class="mb-2 text-muted small">
+                    Ce candidat a déjà un entretien programmé pour cette candidature.
+                    Vous devez d'abord annuler l'entretien existant avant d'en créer un nouveau.
+                </p>
+                <ul class="list-unstyled mb-0 small">
+                    <li><strong>Date :</strong> <span th:text="${entretienExistant.dateHeureFormatted}">-</span></li>
+                    <li><strong>Type :</strong> <span th:text="${entretienExistant.typeLabel}">-</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <form th:if="${candidature != null and entretienExistant == null}"
           th:action="@{/recruteur/candidature/{id}/planifier-entretien(id=${candidature.id})}"
           method="POST" id="planForm" novalidate>
 

@@ -36,7 +36,7 @@ import java.util.Map;
  * ║  }                                                           ║
  * ╚══════════════════════════════════════════════════════════════╝</pre>
  */
-@Component
+// Désactivé : remplacé par AuthenticationListenerImpl (EmailEventDTO + idempotence)
 @Slf4j
 @RequiredArgsConstructor
 public class AuthenticationListener {

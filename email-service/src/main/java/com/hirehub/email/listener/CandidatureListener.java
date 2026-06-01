@@ -94,14 +94,20 @@ public class CandidatureListener {
             String newStatus = (String) event.getPayload().get("newStatus");
             String comment = (String) event.getPayload().get("comment");
 
+            // L'email du candidat vient du payload — c'est la source de vérité
             String candidatEmail = event.getRecipientEmail();
             String candidatName = event.getRecipientName();
+
+            // Feign : enrichir uniquement le NOM d'affichage (best-effort, jamais bloquant)
             if (event.getPayload().get("candidatId") != null) {
-                UserInfoDTO user = authServiceClientAPI.getUserById(
-                        event.getPayload().get("candidatId").toString());
-                if (user != null && user.getEmail() != null && !user.getEmail().isBlank()) {
-                    candidatEmail = user.getEmail();
-                    candidatName = user.getFirstName() != null ? user.getFirstName() : candidatName;
+                try {
+                    UserInfoDTO user = authServiceClientAPI.getUserById(
+                            event.getPayload().get("candidatId").toString());
+                    if (user != null && user.getFirstName() != null && !user.getFirstName().isBlank()) {
+                        candidatName = user.getFirstName();
+                    }
+                } catch (Exception ex) {
+                    log.warn("[CANDIDATURE.STATUT.CHANGED] Impossible de récupérer le nom du candidat: {}", ex.getMessage());
                 }
             }
 

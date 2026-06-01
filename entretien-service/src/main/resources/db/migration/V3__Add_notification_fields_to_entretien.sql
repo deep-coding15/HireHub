@@ -1,0 +1,2 @@
+ALTER TABLE entretiens ADD COLUMN IF NOT EXISTS candidat_email VARCHAR(255);
+ALTER TABLE entretiens ADD COLUMN IF NOT EXISTS offre_titre   VARCHAR(500);

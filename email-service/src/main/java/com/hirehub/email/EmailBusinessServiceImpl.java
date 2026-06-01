@@ -142,7 +142,7 @@ public class EmailBusinessServiceImpl extends MailService implements EmailBusine
             String subject = "Mise à jour de votre candidature - HireHub";
 
             String htmlBody = buildCandidatureStatutChangedTemplate(candidatName, offreTitle,
-                    nouveauStatut, commentaire);
+                    ancienStatut, nouveauStatut, commentaire);
 
             sendHtmlEmail(candidatEmail, subject, htmlBody);
             log.info("[📧 STATUT] Notification envoyée à: {} | Nouveau statut: {}",

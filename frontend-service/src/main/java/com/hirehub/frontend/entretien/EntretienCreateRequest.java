@@ -1,3 +1,4 @@
+
 package com.hirehub.frontend.entretien;
 
 import lombok.AllArgsConstructor;
@@ -11,6 +12,9 @@ import java.time.LocalDateTime;
 public class EntretienCreateRequest {
     private String candidatureId;
     private String candidatId;
+    private String candidatEmail;
+    private String candidatNom;
+    private String offreTitre;
     private String recruteurId;
     private LocalDateTime dateHeure;
     private String lieu;
