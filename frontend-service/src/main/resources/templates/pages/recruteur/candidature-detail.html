@@ -2,78 +2,180 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout}">
 <head>
-    <title>Détails candidature - Recruteur</title>
+    <title>Dossier candidat — Recruteur</title>
 </head>
 <body>
 <section layout:fragment="content" class="page-inner">
     <div class="container">
-        <div th:if="${error}" class="alert alert-danger">
-            <span th:text="${error}"></span>
-        </div>
+
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+        <div th:if="${success}" class="alert alert-success" th:text="${success}"></div>
 
         <div th:unless="${error}">
-            <div class="mb-3">
-                <a th:href="@{/recruteur/pipeline}" class="btn btn-outline-secondary">
+
+            <!-- Navigation -->
+            <div class="d-flex gap-2 mb-4">
+                <a th:href="@{/recruteur/pipeline/{id}(id=${candidature.offreId})}"
+                   class="btn btn-outline-secondary btn-sm rounded-pill">
                     ← Retour au pipeline
+                </a>
+                <a th:if="${candidature.offreId}"
+                   th:href="@{/offres/{id}(id=${candidature.offreId})}"
+                   class="btn btn-outline-primary btn-sm rounded-pill">
+                    Voir l'offre
                 </a>
             </div>
 
-            <div class="hh-card">
-                <div class="d-flex justify-content-between align-items-start mb-4">
-                    <div>
-                        <h1 class="h3" th:text="${candidature.candidatId}"></h1>
-                        <p class="text-muted mb-0">Offre: <strong th:text="${candidature.offreId}"></strong></p>
-                    </div>
-                    <span th:class="${candidature.statusBadgeClass}"
-                          th:text="${candidature.statusLabel}"></span>
+            <!-- En-tête -->
+            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+                <div>
+                    <h1 class="h3 mb-1" th:text="${candidature.displayCandidat}">Candidat</h1>
+                    <p class="text-muted mb-0">
+                        Candidature pour <strong th:text="${candidature.displayTitre}">l'offre</strong>
+                    </p>
                 </div>
+                <span th:class="${candidature.statusBadgeClass + ' fs-6 px-3 py-2'}"
+                      th:text="${candidature.statusLabel}">Statut</span>
+            </div>
 
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <h5 class="text-muted">Date de soumission</h5>
-                        <p th:text="${candidature.getDateSoumissionFormatted()}"></p>
-                    </div>
-                    <div class="col-md-6">
-                        <h5 class="text-muted">Dernière modification</h5>
-                        <p th:text="${candidature.getDateModificationFormatted()}"></p>
-                    </div>
-                </div>
+            <div class="row g-4">
 
-                <div class="mt-4 pt-4 border-top">
-                    <h5>Fichiers</h5>
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <span class="badge bg-info">CV</span>
-                            <th:block th:if="${candidature.hasCv()}">
-                                <a th:href="@{/recruteur/candidature/{id}/download(id=${candidature.id},type=cv)}"
-                                   class="btn btn-sm btn-outline-primary">
+                <!-- Colonne gauche : infos offre + candidature -->
+                <div class="col-lg-7">
+
+                    <!-- Bloc offre -->
+                    <div class="hh-card mb-4" th:if="${candidature.offreTitre}">
+                        <h5 class="mb-3" style="color: var(--hh-violet-700);">L'offre concernée</h5>
+                        <div class="d-flex flex-wrap gap-2 mb-3">
+                            <span th:if="${candidature.offreVille}"
+                                  class="badge bg-light text-dark border fs-6 fw-normal px-3 py-2">
+                                📍 <span th:text="${candidature.offreVille}"></span>
+                            </span>
+                            <span th:if="${candidature.offreTypeContrat}"
+                                  class="badge bg-light text-dark border fs-6 fw-normal px-3 py-2">
+                                📋 <span th:text="${candidature.offreTypeContrat}"></span>
+                            </span>
+                            <span th:if="${candidature.offreSalaire != null and candidature.offreSalaire > 0}"
+                                  class="badge bg-light text-dark border fs-6 fw-normal px-3 py-2">
+                                💶 <span th:text="${candidature.offreSalaireFormatted}"></span>
+                            </span>
+                        </div>
+                        <div th:if="${candidature.offreDescription}">
+                            <h6 class="text-muted text-uppercase small mb-1">Description</h6>
+                            <p class="mb-0 small" style="white-space: pre-line; max-height: 150px; overflow-y: auto;"
+                               th:text="${candidature.offreDescription}"></p>
+                        </div>
+                        <div class="mt-2 small text-muted" th:if="${candidature.offreDateExpirationFormatted}">
+                            ⏳ Date limite : <strong th:text="${candidature.offreDateExpirationFormatted}"></strong>
+                        </div>
+                    </div>
+
+                    <!-- Bloc dossier candidat -->
+                    <div class="hh-card">
+                        <h5 class="mb-3" style="color: var(--hh-violet-700);">Dossier du candidat</h5>
+
+                        <!-- Coordonnées -->
+                        <div class="mb-3">
+                            <p class="text-muted small mb-1">Email</p>
+                            <strong th:text="${candidature.displayCandidat}">—</strong>
+                        </div>
+
+                        <!-- Dates -->
+                        <div class="row mb-3">
+                            <div class="col-sm-6">
+                                <p class="text-muted small mb-1">Date de soumission</p>
+                                <strong th:text="${candidature.getDateSoumissionFormatted()}">—</strong>
+                            </div>
+                            <div class="col-sm-6" th:if="${candidature.dateModification != null}">
+                                <p class="text-muted small mb-1">Dernière mise à jour</p>
+                                <strong th:text="${candidature.getDateModificationFormatted()}">—</strong>
+                            </div>
+                        </div>
+
+                        <!-- Fichiers -->
+                        <h6 class="text-muted text-uppercase small mb-2">Fichiers joints</h6>
+                        <div class="d-flex flex-column gap-2">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span>
+                                    <span th:if="${candidature.hasCv()}" class="text-success me-1">✔</span>
+                                    <span th:unless="${candidature.hasCv()}" class="text-muted me-1">–</span>
+                                    CV
+                                </span>
+                                <a th:if="${candidature.hasCv()}"
+                                   th:href="@{/recruteur/candidature/{id}/download(id=${candidature.id},type=cv)}"
+                                   class="btn btn-sm btn-outline-primary rounded-pill">
                                     Télécharger
                                 </a>
-                            </th:block>
-                            <span th:unless="${candidature.hasCv()}" class="text-muted">Non fourni</span>
+                                <span th:unless="${candidature.hasCv()}" class="text-muted small">Non fourni</span>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span>
+                                    <span th:if="${candidature.hasLettre()}" class="text-success me-1">✔</span>
+                                    <span th:unless="${candidature.hasLettre()}" class="text-muted me-1">–</span>
+                                    Lettre de motivation
+                                </span>
+                                <a th:if="${candidature.hasLettre()}"
+                                   th:href="@{/recruteur/candidature/{id}/download(id=${candidature.id},type=lettre)}"
+                                   class="btn btn-sm btn-outline-primary rounded-pill">
+                                    Télécharger
+                                </a>
+                                <span th:unless="${candidature.hasLettre()}" class="text-muted small">Non fournie</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="mt-4 pt-4 border-top">
-                    <h5>Changer le statut</h5>
-                    <form th:action="@{/recruteur/candidature/{id}/statut(id=${candidature.id})}" method="POST" class="d-inline">
-                        <div class="input-group">
-                            <select name="status" class="form-select" required>
-                                <option value="">-- Sélectionner un statut --</option>
-                                <option value="EN_COURS">En cours</option>
-                                <option value="EN_ATTENTE">En attente</option>
-                                <option value="ACCEPTÉE">Acceptée</option>
-                                <option value="REJETÉE">Rejetée</option>
-                            </select>
-                            <button type="submit" class="btn btn-primary">Mettre à jour</button>
+                <!-- Colonne droite : décision recruteur -->
+                <div class="col-lg-5">
+                    <div class="hh-card">
+                        <h5 class="mb-3" style="color: var(--hh-violet-700);">Décision</h5>
+
+                        <!-- Statut actuel -->
+                        <div class="mb-4">
+                            <p class="text-muted small mb-1">Statut actuel</p>
+                            <span th:class="${candidature.statusBadgeClass}"
+                                  th:text="${candidature.statusLabel}">—</span>
                         </div>
-                    </form>
+
+                        <!-- Formulaire changement statut -->
+                        <div th:if="${candidature.terminal}"
+                             class="alert alert-secondary py-2 text-center small mb-3">
+                            État final — aucune modification possible.
+                        </div>
+                        <form th:unless="${candidature.terminal}"
+                              th:action="@{/recruteur/candidature/{id}/statut(id=${candidature.id})}"
+                              method="POST">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Prochaine étape</label>
+                                <select name="status" class="form-select" required>
+                                    <option value="">— Sélectionner —</option>
+                                    <option th:each="t : ${candidature.allowedTransitions}"
+                                            th:value="${t[0]}"
+                                            th:text="${t[1]}"></option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn btn-primary rounded-pill w-100">
+                                Enregistrer la décision
+                            </button>
+                        </form>
+
+                        <!-- Guide statuts -->
+                        <div class="mt-4 pt-3 border-top">
+                            <p class="text-muted small mb-2">Guide des statuts :</p>
+                            <div class="d-flex flex-column gap-1 small">
+                                <span><span class="badge bg-info">Soumise</span> — reçue, non traitée</span>
+                                <span><span class="badge bg-warning text-dark">En cours</span> — en cours d'examen</span>
+                                <span><span class="badge bg-primary">Entretien</span> — entretien planifié</span>
+                                <span><span class="badge bg-success">Acceptée</span> — candidat retenu</span>
+                                <span><span class="badge bg-danger">Refusée</span> — candidat non retenu</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
             </div>
         </div>
     </div>
 </section>
 </body>
 </html>
-

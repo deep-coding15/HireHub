@@ -7,6 +7,8 @@ import com.hirehub.frontend.candidature.CandidatureServiceException;
 import com.hirehub.frontend.candidature.HistoriqueApiItem;
 import com.hirehub.frontend.clients.CandidatureDTO;
 import com.hirehub.frontend.entretien.EntretienFrontendClient;
+import com.hirehub.frontend.offre.OffreFrontendClient;
+import com.hirehub.frontend.offre.OffreView;
 import com.hirehub.frontend.viewmodels.CandidatureViewModel;
 import com.hirehub.frontend.viewmodels.HistoriqueStatutViewModel;
 import lombok.extern.slf4j.Slf4j;
@@ -34,38 +36,82 @@ public class CandidatureController {
     private final CandidatureFrontendClient candidatureFrontendClient;
     private final EntretienFrontendClient entretienFrontendClient;
     private final ApplicationUploadService applicationUploadService;
+    private final OffreFrontendClient offreFrontendClient;
 
     public CandidatureController(
             CandidatureFrontendClient candidatureFrontendClient,
             EntretienFrontendClient entretienFrontendClient,
-            ApplicationUploadService applicationUploadService
+            ApplicationUploadService applicationUploadService,
+            OffreFrontendClient offreFrontendClient
     ) {
         this.candidatureFrontendClient = candidatureFrontendClient;
         this.entretienFrontendClient = entretienFrontendClient;
         this.applicationUploadService = applicationUploadService;
+        this.offreFrontendClient = offreFrontendClient;
+    }
+
+    private void enrichWithOffre(CandidatureViewModel vm) {
+        try {
+            Long id = Long.parseLong(vm.getOffreId());
+            OffreView offre = offreFrontendClient.detail(id);
+            vm.enrichWithOffre(offre);
+        } catch (NumberFormatException ignored) {
+            // offreId non numérique — on laisse les champs offre vides
+        } catch (Exception e) {
+            log.warn("Impossible de récupérer le détail de l'offre {}: {}", vm.getOffreId(), e.getMessage());
+        }
     }
 
     @GetMapping("/dashboard")
     public String candidatDashboard(Authentication auth, Model model) {
+        String fullName = "";
+        if (auth != null && auth.getPrincipal() instanceof HirehubUserDetails details) {
+            fullName = details.getFullName() != null ? details.getFullName() : details.getUsername();
+        }
+        model.addAttribute("fullName", fullName);
+
         try {
             List<CandidatureViewModel> candidatures = new ArrayList<>();
             List<CandidatureDTO> candidaturesDTO = candidatureFrontendClient.getMyCandidatures();
             for (CandidatureDTO dto : candidaturesDTO) {
-                candidatures.add(CandidatureViewModel.fromDTO(dto));
+                CandidatureViewModel vm = CandidatureViewModel.fromDTO(dto);
+                enrichWithOffre(vm);
+                candidatures.add(vm);
             }
+
+            long cntSoumise   = candidatures.stream().filter(c -> "SOUMISE".equals(c.getStatus())).count();
+            long cntEnCours   = candidatures.stream().filter(c -> "EN_COURS".equals(c.getStatus())).count();
+            long cntEntretien = candidatures.stream().filter(c -> "ENTRETIEN".equals(c.getStatus())).count();
+            long cntAcceptee  = candidatures.stream().filter(c -> "ACCEPTEE".equals(c.getStatus())).count();
+            long cntRefusee   = candidatures.stream().filter(c -> "REFUSEE".equals(c.getStatus())).count();
+
             model.addAttribute("candidatures", candidatures);
             model.addAttribute("candidaturesCount", candidatures.size());
+            model.addAttribute("cntSoumise",   cntSoumise);
+            model.addAttribute("cntEnCours",   cntEnCours);
+            model.addAttribute("cntEntretien", cntEntretien);
+            model.addAttribute("cntAcceptee",  cntAcceptee);
+            model.addAttribute("cntRefusee",   cntRefusee);
 
+            int entretiensCount = 0;
             if (auth != null && auth.getPrincipal() instanceof HirehubUserDetails details) {
-                model.addAttribute("entretiensCount", entretienFrontendClient.listForCandidat(details).size());
-            } else {
-                model.addAttribute("entretiensCount", 0);
+                try {
+                    entretiensCount = entretienFrontendClient.listForCandidat(details).size();
+                } catch (Exception ex) {
+                    log.warn("Entretiens candidat indisponibles: {}", ex.getMessage());
+                }
             }
+            model.addAttribute("entretiensCount", entretiensCount);
             model.addAttribute("apiError", false);
         } catch (Exception e) {
             log.error("Dashboard candidat", e);
             model.addAttribute("candidatures", List.of());
             model.addAttribute("candidaturesCount", 0);
+            model.addAttribute("cntSoumise", 0);
+            model.addAttribute("cntEnCours", 0);
+            model.addAttribute("cntEntretien", 0);
+            model.addAttribute("cntAcceptee", 0);
+            model.addAttribute("cntRefusee", 0);
             model.addAttribute("entretiensCount", 0);
             model.addAttribute("apiError", true);
         }
@@ -81,7 +127,9 @@ public class CandidatureController {
 
             List<CandidatureViewModel> candidatures = new ArrayList<>();
             for (CandidatureDTO dto : candidaturesDTO) {
-                candidatures.add(CandidatureViewModel.fromDTO(dto));
+                CandidatureViewModel vm = CandidatureViewModel.fromDTO(dto);
+                enrichWithOffre(vm);
+                candidatures.add(vm);
             }
 
             model.addAttribute("candidatures", candidatures);
@@ -111,7 +159,9 @@ public class CandidatureController {
                 return "pages/candidat/candidature-detail";
             }
 
-            model.addAttribute("candidature", CandidatureViewModel.fromDTO(candidatureDTO));
+            CandidatureViewModel vm = CandidatureViewModel.fromDTO(candidatureDTO);
+            enrichWithOffre(vm);
+            model.addAttribute("candidature", vm);
             return "pages/candidat/candidature-detail";
         } catch (Exception e) {
             log.error("Erreur lors de la récupération de la candidature", e);
@@ -125,11 +175,18 @@ public class CandidatureController {
         try {
             log.info("Récupération de l'historique de la candidature {}", id);
 
-            List<HistoriqueApiItem> historiqueDTO = candidatureFrontendClient.getHistorique(id);
+            // Candidature + offre pour l'en-tête
+            CandidatureDTO dto = candidatureFrontendClient.getCandidature(id).orElse(null);
+            if (dto != null) {
+                CandidatureViewModel vm = CandidatureViewModel.fromDTO(dto);
+                enrichWithOffre(vm);
+                model.addAttribute("candidature", vm);
+            }
 
+            List<HistoriqueApiItem> historiqueDTO = candidatureFrontendClient.getHistorique(id);
             List<HistoriqueStatutViewModel> historique = new ArrayList<>();
-            for (HistoriqueApiItem dto : historiqueDTO) {
-                historique.add(HistoriqueStatutViewModel.fromApiItem(dto));
+            for (HistoriqueApiItem h : historiqueDTO) {
+                historique.add(HistoriqueStatutViewModel.fromApiItem(h));
             }
 
             model.addAttribute("historique", historique);

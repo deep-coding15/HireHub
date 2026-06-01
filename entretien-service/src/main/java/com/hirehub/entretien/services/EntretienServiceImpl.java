@@ -1,7 +1,6 @@
 package com.hirehub.entretien.services;
 
 import com.hirehub.common.dtos.ApiResponse;
-import com.hirehub.common.enums.CandidatureStatus;
 import com.hirehub.common.enums.InterviewStatus;
 import com.hirehub.entretien.clients.CandidatureClient;
 import com.hirehub.entretien.clients.CandidatureSnapshot;
@@ -46,7 +45,14 @@ public class EntretienServiceImpl implements EntretienService {
                 request.getCandidatureId(), request.getRecruteurId(), request.getDateHeure());
 
         validateRequest(request);
-        CandidatureSnapshot candidature = loadCandidature(request.getCandidatureId());
+
+        // Résoudre le candidatId : priorité au champ fourni dans la requête,
+        // fallback sur l'appel Feign (service-to-service sans gateway)
+        String candidatId = request.getCandidatId();
+        if (!StringUtils.hasText(candidatId)) {
+            CandidatureSnapshot candidature = loadCandidature(request.getCandidatureId());
+            candidatId = candidature.getCandidatId();
+        }
 
         if (entretienRepository.existsByCandidatureIdAndStatus(
                 request.getCandidatureId(), InterviewStatus.PLANIFIE)) {
@@ -63,14 +69,14 @@ public class EntretienServiceImpl implements EntretienService {
             throw new IllegalArgumentException("Le recruteur a deja un entretien sur ce creneau");
         }
         if (entretienRepository.existsByCandidatIdAndStatusAndDateHeureBetween(
-                candidature.getCandidatId(), InterviewStatus.PLANIFIE, start, end)) {
-            log.warn("[ENTRETIEN] Conflit de creneau pour candidatId={}", candidature.getCandidatId());
+                candidatId, InterviewStatus.PLANIFIE, start, end)) {
+            log.warn("[ENTRETIEN] Conflit de creneau pour candidatId={}", candidatId);
             throw new IllegalArgumentException("Le candidat a deja un entretien sur ce creneau");
         }
 
         Entretien entretien = new Entretien();
         entretien.setCandidatureId(request.getCandidatureId());
-        entretien.setCandidatId(candidature.getCandidatId());
+        entretien.setCandidatId(candidatId);
         entretien.setRecruteurId(request.getRecruteurId());
         entretien.setDateHeure(request.getDateHeure());
         entretien.setLieu(request.getLieu());
@@ -80,7 +86,8 @@ public class EntretienServiceImpl implements EntretienService {
         entretien.setStatus(InterviewStatus.PLANIFIE);
 
         Entretien saved = entretienRepository.save(entretien);
-        candidatureClient.updateStatus(saved.getCandidatureId(), CandidatureStatus.ENTRETIEN.name());
+        // Le changement de statut de la candidature est géré par le frontend (via API Gateway
+        // avec le bon JWT). On ne le fait pas ici pour éviter un appel service-à-service sans auth.
         notificationPublisher.publish(saved, false);
         log.info("[ENTRETIEN] Cree avec succes: entretienId={}, candidatId={}", saved.getId(), saved.getCandidatId());
         return saved;

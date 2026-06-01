@@ -1,10 +1,12 @@
 package com.hirehub.frontend.config;
 
+import com.hirehub.frontend.auth.HirehubUserDetails;
 import com.hirehub.frontend.auth.HirehubUserDetailsService;
 import com.hirehub.frontend.auth.JwtSessionEnrichmentFilter;
 import com.hirehub.frontend.auth.LogoutNotificationHandler;
 import com.hirehub.frontend.auth.SessionAuthSupport;
 import com.hirehub.frontend.oauth.GoogleOAuth2LoginSuccessHandler;
+import com.hirehub.common.enums.UserRole;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -125,7 +127,17 @@ public class SecurityConfig {
         http.formLogin(form -> form
                 .loginPage("/login")
                 .permitAll()
-                .defaultSuccessUrl("/", true));
+                .successHandler((request, response, authentication) -> {
+                    String target = "/";
+                    if (authentication.getPrincipal() instanceof HirehubUserDetails u) {
+                        target = switch (u.getRole()) {
+                            case CANDIDAT  -> "/candidat/dashboard";
+                            case RECRUTEUR -> "/recruteur/dashboard";
+                            case ADMIN     -> "/admin/dashboard";
+                        };
+                    }
+                    response.sendRedirect(request.getContextPath() + target);
+                }));
         if (StringUtils.hasText(googleOAuthClientId) && StringUtils.hasText(googleOAuthClientSecret)) {
             http.oauth2Login(o -> o.loginPage("/login").successHandler(googleOAuth2LoginSuccessHandler));
         }

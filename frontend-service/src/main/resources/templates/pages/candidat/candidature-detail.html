@@ -2,89 +2,156 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout}">
 <head>
-    <title>Détails candidature</title>
+    <title>Détail candidature</title>
 </head>
 <body>
 <section layout:fragment="content" class="page-inner">
     <div class="container">
-        <div th:if="${error}" class="alert alert-danger">
-            <span th:text="${error}"></span>
-        </div>
+
+        <!-- Erreur -->
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
 
         <div th:unless="${error}">
-            <div class="mb-3">
-                <a th:href="@{/candidat/mes-candidatures}" class="btn btn-outline-secondary">
-                    ← Retour aux candidatures
+
+            <!-- Navigation -->
+            <div class="d-flex gap-2 mb-4">
+                <a th:href="@{/candidat/mes-candidatures}" class="btn btn-outline-secondary btn-sm rounded-pill">
+                    ← Mes candidatures
+                </a>
+                <a th:if="${candidature.offreId}"
+                   th:href="@{/offres/{id}(id=${candidature.offreId})}"
+                   class="btn btn-outline-primary btn-sm rounded-pill">
+                    Voir l'offre
                 </a>
             </div>
 
-            <div class="hh-card">
-                <div class="d-flex justify-content-between align-items-start mb-4">
-                    <div>
-                        <h1 class="h3" th:text="${candidature.offreId}"></h1>
-                        <p class="text-muted mb-0">ID: <code th:text="${candidature.id}"></code></p>
+            <!-- En-tête statut -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0" th:text="${candidature.displayTitre}">Titre de l'offre</h1>
+                <span th:class="${candidature.statusBadgeClass + ' fs-6 px-3 py-2'}"
+                      th:text="${candidature.statusLabel}">Statut</span>
+            </div>
+
+            <div class="row g-4">
+
+                <!-- Colonne gauche : détails de l'offre -->
+                <div class="col-lg-7">
+                    <div class="hh-card h-100">
+                        <h5 class="mb-3" style="color: var(--hh-violet-700);">À propos de l'offre</h5>
+
+                        <!-- Caractéristiques rapides -->
+                        <div class="d-flex flex-wrap gap-3 mb-4">
+                            <span th:if="${candidature.offreVille}"
+                                  class="badge bg-light text-dark border fs-6 fw-normal px-3 py-2">
+                                📍 <span th:text="${candidature.offreVille}"></span>
+                            </span>
+                            <span th:if="${candidature.offreTypeContrat}"
+                                  class="badge bg-light text-dark border fs-6 fw-normal px-3 py-2">
+                                📋 <span th:text="${candidature.offreTypeContrat}"></span>
+                            </span>
+                            <span th:if="${candidature.offreSalaire != null and candidature.offreSalaire > 0}"
+                                  class="badge bg-light text-dark border fs-6 fw-normal px-3 py-2">
+                                💶 <span th:text="${candidature.offreSalaireFormatted}"></span>
+                            </span>
+                        </div>
+
+                        <!-- Description -->
+                        <div th:if="${candidature.offreDescription}" class="mb-4">
+                            <h6 class="text-muted text-uppercase small mb-2">Description</h6>
+                            <p class="mb-0" style="white-space: pre-line;"
+                               th:text="${candidature.offreDescription}"></p>
+                        </div>
+
+                        <!-- Dates offre -->
+                        <div class="row small text-muted" th:if="${candidature.offreDateExpirationFormatted}">
+                            <div class="col">
+                                <span>⏳ Date limite : </span>
+                                <strong th:text="${candidature.offreDateExpirationFormatted}">-</strong>
+                            </div>
+                        </div>
+
+                        <!-- Indisponible -->
+                        <div th:unless="${candidature.offreTitre}"
+                             class="text-muted fst-italic small">
+                            Les détails de l'offre ne sont pas disponibles pour le moment.
+                        </div>
                     </div>
-                    <span th:class="${candidature.statusBadgeClass}"
-                          th:text="${candidature.statusLabel}"></span>
                 </div>
 
-                <!-- Informations de candidature -->
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <h5 class="text-muted">Date de soumission</h5>
-                        <p th:text="${candidature.getDateSoumissionFormatted()}"></p>
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <h5 class="text-muted">Dernière modification</h5>
-                        <p th:text="${candidature.getDateModificationFormatted()}"></p>
-                    </div>
-                </div>
+                <!-- Colonne droite : mon dossier -->
+                <div class="col-lg-5">
+                    <div class="hh-card h-100">
+                        <h5 class="mb-3" style="color: var(--hh-violet-700);">Mon dossier</h5>
 
-                <!-- Fichiers -->
-                <div class="mt-4 pt-4 border-top">
-                    <h5>Fichiers</h5>
-                    <div class="row">
-                        <div class="col-md-6 mb-2">
-                            <span class="badge bg-info">CV</span>
-                            <th:block th:if="${candidature.hasCv()}">
-                                <a th:href="@{/candidat/candidature/{id}/download(id=${candidature.id},type=cv)}"
-                                   class="btn btn-sm btn-outline-primary">
+                        <!-- Statut -->
+                        <div class="mb-3">
+                            <p class="text-muted small mb-1">Statut actuel</p>
+                            <span th:class="${candidature.statusBadgeClass}"
+                                  th:text="${candidature.statusLabel}">-</span>
+                        </div>
+
+                        <!-- Dates -->
+                        <div class="mb-3">
+                            <p class="text-muted small mb-1">Date de soumission</p>
+                            <strong th:text="${candidature.getDateSoumissionFormatted()}">-</strong>
+                        </div>
+                        <div class="mb-4" th:if="${candidature.dateModification != null}">
+                            <p class="text-muted small mb-1">Dernière mise à jour</p>
+                            <strong th:text="${candidature.getDateModificationFormatted()}">-</strong>
+                        </div>
+
+                        <!-- Fichiers -->
+                        <h6 class="text-muted text-uppercase small mb-2">Fichiers joints</h6>
+                        <div class="d-flex flex-column gap-2 mb-4">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span>
+                                    <span th:if="${candidature.hasCv()}" class="text-success me-1">✔</span>
+                                    <span th:unless="${candidature.hasCv()}" class="text-muted me-1">–</span>
+                                    CV
+                                </span>
+                                <a th:if="${candidature.hasCv()}"
+                                   th:href="@{/candidat/candidature/{id}/download(id=${candidature.id},type=cv)}"
+                                   class="btn btn-sm btn-outline-primary rounded-pill">
                                     Télécharger
                                 </a>
-                            </th:block>
-                            <span th:unless="${candidature.hasCv()}" class="text-muted">Non fourni</span>
-                        </div>
-                        <div class="col-md-6 mb-2">
-                            <span class="badge bg-info">Lettre de motivation</span>
-                            <th:block th:if="${candidature.hasLettre()}">
-                                <a th:href="@{/candidat/candidature/{id}/download(id=${candidature.id},type=lettre)}"
-                                   class="btn btn-sm btn-outline-primary">
+                                <span th:unless="${candidature.hasCv()}" class="text-muted small">Non fourni</span>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span>
+                                    <span th:if="${candidature.hasLettre()}" class="text-success me-1">✔</span>
+                                    <span th:unless="${candidature.hasLettre()}" class="text-muted me-1">–</span>
+                                    Lettre de motivation
+                                </span>
+                                <a th:if="${candidature.hasLettre()}"
+                                   th:href="@{/candidat/candidature/{id}/download(id=${candidature.id},type=lettre)}"
+                                   class="btn btn-sm btn-outline-primary rounded-pill">
                                     Télécharger
                                 </a>
-                            </th:block>
-                            <span th:unless="${candidature.hasLettre()}" class="text-muted">Non fournie</span>
+                                <span th:unless="${candidature.hasLettre()}" class="text-muted small">Non fournie</span>
+                            </div>
                         </div>
-                    </div>
-                </div>
 
-                <!-- Actions -->
-                <div class="mt-4 pt-4 border-top">
-                    <a th:href="@{/candidat/candidature/{id}/historique(id=${candidature.id})}"
-                       class="btn btn-outline-secondary me-2">
-                        Voir l'historique
-                    </a>
-                    <form th:action="@{/candidat/candidature/{id}/delete(id=${candidature.id})}"
-                          method="POST" class="d-inline">
-                        <button type="submit" class="btn btn-outline-danger"
-                                onclick="return confirm('Êtes-vous sûr?')">
-                            Supprimer cette candidature
-                        </button>
-                    </form>
+                        <!-- Actions -->
+                        <div class="d-flex flex-column gap-2 pt-3 border-top">
+                            <a th:href="@{/candidat/candidature/{id}/historique(id=${candidature.id})}"
+                               class="btn btn-outline-secondary rounded-pill">
+                                Voir l'historique
+                            </a>
+                            <form th:action="@{/candidat/candidature/{id}/delete(id=${candidature.id})}"
+                                  method="POST">
+                                <button type="submit" class="btn btn-outline-danger rounded-pill w-100"
+                                        onclick="return confirm('Retirer cette candidature définitivement ?')">
+                                    Retirer ma candidature
+                                </button>
+                            </form>
+                        </div>
+
+                    </div>
                 </div>
             </div>
-        </div>
+
+        </div><!-- /th:unless error -->
     </div>
 </section>
 </body>
 </html>
-

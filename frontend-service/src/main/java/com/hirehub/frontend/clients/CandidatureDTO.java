@@ -18,6 +18,7 @@ import java.time.LocalDateTime;
 public class CandidatureDTO {
     private String id;
     private String candidatId;
+    private String candidatEmail;
     private String offreId;
     private String cvPath;
     private String lettreMotivationPath;

@@ -20,6 +20,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -186,10 +187,23 @@ public class CandidatureFrontendClient {
         dto.setId(item.getId());
         dto.setOffreId(item.getOffreId());
         dto.setCandidatId(item.getCandidatId());
+        dto.setCandidatEmail(item.getCandidatEmail());
         dto.setStatus(item.getStatus());
         dto.setCvPath(item.getCvPath());
         dto.setLettreMotivationPath(item.getLettreMotivationPath());
+        dto.setDateSoumission(parseDate(item.getDateSoumission()));
+        dto.setDateModification(parseDate(item.getDateModification()));
         return dto;
+    }
+
+    private LocalDateTime parseDate(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            return LocalDateTime.parse(raw.length() > 19 ? raw.substring(0, 19) : raw);
+        } catch (Exception e) {
+            log.debug("Date non parseable: {}", raw);
+            return null;
+        }
     }
 
     private String parseError(HttpStatusCodeException ex) {

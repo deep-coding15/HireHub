@@ -2,71 +2,111 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout}">
 <head>
-    <title>Pipeline</title>
+    <title>Pipeline candidatures</title>
 </head>
 <body>
 <section layout:fragment="content" class="page-inner">
     <th:block th:insert="~{fragments/recruteur-lock :: top}"/>
     <div th:classappend="${uiRecruteurPending} ? 'hh-recruteur-locked'">
     <div class="container">
+
+        <!-- Fil d'Ariane -->
         <nav aria-label="breadcrumb" class="mb-3">
             <ol class="breadcrumb mb-0">
                 <li class="breadcrumb-item"><a th:href="@{/recruteur/offres}">Mes offres</a></li>
-                <li class="breadcrumb-item active">Offre #<span th:text="${offreId}">—</span></li>
+                <li class="breadcrumb-item active"
+                    th:text="${offre != null ? offre.titre : 'Offre #' + offreId}">Offre</li>
             </ol>
         </nav>
-        <h1 class="page-hero-title">Pipeline</h1>
-        <p class="page-hero-sub">Suivez les candidatures reçues pour cette offre.</p>
+
+        <!-- En-tête offre -->
+        <div class="d-flex justify-content-between align-items-start mb-4 flex-wrap gap-3">
+            <div>
+                <h1 class="page-hero-title mb-1"
+                    th:text="${offre != null ? offre.titre : 'Pipeline — offre #' + offreId}">Pipeline</h1>
+                <div class="d-flex flex-wrap gap-3 text-muted small mt-1" th:if="${offre != null}">
+                    <span th:if="${offre.ville}">📍 <span th:text="${offre.ville}"></span></span>
+                    <span th:if="${offre.typeContrat}">📋 <span th:text="${offre.typeContrat}"></span></span>
+                    <span th:if="${offre.statut}"
+                          th:class="${offre.statut == 'PUBLIEE' ? 'badge bg-success' : (offre.statut == 'FERMEE' ? 'badge bg-secondary' : 'badge bg-warning text-dark')}"
+                          th:text="${offre.statut == 'PUBLIEE' ? 'Publiée' : (offre.statut == 'FERMEE' ? 'Fermée' : 'Brouillon')}"></span>
+                </div>
+            </div>
+            <a th:href="@{/offres/{id}(id=${offreId})}" class="btn btn-outline-secondary btn-sm rounded-pill">
+                Voir l'offre publique
+            </a>
+        </div>
 
         <div class="alert alert-danger border-0 shadow-sm" th:if="${error}" th:text="${error}"></div>
         <div class="alert alert-success border-0 shadow-sm" th:if="${success}" th:text="${success}"></div>
 
-        <div class="hh-table-wrap">
-            <table class="table table-hover mb-0">
+        <!-- État vide -->
+        <div th:if="${#lists.isEmpty(candidatures)}" class="hh-card text-center text-muted py-5">
+            Aucune candidature reçue pour cette offre.
+        </div>
+
+        <!-- Tableau pipeline -->
+        <div th:unless="${#lists.isEmpty(candidatures)}" class="hh-table-wrap">
+            <table class="table table-hover align-middle mb-0">
                 <thead>
                 <tr>
                     <th>Candidat</th>
-                    <th>Date de soumission</th>
-                    <th>CV</th>
+                    <th>Date soumission</th>
+                    <th>Fichiers</th>
                     <th>Statut</th>
-                    <th>Actions</th>
+                    <th>Action rapide</th>
+                    <th></th>
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:if="${#lists.isEmpty(candidatures)}">
-                    <td colspan="5" class="text-center text-muted py-4">Aucune candidature pour cette offre.</td>
-                </tr>
                 <tr th:each="c : ${candidatures}">
-                    <td th:text="${c.candidatId}">—</td>
-                    <td th:text="${c.dateSoumissionFormatted}">—</td>
+                    <!-- Candidat -->
                     <td>
-                        <a th:if="${c.hasCv()}"
-                           th:href="@{/recruteur/candidature/{id}/download(id=${c.candidatureId},type=cv)}"
-                           class="btn btn-sm btn-outline-secondary">CV</a>
-                        <span th:unless="${c.hasCv()}" class="text-muted">—</span>
+                        <span class="fw-semibold" th:text="${c.displayCandidat}">—</span>
                     </td>
+                    <!-- Date -->
+                    <td class="text-muted small" th:text="${c.dateSoumissionFormatted}">—</td>
+                    <!-- Fichiers -->
+                    <td>
+                        <span th:if="${c.hasCv()}" class="badge bg-success me-1" title="CV joint">CV</span>
+                        <span th:unless="${c.hasCv()}" class="badge bg-light text-muted border me-1">CV —</span>
+                        <span th:if="${c.hasLettre()}" class="badge bg-success" title="Lettre jointe">LM</span>
+                        <span th:unless="${c.hasLettre()}" class="badge bg-light text-muted border">LM —</span>
+                    </td>
+                    <!-- Statut -->
                     <td>
                         <span th:class="${c.statusBadgeClass}" th:text="${c.statusLabel}"></span>
                     </td>
+                    <!-- Changement rapide de statut -->
                     <td>
-                        <a th:href="@{/recruteur/candidature/{id}(id=${c.candidatureId})}"
-                           class="btn btn-sm btn-outline-primary rounded-pill me-1">Détails</a>
-                        <form th:action="@{/recruteur/candidature/{id}/statut(id=${c.candidatureId})}"
-                              method="POST" class="d-inline">
-                            <select name="status" class="form-select form-select-sm d-inline-block w-auto"
-                                    onchange="this.form.submit()">
+                        <span th:if="${c.terminal}" class="text-muted small fst-italic">État final</span>
+                        <form th:unless="${c.terminal}"
+                              th:action="@{/recruteur/candidature/{id}/statut(id=${c.candidatureId})}"
+                              method="POST">
+                            <select name="status" class="form-select form-select-sm"
+                                    style="min-width:150px" onchange="this.form.submit()">
                                 <option value="">Changer…</option>
-                                <option value="EN_COURS">En cours</option>
-                                <option value="ENTRETIEN">Entretien</option>
-                                <option value="ACCEPTEE">Acceptée</option>
-                                <option value="REFUSEE">Refusée</option>
+                                <option th:each="t : ${c.allowedTransitions}"
+                                        th:value="${t[0]}"
+                                        th:text="${t[1]}"></option>
                             </select>
                         </form>
+                    </td>
+                    <!-- Lien détail -->
+                    <td>
+                        <a th:href="@{/recruteur/candidature/{id}(id=${c.candidatureId})}"
+                           class="btn btn-sm btn-outline-primary rounded-pill">Détails</a>
                     </td>
                 </tr>
                 </tbody>
             </table>
         </div>
+
+        <!-- Compteur -->
+        <p class="text-muted small mt-3"
+           th:unless="${#lists.isEmpty(candidatures)}"
+           th:text="${#lists.size(candidatures)} + ' candidature(s) reçue(s)'"></p>
+
     </div>
     </div>
 </section>

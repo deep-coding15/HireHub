@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head>
+    <title>Planifier un entretien</title>
+    <style>
+        .type-card {
+            cursor: pointer;
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 1.1rem 1rem;
+            transition: border-color .2s, background .2s, box-shadow .2s;
+            user-select: none;
+            text-align: center;
+        }
+        .type-card:hover {
+            border-color: #a78bfa;
+            background: #f5f3ff;
+        }
+        .type-card.selected {
+            border-color: #7c3aed;
+            background: #f5f3ff;
+            box-shadow: 0 0 0 3px rgba(124,58,237,.15);
+        }
+        .type-card input[type=radio] { display: none; }
+        .type-icon { font-size: 2rem; display: block; margin-bottom: .4rem; }
+
+        .cond-field {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height .3s ease, opacity .25s ease, margin-bottom .3s ease;
+            margin-bottom: 0;
+        }
+        .cond-field.visible {
+            max-height: 220px;
+            opacity: 1;
+            margin-bottom: 1rem;
+        }
+
+        #recap { transition: background .25s, border-color .25s; border-radius: 10px; }
+        #recap.type-visio        { background: #ede9fe; border-color: #a78bfa !important; }
+        #recap.type-presentiel   { background: #d1fae5; border-color: #34d399 !important; }
+        #recap.type-telephonique { background: #fff7ed; border-color: #fb923c !important; }
+    </style>
+</head>
+<body>
+<section layout:fragment="content" class="page-inner">
+<div class="container" style="max-width:680px;">
+
+    <!-- Navigation -->
+    <div class="d-flex gap-2 mb-4">
+        <a th:if="${candidature != null}"
+           th:href="@{/recruteur/candidature/{id}(id=${candidature.id})}"
+           class="btn btn-outline-secondary btn-sm rounded-pill">← Retour au dossier</a>
+        <a th:if="${candidature != null}"
+           th:href="@{/recruteur/pipeline/{id}(id=${candidature.offreId})}"
+           class="btn btn-outline-secondary btn-sm rounded-pill">← Pipeline</a>
+    </div>
+
+    <h1 class="page-hero-title mb-1">Planifier un entretien</h1>
+    <p class="text-muted mb-4" th:if="${candidature != null}">
+        Pour <strong th:text="${candidature.displayCandidat}">candidat</strong>
+        — <span th:text="${candidature.displayTitre}">offre</span>
+    </p>
+
+    <div class="alert alert-danger border-0 rounded-3" th:if="${error}" th:text="${error}"></div>
+
+    <form th:if="${candidature != null}"
+          th:action="@{/recruteur/candidature/{id}/planifier-entretien(id=${candidature.id})}"
+          method="POST" id="planForm" novalidate>
+
+        <!-- ① Date et heure -->
+        <div class="hh-card mb-3">
+            <h2 class="h6 text-uppercase mb-3" style="color:var(--hh-violet-800);">① Date et heure</h2>
+            <input type="datetime-local" id="dateHeure" name="dateHeure"
+                   class="form-control rounded-3 border-0 shadow-sm fs-5 mb-1"
+                   style="max-width:300px;" required/>
+            <div class="form-text">La date doit être dans le futur.</div>
+        </div>
+
+        <!-- ② Type d'entretien -->
+        <div class="hh-card mb-3">
+            <h2 class="h6 text-uppercase mb-3" style="color:var(--hh-violet-800);">② Type d'entretien</h2>
+            <div class="row g-3">
+                <div class="col-12 col-sm-4">
+                    <label class="type-card w-100" id="cardVisio">
+                        <input type="radio" name="type" value="VISIO"/>
+                        <span class="type-icon">🎥</span>
+                        <strong>Visioconférence</strong>
+                        <br><small class="text-muted">Meet, Zoom, Teams…</small>
+                    </label>
+                </div>
+                <div class="col-12 col-sm-4">
+                    <label class="type-card w-100" id="cardPresentiel">
+                        <input type="radio" name="type" value="PRESENTIEL"/>
+                        <span class="type-icon">🏢</span>
+                        <strong>Présentiel</strong>
+                        <br><small class="text-muted">Adresse physique</small>
+                    </label>
+                </div>
+                <div class="col-12 col-sm-4">
+                    <label class="type-card w-100" id="cardTel">
+                        <input type="radio" name="type" value="TELEPHONIQUE"/>
+                        <span class="type-icon">📞</span>
+                        <strong>Téléphonique</strong>
+                        <br><small class="text-muted">Appel direct</small>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- ③ Détails selon le type -->
+        <div class="hh-card mb-3" id="sectionDetails" style="display:none;">
+            <h2 class="h6 text-uppercase mb-3" style="color:var(--hh-violet-800);">③ Détails</h2>
+
+            <!-- Lien visio -->
+            <div class="cond-field" id="fieldVisio">
+                <label class="form-label fw-semibold" for="lienVisio">
+                    🔗 Lien de la réunion <span class="text-danger">*</span>
+                </label>
+                <input type="url" id="lienVisio" name="lienVisio"
+                       class="form-control rounded-3 border-0 shadow-sm"
+                       placeholder="https://meet.google.com/abc-defg-hij"/>
+                <div class="form-text">Copiez le lien depuis Meet, Zoom ou Teams.</div>
+            </div>
+
+            <!-- Lieu présentiel -->
+            <div class="cond-field" id="fieldLieu">
+                <label class="form-label fw-semibold" for="lieu">
+                    📍 Adresse / lieu <span class="text-danger">*</span>
+                </label>
+                <input type="text" id="lieu" name="lieu"
+                       class="form-control rounded-3 border-0 shadow-sm"
+                       placeholder="Ex : 12 rue de la Paix, Paris 75001 — Salle B2"/>
+            </div>
+
+            <!-- Info téléphonique -->
+            <div class="cond-field" id="fieldTel">
+                <div class="alert alert-warning rounded-3 mb-0 small py-2">
+                    📞 Entretien par téléphone. Précisez votre numéro dans les consignes ci-dessous
+                    si le candidat ne l'a pas encore.
+                </div>
+            </div>
+
+            <!-- Consignes (toujours visible dès qu'un type est choisi) -->
+            <div class="mt-3">
+                <label class="form-label fw-semibold" for="notesInternes">
+                    📝 Consignes <span class="text-muted fw-normal small">(facultatif)</span>
+                </label>
+                <textarea id="notesInternes" name="notesInternes" rows="3"
+                          class="form-control rounded-3 border-0 shadow-sm"
+                          placeholder="Ex : Préparez une présentation de 5 min. Munissez-vous d'une pièce d'identité."></textarea>
+                <div class="form-text">Transmises au candidat par email avec la confirmation.</div>
+            </div>
+        </div>
+
+        <!-- ④ Récapitulatif -->
+        <div class="alert border mb-4" id="recap" style="display:none;">
+            <div class="fw-semibold mb-1">
+                <span id="recapIcon"></span> <span id="recapTypeLabel"></span>
+            </div>
+            <div class="small" id="recapDetails"></div>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex gap-3 flex-wrap">
+            <button type="submit" id="btnSubmit" class="btn btn-primary rounded-pill px-4" disabled>
+                ✔ Confirmer et notifier le candidat
+            </button>
+            <a th:href="@{/recruteur/candidature/{id}(id=${candidature.id})}"
+               class="btn btn-outline-secondary rounded-pill">Annuler</a>
+        </div>
+    </form>
+
+</div>
+
+<script>
+(function () {
+    var currentType = null;
+
+    function selectType(type) {
+        currentType = type;
+        ['VISIO','PRESENTIEL','TELEPHONIQUE'].forEach(function(t) {
+            var card = document.getElementById({VISIO:'cardVisio',PRESENTIEL:'cardPresentiel',TELEPHONIQUE:'cardTel'}[t]);
+            var radio = card.querySelector('input[type=radio]');
+            if (t === type) { card.classList.add('selected'); radio.checked = true; }
+            else             { card.classList.remove('selected'); radio.checked = false; }
+        });
+
+        document.getElementById('sectionDetails').style.display = 'block';
+        toggle('fieldVisio',  type === 'VISIO');
+        toggle('fieldLieu',   type === 'PRESENTIEL');
+        toggle('fieldTel',    type === 'TELEPHONIQUE');
+
+        document.getElementById('lienVisio').required = (type === 'VISIO');
+        document.getElementById('lieu').required      = (type === 'PRESENTIEL');
+
+        updateRecap();
+        checkReady();
+    }
+
+    function toggle(id, show) {
+        var el = document.getElementById(id);
+        if (show) el.classList.add('visible');
+        else      el.classList.remove('visible');
+    }
+
+    function updateRecap() {
+        var dt     = document.getElementById('dateHeure').value;
+        var recap  = document.getElementById('recap');
+        if (!currentType || !dt) { recap.style.display = 'none'; return; }
+
+        var cfg = {
+            VISIO:        {icon:'🎥', label:'Visioconférence',  cls:'type-visio'},
+            PRESENTIEL:   {icon:'🏢', label:'Présentiel',       cls:'type-presentiel'},
+            TELEPHONIQUE: {icon:'📞', label:'Téléphonique',     cls:'type-telephonique'}
+        };
+        var c = cfg[currentType];
+        document.getElementById('recapIcon').textContent      = c.icon;
+        document.getElementById('recapTypeLabel').textContent = c.label;
+        recap.className = 'alert border mb-4 ' + c.cls;
+        recap.style.display = 'block';
+
+        var d = new Date(dt);
+        var dateStr = d.toLocaleDateString('fr-FR', {weekday:'long', day:'numeric', month:'long', year:'numeric'})
+                    + ' à ' + d.toLocaleTimeString('fr-FR', {hour:'2-digit', minute:'2-digit'});
+        var extra = '';
+        if (currentType === 'VISIO') {
+            var lien = document.getElementById('lienVisio').value;
+            if (lien) extra = '<br>🔗 <a href="' + lien + '" target="_blank" class="small">' + lien + '</a>';
+        } else if (currentType === 'PRESENTIEL') {
+            var lieu = document.getElementById('lieu').value;
+            if (lieu) extra = '<br>📍 ' + lieu;
+        }
+        document.getElementById('recapDetails').innerHTML = '📅 ' + dateStr + extra;
+    }
+
+    function checkReady() {
+        var dt  = document.getElementById('dateHeure').value;
+        document.getElementById('btnSubmit').disabled = !(dt && currentType);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Date minimum = maintenant
+        var now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        document.getElementById('dateHeure').min = now.toISOString().slice(0, 16);
+
+        // Écouter le changement des radios (fiable, pas de double-fire)
+        document.querySelectorAll('input[name="type"]').forEach(function(radio) {
+            radio.addEventListener('change', function() {
+                selectType(this.value);
+            });
+        });
+
+        // Écouter input ET change sur la date (le sélecteur natif émet 'change')
+        ['input', 'change'].forEach(function(ev) {
+            document.getElementById('dateHeure').addEventListener(ev, function() {
+                updateRecap();
+                checkReady();
+            });
+        });
+
+        document.getElementById('lienVisio').addEventListener('input', updateRecap);
+        document.getElementById('lieu').addEventListener('input', updateRecap);
+
+        // Pré-sélectionner Visio
+        selectType('VISIO');
+    });
+})();
+</script>
+</section>
+</body>
+</html>

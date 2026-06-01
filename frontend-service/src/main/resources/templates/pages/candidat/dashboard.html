@@ -2,59 +2,184 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout}">
 <head>
-    <title>Espace candidat</title>
+    <title>Mon espace candidat</title>
 </head>
 <body>
 <section layout:fragment="content" class="page-inner">
-    <div class="container">
-        <h1 class="page-hero-title">Bonjour, candidat</h1>
-        <p class="page-hero-sub">Vue d'ensemble de votre parcours candidat.</p>
+<div class="container">
 
-        <div class="alert alert-warning border-0 shadow-sm" th:if="${apiError}">
-            Certaines informations sont temporairement indisponibles.
+    <!-- En-tête personnalisé -->
+    <div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-3">
+        <div>
+            <h1 class="page-hero-title mb-1">
+                Bonjour, <span th:text="${fullName}">candidat</span> 👋
+            </h1>
+            <p class="text-muted mb-0">Voici un résumé de votre activité sur HireHub.</p>
         </div>
+        <a th:href="@{/offres}" class="btn btn-primary rounded-pill">Trouver une offre</a>
+    </div>
 
-        <div class="row g-3 mb-4">
-            <div class="col-md-4">
-                <div class="hh-kpi">
-                    <div class="hh-kpi-value" th:text="${candidaturesCount}">0</div>
-                    <div class="hh-kpi-label">Candidatures</div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="hh-kpi">
-                    <div class="hh-kpi-value" th:text="${entretiensCount}">0</div>
-                    <div class="hh-kpi-label">Entretiens planifies</div>
-                </div>
+    <!-- Alerte service indisponible -->
+    <div class="alert alert-warning border-0 shadow-sm d-flex align-items-center gap-2" th:if="${apiError}">
+        <span>⚠️</span>
+        <span>Certaines données sont temporairement indisponibles. Réessayez dans quelques instants.</span>
+    </div>
+
+    <!-- KPI : barre de progression du parcours -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="hh-kpi text-center">
+                <div class="hh-kpi-value" th:text="${candidaturesCount}">0</div>
+                <div class="hh-kpi-label">Total</div>
             </div>
         </div>
-
-        <div class="row g-4">
-            <div class="col-lg-7">
-                <div class="hh-card">
-                    <h2 class="h5 mb-3" style="color: var(--hh-violet-900);">Candidatures recentes</h2>
-                    <ul class="list-unstyled mb-0" th:if="${!#lists.isEmpty(candidatures)}">
-                        <li class="d-flex justify-content-between py-2 border-bottom border-light"
-                            th:each="c : ${candidatures}">
-                            <span>Offre #<strong th:text="${c.offreId}">1</strong></span>
-                            <span th:class="${c.statusBadgeClass}" th:text="${c.statusLabel}">Statut</span>
-                        </li>
-                    </ul>
-                    <p class="text-muted mb-0" th:if="${#lists.isEmpty(candidatures)}">Aucune candidature pour le moment.</p>
-                </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="hh-kpi text-center" style="border-top: 3px solid #06b6d4;">
+                <div class="hh-kpi-value text-info" th:text="${cntSoumise}">0</div>
+                <div class="hh-kpi-label">Soumises</div>
             </div>
-            <div class="col-lg-5">
-                <div class="hh-card">
-                    <h2 class="h5 mb-3" style="color: var(--hh-violet-900);">Raccourcis</h2>
-                    <div class="d-grid gap-2">
-                        <a class="btn btn-outline-primary rounded-pill" th:href="@{/offres}">Parcourir les offres</a>
-                        <a class="btn btn-outline-primary rounded-pill" th:href="@{/candidat/mes-candidatures}">Mes candidatures</a>
-                        <a class="btn btn-outline-primary rounded-pill" th:href="@{/candidat/entretiens}">Mes entretiens</a>
-                    </div>
-                </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="hh-kpi text-center" style="border-top: 3px solid #f59e0b;">
+                <div class="hh-kpi-value" style="color:#f59e0b;" th:text="${cntEnCours}">0</div>
+                <div class="hh-kpi-label">En cours</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="hh-kpi text-center" style="border-top: 3px solid #6366f1;">
+                <div class="hh-kpi-value text-primary" th:text="${cntEntretien}">0</div>
+                <div class="hh-kpi-label">Entretiens</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="hh-kpi text-center" style="border-top: 3px solid #22c55e;">
+                <div class="hh-kpi-value text-success" th:text="${cntAcceptee}">0</div>
+                <div class="hh-kpi-label">Acceptées</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-4 col-lg-2">
+            <div class="hh-kpi text-center" style="border-top: 3px solid #ef4444;">
+                <div class="hh-kpi-value text-danger" th:text="${cntRefusee}">0</div>
+                <div class="hh-kpi-label">Refusées</div>
             </div>
         </div>
     </div>
+
+    <div class="row g-4">
+
+        <!-- Colonne principale : candidatures récentes -->
+        <div class="col-lg-8">
+            <div class="hh-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h5 mb-0" style="color:var(--hh-violet-900);">Mes candidatures récentes</h2>
+                    <a th:href="@{/candidat/mes-candidatures}" class="btn btn-sm btn-outline-primary rounded-pill">
+                        Tout voir
+                    </a>
+                </div>
+
+                <!-- État vide -->
+                <div th:if="${#lists.isEmpty(candidatures)}" class="text-center py-4">
+                    <p class="text-muted mb-3">Vous n'avez pas encore postulé à une offre.</p>
+                    <a th:href="@{/offres}" class="btn btn-primary rounded-pill">Parcourir les offres</a>
+                </div>
+
+                <!-- Liste (max 5) -->
+                <ul class="list-unstyled mb-0" th:unless="${#lists.isEmpty(candidatures)}">
+                    <li th:each="c, stat : ${candidatures}" th:if="${stat.index < 5}"
+                        class="d-flex justify-content-between align-items-start py-3"
+                        th:classappend="${!stat.last and stat.index < 4} ? 'border-bottom border-light'">
+                        <div class="me-3 flex-grow-1" style="min-width:0;">
+                            <div class="fw-semibold text-truncate"
+                                 th:text="${c.displayTitre}">Offre</div>
+                            <div class="text-muted small d-flex flex-wrap gap-2 mt-1">
+                                <span th:if="${c.offreVille}">📍 <span th:text="${c.offreVille}"></span></span>
+                                <span th:if="${c.offreTypeContrat}">📋 <span th:text="${c.offreTypeContrat}"></span></span>
+                                <span>🗓 <span th:text="${c.dateSoumissionFormatted}"></span></span>
+                            </div>
+                        </div>
+                        <div class="d-flex flex-column align-items-end gap-1 flex-shrink-0">
+                            <span th:class="${c.statusBadgeClass}" th:text="${c.statusLabel}"></span>
+                            <a th:href="@{/candidat/candidature/{id}(id=${c.id})}"
+                               class="btn btn-sm btn-outline-secondary rounded-pill" style="font-size:.75rem;">
+                                Détails
+                            </a>
+                        </div>
+                    </li>
+                </ul>
+
+                <div th:if="${candidaturesCount > 5}" class="text-center mt-3 pt-3 border-top">
+                    <a th:href="@{/candidat/mes-candidatures}" class="btn btn-outline-primary rounded-pill btn-sm">
+                        Voir les <span th:text="${candidaturesCount - 5}"></span> autres candidatures
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne latérale -->
+        <div class="col-lg-4 d-flex flex-column gap-4">
+
+            <!-- Entretiens -->
+            <div class="hh-card">
+                <h2 class="h5 mb-3" style="color:var(--hh-violet-900);">Entretiens planifiés</h2>
+                <div class="d-flex align-items-center gap-3">
+                    <span class="display-6 fw-bold" style="color:var(--hh-violet-600);"
+                          th:text="${entretiensCount}">0</span>
+                    <span class="text-muted small"
+                          th:text="${entretiensCount == 1} ? 'entretien à venir' : 'entretiens à venir'">
+                        entretiens à venir
+                    </span>
+                </div>
+                <a th:href="@{/candidat/entretiens}"
+                   class="btn btn-outline-primary rounded-pill btn-sm mt-3 w-100">
+                    Voir mes entretiens
+                </a>
+            </div>
+
+            <!-- Raccourcis -->
+            <div class="hh-card">
+                <h2 class="h5 mb-3" style="color:var(--hh-violet-900);">Actions rapides</h2>
+                <div class="d-grid gap-2">
+                    <a class="btn btn-primary rounded-pill" th:href="@{/offres}">
+                        🔍 Parcourir les offres
+                    </a>
+                    <a class="btn btn-outline-primary rounded-pill" th:href="@{/candidat/mes-candidatures}">
+                        📋 Mes candidatures
+                    </a>
+                    <a class="btn btn-outline-secondary rounded-pill" th:href="@{/candidat/entretiens}">
+                        📅 Mes entretiens
+                    </a>
+                    <a class="btn btn-outline-secondary rounded-pill" th:href="@{/candidat/profil}">
+                        👤 Mon profil
+                    </a>
+                </div>
+            </div>
+
+            <!-- Conseil -->
+            <div class="hh-card" style="background:var(--hh-violet-50, #f5f3ff); border-left: 4px solid var(--hh-violet-400);">
+                <h6 class="fw-semibold mb-2" style="color:var(--hh-violet-800);">💡 Conseil</h6>
+                <p class="text-muted small mb-0"
+                   th:if="${cntSoumise > 0}">
+                    Vous avez <strong th:text="${cntSoumise}"></strong> candidature(s) en attente de réponse.
+                    Pensez à relancer le recruteur si vous n'avez pas eu de retour sous 2 semaines.
+                </p>
+                <p class="text-muted small mb-0"
+                   th:if="${cntEntretien > 0}">
+                    🎉 Vous avez décroché un entretien ! Préparez bien votre présentation et relisez la description du poste.
+                </p>
+                <p class="text-muted small mb-0"
+                   th:if="${candidaturesCount == 0}">
+                    Commencez par explorer les offres disponibles et postulez directement depuis la fiche offre.
+                </p>
+                <p class="text-muted small mb-0"
+                   th:if="${cntAcceptee > 0 and cntEntretien == 0 and cntSoumise == 0}">
+                    🎊 Félicitations pour votre acceptation ! Pensez à mettre à jour votre profil.
+                </p>
+            </div>
+
+        </div>
+    </div>
+
+</div>
 </section>
 </body>
 </html>

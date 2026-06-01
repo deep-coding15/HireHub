@@ -13,6 +13,7 @@ public class EntretienView {
     private String lieu;
     private String lienVisio;
     private String type;
+    private String notesInternes;
     private String status;
 
     public String getId() {
@@ -79,12 +80,29 @@ public class EntretienView {
         this.type = type;
     }
 
+    public String getNotesInternes() { return notesInternes; }
+    public void setNotesInternes(String notesInternes) { this.notesInternes = notesInternes; }
+
     public String getStatus() {
         return status;
     }
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getTypeLabel() {
+        if (type == null) return "-";
+        return switch (type) {
+            case "VISIO"        -> "Visioconférence";
+            case "PRESENTIEL"   -> "Présentiel";
+            case "TELEPHONIQUE" -> "Téléphonique";
+            default -> type;
+        };
+    }
+
+    public boolean isVisio() {
+        return "VISIO".equals(type);
     }
 
     public String getDateHeureFormatted() {

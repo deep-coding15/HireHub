@@ -16,4 +16,7 @@ public class CandidatureApiItem {
     private String createdAt;
     private String cvPath;
     private String lettreMotivationPath;
+    private String candidatEmail;
+    private String dateSoumission;
+    private String dateModification;
 }

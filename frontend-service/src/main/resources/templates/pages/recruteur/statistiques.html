@@ -18,7 +18,7 @@
 
         <div class="hh-card mb-4">
             <h2 class="h6 text-uppercase mb-3" style="color: var(--hh-violet-800);">Candidatures par offre</h2>
-            <div style="max-height: 420px;">
+            <div th:style="|height: ${#lists.size(stats.offreLabels) * 48 + 80}px; min-height: 160px; max-height: 600px;|">
                 <canvas id="chartRecruteur"></canvas>
             </div>
         </div>
@@ -48,8 +48,10 @@
         document.addEventListener('DOMContentLoaded', function () {
             const el = document.getElementById('chartRecruteur');
             if (!el || typeof Chart === 'undefined') return;
-            const labels = /*[[${stats.chartLabelsJson}]]*/ [];
-            const data = /*[[${stats.chartDataJson}]]*/ [];
+            const rawLabels = /*[[${stats.chartLabelsJson}]]*/ [];
+            const data      = /*[[${stats.chartDataJson}]]*/ [];
+            // Tronquer les labels longs pour les barres horizontales
+            const labels = rawLabels.map(l => l.length > 40 ? l.substring(0, 38) + '…' : l);
             new Chart(el, {
                 type: 'bar',
                 data: {
@@ -58,16 +60,24 @@
                         label: 'Candidatures',
                         data: data,
                         backgroundColor: 'rgba(109, 40, 217, 0.65)',
-                        borderRadius: 8
+                        borderRadius: 6
                     }]
                 },
                 options: {
+                    indexAxis: 'y',          // barres horizontales → labels sur l'axe Y
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(76,29,149,0.08)' } },
-                        x: { grid: { display: false } }
+                        x: {
+                            beginAtZero: true,
+                            ticks: { precision: 0 },
+                            grid: { color: 'rgba(76,29,149,0.08)' }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { font: { size: 13 } }
+                        }
                     }
                 }
             });

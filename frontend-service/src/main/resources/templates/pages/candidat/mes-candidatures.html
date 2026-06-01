@@ -7,33 +7,78 @@
 <body>
 <section layout:fragment="content" class="page-inner">
     <div class="container">
-        <h1 class="page-hero-title">Mes candidatures</h1>
-        <p class="page-hero-sub">Suivez l'état de vos candidatures en cours.</p>
+
+        <div class="d-flex justify-content-between align-items-end mb-4">
+            <div>
+                <h1 class="page-hero-title mb-1">Mes candidatures</h1>
+                <p class="text-muted mb-0">Suivez l'avancement de vos dossiers.</p>
+            </div>
+            <a th:href="@{/offres}" class="btn btn-primary rounded-pill">
+                Trouver une offre
+            </a>
+        </div>
 
         <div class="alert alert-success border-0 shadow-sm" th:if="${success}" th:text="${success}"></div>
         <div class="alert alert-danger border-0 shadow-sm" th:if="${error}" th:text="${error}"></div>
 
-        <div th:if="${#lists.isEmpty(candidatures)}" class="hh-card text-center text-muted py-4">
-            Aucune candidature. <a th:href="@{/offres}">Parcourir les offres</a>.
+        <!-- État vide -->
+        <div th:if="${#lists.isEmpty(candidatures)}" class="hh-card text-center py-5">
+            <p class="fs-5 text-muted mb-3">Vous n'avez pas encore postulé à une offre.</p>
+            <a th:href="@{/offres}" class="btn btn-primary rounded-pill">Parcourir les offres</a>
         </div>
 
-        <div class="hh-card mb-4" th:each="c : ${candidatures}">
-            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-                <div>
-                    <h2 class="h5 mb-0" style="color: var(--hh-violet-900);">
-                        Offre #<span th:text="${c.offreId}">1</span>
-                    </h2>
-                    <small class="text-muted">Soumise le <span th:text="${c.dateSoumissionFormatted}">-</span></small>
+        <!-- Liste des candidatures -->
+        <div th:each="c : ${candidatures}" class="hh-card mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-start gap-3">
+
+                <!-- Titre + métadonnées de l'offre -->
+                <div class="flex-grow-1">
+                    <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+                        <h2 class="h5 mb-0" style="color: var(--hh-violet-900);"
+                            th:text="${c.displayTitre}">Titre de l'offre</h2>
+                        <span th:class="${c.statusBadgeClass}" th:text="${c.statusLabel}">Statut</span>
+                    </div>
+
+                    <!-- Détails offre : ville, contrat, salaire -->
+                    <div class="d-flex flex-wrap gap-3 text-muted small mt-2">
+                        <span th:if="${c.offreVille}">
+                            📍 <span th:text="${c.offreVille}"></span>
+                        </span>
+                        <span th:if="${c.offreTypeContrat}">
+                            📋 <span th:text="${c.offreTypeContrat}"></span>
+                        </span>
+                        <span th:if="${c.offreSalaire != null and c.offreSalaire > 0}">
+                            💶 <span th:text="${c.offreSalaireFormatted}"></span>
+                        </span>
+                        <span th:if="${c.offreDateExpirationFormatted}">
+                            ⏳ Expire le <span th:text="${c.offreDateExpirationFormatted}"></span>
+                        </span>
+                    </div>
+
+                    <!-- Dates candidature -->
+                    <div class="d-flex flex-wrap gap-3 text-muted small mt-2">
+                        <span>Soumise le <strong th:text="${c.dateSoumissionFormatted}">-</strong></span>
+                        <span th:if="${c.dateModification != null}">
+                            · Mis à jour le <strong th:text="${c.dateModificationFormatted}">-</strong>
+                        </span>
+                        <span th:if="${c.hasCv()}" class="text-success">✔ CV joint</span>
+                        <span th:unless="${c.hasCv()}" class="text-warning">⚠ Pas de CV</span>
+                        <span th:if="${c.hasLettre()}" class="text-success">✔ Lettre jointe</span>
+                    </div>
                 </div>
-                <span th:class="${c.statusBadgeClass}" th:text="${c.statusLabel}">Statut</span>
             </div>
-            <div class="d-flex gap-2 flex-wrap">
+
+            <!-- Actions -->
+            <div class="d-flex gap-2 flex-wrap mt-3 pt-3 border-top">
                 <a class="btn btn-sm btn-outline-primary rounded-pill"
-                   th:href="@{/candidat/candidature/{id}(id=${c.id})}">Détails</a>
+                   th:href="@{/candidat/candidature/{id}(id=${c.id})}">Voir le dossier</a>
                 <a class="btn btn-sm btn-outline-secondary rounded-pill"
                    th:href="@{/candidat/candidature/{id}/historique(id=${c.id})}">Historique</a>
+                <a class="btn btn-sm btn-outline-secondary rounded-pill"
+                   th:if="${c.offreId != null}"
+                   th:href="@{/offres/{id}(id=${c.offreId})}">Voir l'offre</a>
                 <form th:action="@{/candidat/candidature/{id}/delete(id=${c.id})}"
-                      method="POST" class="d-inline">
+                      method="POST" class="d-inline ms-auto">
                     <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill"
                             onclick="return confirm('Retirer cette candidature ?')">
                         Retirer
@@ -41,6 +86,7 @@
                 </form>
             </div>
         </div>
+
     </div>
 </section>
 </body>

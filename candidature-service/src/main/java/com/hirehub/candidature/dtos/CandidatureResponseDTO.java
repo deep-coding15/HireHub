@@ -15,6 +15,7 @@ public class CandidatureResponseDTO {
     private String id;
     private String offreId;
     private String candidatId;
+    private String candidatEmail;
     private String status;
     private String cvPath;
     private String lettreMotivationPath;

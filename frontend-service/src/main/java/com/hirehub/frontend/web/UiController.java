@@ -3,6 +3,7 @@ package com.hirehub.frontend.web;
 import com.hirehub.frontend.admin.AdminDashboardStats;
 import com.hirehub.frontend.admin.AdminSpaceService;
 import com.hirehub.frontend.admin.AdminUserDetailVm;
+import com.hirehub.frontend.auth.FrontendUserRepository;
 import com.hirehub.frontend.entretien.EntretienFrontendClient;
 import com.hirehub.frontend.offre.OffreForm;
 import com.hirehub.frontend.offre.OffreFrontendClient;
@@ -45,6 +46,7 @@ public class UiController {
     private final RecruteurStatsService recruteurStatsService;
     private final CandidatureFrontendClient candidatureFrontendClient;
     private final ApplicationUploadService applicationUploadService;
+    private final FrontendUserRepository frontendUserRepository;
 
     public UiController(
             AdminSpaceService adminSpaceService,
@@ -52,7 +54,8 @@ public class UiController {
             EntretienFrontendClient entretienFrontendClient,
             RecruteurStatsService recruteurStatsService,
             CandidatureFrontendClient candidatureFrontendClient,
-            ApplicationUploadService applicationUploadService
+            ApplicationUploadService applicationUploadService,
+            FrontendUserRepository frontendUserRepository
     ) {
         this.adminSpaceService = adminSpaceService;
         this.offreFrontendClient = offreFrontendClient;
@@ -60,6 +63,7 @@ public class UiController {
         this.recruteurStatsService = recruteurStatsService;
         this.candidatureFrontendClient = candidatureFrontendClient;
         this.applicationUploadService = applicationUploadService;
+        this.frontendUserRepository = frontendUserRepository;
     }
 
     /* ---------- Public ---------- */
@@ -185,8 +189,38 @@ public class UiController {
     }
 
     @GetMapping("/candidat/profil")
-    public String candidatProfil() {
+    public String candidatProfil(Authentication auth, Model model) {
+        if (auth != null && auth.getPrincipal() instanceof HirehubUserDetails details) {
+            model.addAttribute("fullName", details.getFullName() != null ? details.getFullName() : "");
+            model.addAttribute("email", details.getUsername());
+        }
         return "pages/candidat/profil";
+    }
+
+    @PostMapping("/candidat/profil")
+    public String candidatProfilSave(
+            @RequestParam(value = "fullName", required = false) String fullName,
+            Authentication auth,
+            RedirectAttributes redirectAttributes
+    ) {
+        if (auth == null || !(auth.getPrincipal() instanceof HirehubUserDetails details)) {
+            return "redirect:/login";
+        }
+        try {
+            if (fullName == null || fullName.isBlank()) {
+                redirectAttributes.addFlashAttribute("profilError", "Le nom complet ne peut pas être vide.");
+                return "redirect:/candidat/profil";
+            }
+            frontendUserRepository.findByEmailIgnoreCase(details.getUsername()).ifPresent(user -> {
+                user.setFullName(fullName.trim());
+                frontendUserRepository.save(user);
+            });
+            redirectAttributes.addFlashAttribute("profilSuccess", "Profil mis à jour avec succès.");
+        } catch (Exception ex) {
+            log.warn("Sauvegarde profil candidat: {}", ex.getMessage());
+            redirectAttributes.addFlashAttribute("profilError", "Impossible de sauvegarder le profil pour le moment.");
+        }
+        return "redirect:/candidat/profil";
     }
 
     @GetMapping("/demande-recruteur")

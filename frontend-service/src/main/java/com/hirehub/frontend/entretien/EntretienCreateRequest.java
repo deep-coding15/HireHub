@@ -1,20 +1,20 @@
-package com.hirehub.entretien.dtos;
+package com.hirehub.frontend.entretien;
 
-import com.hirehub.entretien.entities.EntretienType;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
 
-@Getter @Setter @NoArgsConstructor
-public class CreateEntretienRequest {
+@Getter @Setter @NoArgsConstructor @AllArgsConstructor
+public class EntretienCreateRequest {
     private String candidatureId;
-    private String candidatId;    // fourni par le frontend pour éviter l'appel Feign interne
+    private String candidatId;
     private String recruteurId;
     private LocalDateTime dateHeure;
     private String lieu;
     private String lienVisio;
-    private EntretienType type;
+    private String type;          // PRESENTIEL | VISIO | TELEPHONIQUE
     private String notesInternes;
 }

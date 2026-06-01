@@ -2,89 +2,112 @@
 <html lang="fr" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
       layout:decorate="~{layout}">
 <head>
-    <title>Historique candidature</title>
+    <title>Historique de candidature</title>
 </head>
 <body>
 <section layout:fragment="content" class="page-inner">
     <div class="container">
-        <div class="mb-3">
-            <a th:href="@{/candidat/mes-candidatures}" class="btn btn-outline-secondary">
-                ← Retour aux candidatures
+
+        <!-- Navigation -->
+        <div class="d-flex gap-2 mb-4">
+            <a th:href="@{/candidat/mes-candidatures}" class="btn btn-outline-secondary btn-sm rounded-pill">
+                ← Mes candidatures
+            </a>
+            <a th:if="${candidature != null}"
+               th:href="@{/candidat/candidature/{id}(id=${candidature.id})}"
+               class="btn btn-outline-primary btn-sm rounded-pill">
+                Voir le dossier
             </a>
         </div>
 
-        <h1 class="page-hero-title">Historique de candidature</h1>
-
-        <div th:if="${error}" class="alert alert-danger">
-            <span th:text="${error}"></span>
+        <!-- En-tête : infos de la candidature concernée -->
+        <div th:if="${candidature != null}" class="hh-card mb-4">
+            <div class="d-flex justify-content-between align-items-start flex-wrap gap-3">
+                <div>
+                    <p class="text-muted small mb-1">Historique de la candidature pour</p>
+                    <h1 class="h4 mb-1" th:text="${candidature.displayTitre}">Titre de l'offre</h1>
+                    <div class="d-flex flex-wrap gap-3 text-muted small mt-1">
+                        <span th:if="${candidature.offreVille}">
+                            📍 <span th:text="${candidature.offreVille}"></span>
+                        </span>
+                        <span th:if="${candidature.offreTypeContrat}">
+                            📋 <span th:text="${candidature.offreTypeContrat}"></span>
+                        </span>
+                        <span>
+                            🗓 Postulé le <strong th:text="${candidature.dateSoumissionFormatted}"></strong>
+                        </span>
+                    </div>
+                </div>
+                <span th:class="${candidature.statusBadgeClass + ' fs-6 px-3 py-2'}"
+                      th:text="${candidature.statusLabel}">Statut actuel</span>
+            </div>
         </div>
 
-        <div th:if="${historique.isEmpty()}" class="alert alert-info">
-            Aucun changement de statut pour le moment.
+        <h2 class="h5 mb-3" style="color:var(--hh-violet-900);">Évolution du dossier</h2>
+
+        <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+
+        <div th:if="${historique.isEmpty()}" class="hh-card text-center text-muted py-4">
+            Aucun changement de statut enregistré pour le moment.<br>
+            <small>Les évolutions apparaîtront ici dès qu'un recruteur traitera votre dossier.</small>
         </div>
 
         <div th:unless="${historique.isEmpty()}" class="hh-card">
             <div class="timeline">
-                <div th:each="event : ${historique}" class="timeline-item">
-                    <div class="timeline-marker"></div>
+                <div th:each="event, stat : ${historique}" class="timeline-item">
+                    <div class="timeline-marker"
+                         th:style="${stat.first} ? 'background-color: var(--hh-violet-600);' : ''"></div>
                     <div class="timeline-content">
-                        <h5 class="mb-1">
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
                             <span th:class="${event.ancienStatusBadgeClass}"
                                   th:text="${event.ancienStatusLabel}"></span>
-                            →
+                            <span class="text-muted">→</span>
                             <span th:class="${event.nouveauStatusBadgeClass}"
                                   th:text="${event.nouveauStatusLabel}"></span>
-                        </h5>
-                        <p class="text-muted mb-1">
-                            <small th:text="${event.getDateChangementFormatted()}"></small>
+                            <span th:if="${stat.first}" class="badge bg-light text-muted border ms-1">
+                                Dernière mise à jour
+                            </span>
+                        </div>
+                        <p class="text-muted small mb-1">
+                            🕐 <span th:text="${event.getDateChangementFormatted()}"></span>
                         </p>
-                        <p th:if="${event.commentaire}" th:text="${event.commentaire}" class="mb-0"></p>
-                        <p th:unless="${event.commentaire}" class="text-muted mb-0">
-                            <small>Pas de commentaire</small>
-                        </p>
+                        <p th:if="${event.commentaire}" class="mb-0 small fst-italic"
+                           th:text="${event.commentaire}"></p>
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Lien vers l'offre publique -->
+        <div th:if="${candidature != null and candidature.offreId != null}" class="mt-3 text-center">
+            <a th:href="@{/offres/{id}(id=${candidature.offreId})}"
+               class="btn btn-outline-secondary btn-sm rounded-pill">
+                Consulter l'offre
+            </a>
+        </div>
+
     </div>
 </section>
 
 <style>
-.timeline {
-    position: relative;
-    padding: 10px 0;
-}
-
-.timeline-item {
-    display: flex;
-    margin-bottom: 30px;
-    position: relative;
-}
-
+.timeline { position: relative; padding: 10px 0; }
+.timeline-item { display: flex; margin-bottom: 28px; position: relative; }
 .timeline-marker {
-    width: 12px;
-    height: 12px;
-    background-color: var(--hh-violet-600);
+    width: 13px; height: 13px;
+    background-color: var(--hh-violet-300, #c4b5fd);
+    border: 2px solid var(--hh-violet-600, #7c3aed);
     border-radius: 50%;
-    margin-top: 5px;
-    margin-right: 20px;
-    flex-shrink: 0;
+    margin-top: 4px; margin-right: 18px; flex-shrink: 0;
 }
-
 .timeline-item:not(:last-child)::before {
     content: '';
     position: absolute;
-    left: 5px;
-    top: 20px;
-    height: 30px;
+    left: 5px; top: 22px;
+    height: calc(100% + 6px);
     width: 2px;
-    background-color: var(--hh-violet-200);
+    background-color: var(--hh-violet-100, #ede9fe);
 }
-
-.timeline-content {
-    flex: 1;
-}
+.timeline-content { flex: 1; }
 </style>
 </body>
 </html>
-

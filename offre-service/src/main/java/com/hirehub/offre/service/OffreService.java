@@ -95,6 +95,12 @@ public class OffreService {
         return offreRepository.existsByIdAndStatut(id, StatutOffre.PUBLIEE);
     }
 
+    public boolean isRecruteurOwner(Long id, String recruteurId) {
+        return offreRepository.findById(id)
+                .map(o -> o.getRecruteurId().equals(recruteurId))
+                .orElse(false);
+    }
+
     private Offre findOffre(Long id) {
         return offreRepository.findById(id)
                 .orElseThrow(() -> {

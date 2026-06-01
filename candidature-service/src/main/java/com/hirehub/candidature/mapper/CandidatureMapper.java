@@ -33,6 +33,7 @@ public final class CandidatureMapper {
         candidatureResponseDTO.setId(candidature.getId());
         candidatureResponseDTO.setOffreId(candidature.getOffreId());
         candidatureResponseDTO.setCandidatId(candidature.getCandidatId());
+        candidatureResponseDTO.setCandidatEmail(candidature.getCandidatEmail());
         candidatureResponseDTO.setStatus(candidature.getStatus().getLabel());
         candidatureResponseDTO.setCvPath(candidature.getCvPath());
         candidatureResponseDTO.setLettreMotivationPath(candidature.getLettreMotivationPath());

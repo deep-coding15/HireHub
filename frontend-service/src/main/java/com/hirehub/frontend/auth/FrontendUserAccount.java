@@ -109,6 +109,10 @@ public class FrontendUserAccount {
         return Boolean.TRUE.equals(blocked);
     }
 
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
+    }
+
     public void setRecruiterApproved(boolean recruiterApproved) {
         this.recruiterApproved = recruiterApproved;
     }
