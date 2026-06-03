@@ -100,6 +100,11 @@
             <optional>true</optional>
         </dependency>
 
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+        </dependency>
+
         <!-- Resilience4j — Circuit Breaker, Retry, Bulkhead -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

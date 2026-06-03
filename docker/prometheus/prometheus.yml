@@ -1,0 +1,39 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'api-gateway'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['api-gateway:8089']
+        labels:
+          service: 'api-gateway'
+
+  - job_name: 'candidature-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['candidature-service:8083']
+        labels:
+          service: 'candidature-service'
+
+  - job_name: 'email-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['email-service:8093']
+        labels:
+          service: 'email-service'
+
+  - job_name: 'entretien-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['entretien-service:8085']
+        labels:
+          service: 'entretien-service'
+
+  - job_name: 'frontend-service'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['frontend-service:8086']
+        labels:
+          service: 'frontend-service'

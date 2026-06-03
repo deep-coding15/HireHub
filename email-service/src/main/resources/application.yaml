@@ -160,4 +160,4 @@ management:
   endpoints:
     web:
       exposure:
-        include: health, metrics, circuitbreakers, circuitbreakerevents
+        include: health, metrics, prometheus, circuitbreakers, circuitbreakerevents

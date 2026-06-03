@@ -78,6 +78,24 @@ services:
       loki:
         condition: service_healthy
 
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: hirehub-prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=7d'
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --tries=1 -O- http://localhost:9090/-/healthy || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   grafana:
     image: grafana/grafana:11.0.0
     container_name: hirehub-grafana
@@ -94,6 +112,8 @@ services:
     depends_on:
       loki:
         condition: service_healthy
+      prometheus:
+        condition: service_healthy
 
 # ── Volumes ──────────────────────────────────────────────────────────────────
 
@@ -103,6 +123,7 @@ volumes:
   hirehub-rabbitmq-logs:
   loki-data:
   grafana-data:
+  prometheus-data:
 
 # ── Réseau ───────────────────────────────────────────────────────────────────
 
