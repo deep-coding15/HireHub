@@ -1,0 +1,1634 @@
+{
+  "info": {
+    "_postman_id": "hirehub-complete-collection",
+    "name": "HireHub - Collection Complète",
+    "description": "Collection Postman complète pour le projet HireHub (plateforme de recrutement microservices).\n\n## Architecture\n- **API Gateway**: http://localhost:8089\n- **Auth Service**: http://localhost:8081\n- **Offre Service**: http://localhost:8092\n- **Candidature Service**: http://localhost:8083\n- **Entretien Service**: http://localhost:8085\n- **Email Service**: http://localhost:8093\n- **Event Service**: http://localhost:8084\n- **Frontend**: http://localhost:8086\n\n## Utilisation\n1. Commencez par **Auth > Login** pour obtenir un token JWT\n2. Le token est automatiquement sauvegardé dans la variable `{{jwt_token}}`\n3. Toutes les requêtes protégées utilisent `Bearer {{jwt_token}}`",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "gateway_url",
+      "value": "http://localhost:8089",
+      "type": "string",
+      "description": "URL de l'API Gateway"
+    },
+    {
+      "key": "auth_url",
+      "value": "http://localhost:8081",
+      "type": "string",
+      "description": "URL directe Auth Service"
+    },
+    {
+      "key": "offre_url",
+      "value": "http://localhost:8092",
+      "type": "string",
+      "description": "URL directe Offre Service"
+    },
+    {
+      "key": "candidature_url",
+      "value": "http://localhost:8083",
+      "type": "string",
+      "description": "URL directe Candidature Service"
+    },
+    {
+      "key": "entretien_url",
+      "value": "http://localhost:8085",
+      "type": "string",
+      "description": "URL directe Entretien Service"
+    },
+    {
+      "key": "email_url",
+      "value": "http://localhost:8093",
+      "type": "string",
+      "description": "URL directe Email Service"
+    },
+    {
+      "key": "event_url",
+      "value": "http://localhost:8084",
+      "type": "string",
+      "description": "URL directe Event Service"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string",
+      "description": "Token JWT (rempli automatiquement après login)"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string",
+      "description": "ID utilisateur connecté"
+    },
+    {
+      "key": "user_email",
+      "value": "",
+      "type": "string",
+      "description": "Email utilisateur connecté"
+    },
+    {
+      "key": "offre_id",
+      "value": "",
+      "type": "string",
+      "description": "ID d'une offre (à remplir)"
+    },
+    {
+      "key": "candidature_id",
+      "value": "",
+      "type": "string",
+      "description": "ID d'une candidature (à remplir)"
+    },
+    {
+      "key": "entretien_id",
+      "value": "",
+      "type": "string",
+      "description": "ID d'un entretien (à remplir)"
+    },
+    {
+      "key": "event_log_id",
+      "value": "",
+      "type": "string",
+      "description": "ID d'un log d'événement (à remplir)"
+    }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "🔐 Authentication Service",
+      "description": "Endpoints du service d'authentification (Port 8081)",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.collectionVariables.set('jwt_token', data.accessToken);",
+                  "    console.log('Token JWT sauvegardé:', data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{auth_url}}/api/v1/auth/login",
+              "host": ["{{auth_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Authentifie un utilisateur et retourne un token JWT. Le token est automatiquement sauvegardé dans `{{jwt_token}}`.\n\n**Réponse :** `{accessToken, tokenType, expiresIn}`"
+          }
+        },
+        {
+          "name": "Inscription Candidat",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "nomComplet",
+                  "value": "Jean Dupont",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "jean.dupont@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "MotDePasse123!",
+                  "type": "text"
+                },
+                {
+                  "key": "recaptchaToken",
+                  "value": "TOKEN_RECAPTCHA",
+                  "type": "text",
+                  "description": "Token reCAPTCHA v2/v3"
+                },
+                {
+                  "key": "frontendRedirect",
+                  "value": "http://localhost:8086/login",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{auth_url}}/api/v1/auth/register/candidat",
+              "host": ["{{auth_url}}"],
+              "path": ["api", "v1", "auth", "register", "candidat"]
+            },
+            "description": "Inscrit un nouveau candidat.\n\n**Réponse :** `{userId, email, role, message}`"
+          }
+        },
+        {
+          "name": "Inscription Recruteur",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "nomComplet",
+                  "value": "Marie Martin",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "marie.martin@entreprise.com",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "MotDePasse123!",
+                  "type": "text"
+                },
+                {
+                  "key": "raisonSociale",
+                  "value": "Entreprise SAS",
+                  "type": "text"
+                },
+                {
+                  "key": "presentation",
+                  "value": "Nous sommes une startup innovante spécialisée en IA.",
+                  "type": "text"
+                },
+                {
+                  "key": "justificatifEntreprise",
+                  "value": "",
+                  "type": "file",
+                  "description": "Fichier justificatif (PDF, image)"
+                },
+                {
+                  "key": "recaptchaToken",
+                  "value": "TOKEN_RECAPTCHA",
+                  "type": "text"
+                },
+                {
+                  "key": "frontendRedirect",
+                  "value": "http://localhost:8086/login",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{auth_url}}/api/v1/auth/register/recruteur",
+              "host": ["{{auth_url}}"],
+              "path": ["api", "v1", "auth", "register", "recruteur"]
+            },
+            "description": "Inscrit un nouveau recruteur avec justificatif d'entreprise.\n\n**Réponse :** `{userId, email, role, verificationStatus, justificatifNom}`"
+          }
+        },
+        {
+          "name": "Obtenir Utilisateur par ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{auth_url}}/api/users/{{user_id}}",
+              "host": ["{{auth_url}}"],
+              "path": ["api", "users", "{{user_id}}"]
+            },
+            "description": "Récupère les informations d'un utilisateur par son ID.\n\n**Réponse :** `{id, email, firstName, lastName, role}`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 Offre Service",
+      "description": "Gestion des offres d'emploi (Port 8092)",
+      "item": [
+        {
+          "name": "Créer une Offre",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}",
+                "description": "ID du recruteur (obligatoire)"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "{{user_email}}",
+                "description": "Email du recruteur"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Développeur Java Senior\",\n  \"description\": \"Nous recherchons un développeur Java expérimenté pour rejoindre notre équipe. Vous travaillerez sur des microservices Spring Boot et des architectures cloud.\",\n  \"typeContrat\": \"CDI\",\n  \"ville\": \"Paris\",\n  \"salaire\": 60000.0,\n  \"dateExpiration\": \"2026-12-31T23:59:59\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{offre_url}}/api/offres",
+              "host": ["{{offre_url}}"],
+              "path": ["api", "offres"]
+            },
+            "description": "Crée une nouvelle offre d'emploi (Recruteur uniquement).\n\n**typeContrat :** CDI, CDD, STAGE, ALTERNANCE, FREELANCE\n\n**Réponse :** `OffreResponse`"
+          }
+        },
+        {
+          "name": "Lister les Offres Publiées",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{offre_url}}/api/offres?page=0&size=10&ville=Paris&typeContrat=CDI&motCle=java",
+              "host": ["{{offre_url}}"],
+              "path": ["api", "offres"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0",
+                  "description": "Numéro de page (0-based)"
+                },
+                {
+                  "key": "size",
+                  "value": "10",
+                  "description": "Nombre d'éléments par page"
+                },
+                {
+                  "key": "ville",
+                  "value": "Paris",
+                  "description": "Filtrer par ville"
+                },
+                {
+                  "key": "typeContrat",
+                  "value": "CDI",
+                  "description": "Filtrer par type de contrat"
+                },
+                {
+                  "key": "motCle",
+                  "value": "java",
+                  "description": "Mot-clé de recherche"
+                }
+              ]
+            },
+            "description": "Liste toutes les offres publiées avec pagination et filtres. Endpoint public.\n\n**Réponse :** `Page<OffreResponse>`"
+          }
+        },
+        {
+          "name": "Obtenir une Offre par ID",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{offre_url}}/api/offres/{{offre_id}}",
+              "host": ["{{offre_url}}"],
+              "path": ["api", "offres", "{{offre_id}}"]
+            },
+            "description": "Récupère le détail d'une offre. Endpoint public.\n\n**Réponse :** `OffreResponse`"
+          }
+        },
+        {
+          "name": "Mes Offres (Recruteur)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{offre_url}}/api/offres/mes-offres?page=0&size=10",
+              "host": ["{{offre_url}}"],
+              "path": ["api", "offres", "mes-offres"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Récupère les offres du recruteur connecté.\n\n**Réponse :** `Page<OffreResponse>`"
+          }
+        },
+        {
+          "name": "Modifier une Offre",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Développeur Java Senior - Mise à jour\",\n  \"description\": \"Description mise à jour avec de nouvelles informations...\",\n  \"typeContrat\": \"CDI\",\n  \"ville\": \"Lyon\",\n  \"salaire\": 65000.0,\n  \"dateExpiration\": \"2027-06-30T23:59:59\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{offre_url}}/api/offres/{{offre_id}}",
+              "host": ["{{offre_url}}"],
+              "path": ["api", "offres", "{{offre_id}}"]
+            },
+            "description": "Met à jour une offre existante (propriétaire uniquement).\n\n**Réponse :** `OffreResponse`"
+          }
+        },
+        {
+          "name": "Publier une Offre",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{offre_url}}/api/offres/{{offre_id}}/publier",
+              "host": ["{{offre_url}}"],
+              "path": ["api", "offres", "{{offre_id}}", "publier"]
+            },
+            "description": "Publie une offre (rend visible publiquement).\n\n**Réponse :** `OffreResponse`"
+          }
+        },
+        {
+          "name": "Fermer une Offre",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}"
+              }
+            ],
+            "url": {
+              "raw": "{{offre_url}}/api/offres/{{offre_id}}/fermer",
+              "host": ["{{offre_url}}"],
+              "path": ["api", "offres", "{{offre_id}}", "fermer"]
+            },
+            "description": "Ferme une offre (arrête les candidatures).\n\n**Réponse :** `OffreResponse`"
+          }
+        },
+        {
+          "name": "Vérifier si Offre Publiée",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{offre_url}}/api/offres/{{offre_id}}/valide",
+              "host": ["{{offre_url}}"],
+              "path": ["api", "offres", "{{offre_id}}", "valide"]
+            },
+            "description": "Vérifie si une offre est publiée (utilisé par d'autres services).\n\n**Réponse :** `boolean`"
+          }
+        },
+        {
+          "name": "Vérifier Propriétaire Offre",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{offre_url}}/api/offres/{{offre_id}}/owner?recruteurId={{user_id}}",
+              "host": ["{{offre_url}}"],
+              "path": ["api", "offres", "{{offre_id}}", "owner"],
+              "query": [
+                {
+                  "key": "recruteurId",
+                  "value": "{{user_id}}"
+                }
+              ]
+            },
+            "description": "Vérifie si un utilisateur est propriétaire d'une offre.\n\n**Réponse :** `boolean`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📄 Candidature Service",
+      "description": "Gestion des candidatures (Port 8083)",
+      "item": [
+        {
+          "name": "Soumettre une Candidature",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offreId\": \"{{offre_id}}\",\n  \"candidatId\": \"{{user_id}}\",\n  \"cvPath\": \"uploads/cv/mon-cv.pdf\",\n  \"lettreMotivationPath\": \"uploads/lettres/ma-lettre.pdf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{candidature_url}}/candidatures",
+              "host": ["{{candidature_url}}"],
+              "path": ["candidatures"]
+            },
+            "description": "Soumet une nouvelle candidature pour une offre.\n\n**Réponse :** `CandidatureResponseDTO`"
+          }
+        },
+        {
+          "name": "Mes Candidatures (Candidat)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{candidature_url}}/candidatures/moi",
+              "host": ["{{candidature_url}}"],
+              "path": ["candidatures", "moi"]
+            },
+            "description": "Récupère toutes les candidatures du candidat connecté.\n\n**Réponse :** `List<CandidatureResponseDTO>`"
+          }
+        },
+        {
+          "name": "Obtenir une Candidature par ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{candidature_url}}/candidatures/{{candidature_id}}",
+              "host": ["{{candidature_url}}"],
+              "path": ["candidatures", "{{candidature_id}}"]
+            },
+            "description": "Récupère le détail d'une candidature par son ID.\n\n**Réponse :** `CandidatureResponseDTO`"
+          }
+        },
+        {
+          "name": "Candidatures d'une Offre (Recruteur)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{candidature_url}}/candidatures/offre/{{offre_id}}",
+              "host": ["{{candidature_url}}"],
+              "path": ["candidatures", "offre", "{{offre_id}}"]
+            },
+            "description": "Récupère toutes les candidatures pour une offre donnée (pipeline recruteur).\n\n**Réponse :** `List<CandidatureResponseDTO>`"
+          }
+        },
+        {
+          "name": "Mettre à Jour le Statut",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{candidature_url}}/candidatures/{{candidature_id}}/status?status=EN_COURS",
+              "host": ["{{candidature_url}}"],
+              "path": ["candidatures", "{{candidature_id}}", "status"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "EN_COURS",
+                  "description": "SOUMISE | EN_COURS | ENTRETIEN | ACCEPTEE | REFUSEE"
+                }
+              ]
+            },
+            "description": "Met à jour le statut d'une candidature.\n\n**Statuts disponibles :** SOUMISE → EN_COURS → ENTRETIEN → ACCEPTEE / REFUSEE\n\n**Réponse :** `CandidatureResponseDTO`"
+          }
+        },
+        {
+          "name": "Mettre à Jour les Fichiers",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{candidature_url}}/candidatures/{{candidature_id}}?cvPath=uploads/cv/nouveau-cv.pdf&lettreMotivationPath=uploads/lettres/nouvelle-lettre.pdf",
+              "host": ["{{candidature_url}}"],
+              "path": ["candidatures", "{{candidature_id}}"],
+              "query": [
+                {
+                  "key": "cvPath",
+                  "value": "uploads/cv/nouveau-cv.pdf"
+                },
+                {
+                  "key": "lettreMotivationPath",
+                  "value": "uploads/lettres/nouvelle-lettre.pdf"
+                }
+              ]
+            },
+            "description": "Met à jour les chemins des fichiers d'une candidature.\n\n**Réponse :** `CandidatureResponseDTO`"
+          }
+        },
+        {
+          "name": "Uploader CV et Lettre",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{candidature_url}}/candidatures/{{candidature_id}}/upload?cvPath=uploads/cv/cv.pdf&lettreMotivationPath=uploads/lettres/lettre.pdf",
+              "host": ["{{candidature_url}}"],
+              "path": ["candidatures", "{{candidature_id}}", "upload"],
+              "query": [
+                {
+                  "key": "cvPath",
+                  "value": "uploads/cv/cv.pdf"
+                },
+                {
+                  "key": "lettreMotivationPath",
+                  "value": "uploads/lettres/lettre.pdf"
+                }
+              ]
+            },
+            "description": "Upload le CV et la lettre de motivation d'une candidature.\n\n**Réponse :** `CandidatureResponseDTO`"
+          }
+        },
+        {
+          "name": "Historique Statuts Candidature",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{candidature_url}}/candidatures/{{candidature_id}}/historique",
+              "host": ["{{candidature_url}}"],
+              "path": ["candidatures", "{{candidature_id}}", "historique"]
+            },
+            "description": "Récupère l'historique des changements de statut d'une candidature.\n\n**Réponse :** `List<HistoriqueStatusDTO>`"
+          }
+        },
+        {
+          "name": "Supprimer une Candidature",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{candidature_url}}/candidatures/{{candidature_id}}",
+              "host": ["{{candidature_url}}"],
+              "path": ["candidatures", "{{candidature_id}}"]
+            },
+            "description": "Supprime (retire) une candidature.\n\n**Réponse :** `204 No Content`"
+          }
+        },
+        {
+          "name": "Télécharger CV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{candidature_url}}/candidatures/file/{{candidature_id}}/download?type=cv",
+              "host": ["{{candidature_url}}"],
+              "path": ["candidatures", "file", "{{candidature_id}}", "download"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "cv",
+                  "description": "cv | lettre"
+                }
+              ]
+            },
+            "description": "Télécharge le CV d'une candidature.\n\n**Réponse :** Fichier binaire (Resource)"
+          }
+        },
+        {
+          "name": "Télécharger Lettre de Motivation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{candidature_url}}/candidatures/file/{{candidature_id}}/download?type=lettre",
+              "host": ["{{candidature_url}}"],
+              "path": ["candidatures", "file", "{{candidature_id}}", "download"],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "lettre",
+                  "description": "cv | lettre"
+                }
+              ]
+            },
+            "description": "Télécharge la lettre de motivation d'une candidature.\n\n**Réponse :** Fichier binaire (Resource)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🗓️ Entretien Service",
+      "description": "Gestion des entretiens (Port 8085)",
+      "item": [
+        {
+          "name": "Planifier un Entretien",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"candidatureId\": \"{{candidature_id}}\",\n  \"candidatId\": \"{{user_id}}\",\n  \"candidatEmail\": \"candidat@example.com\",\n  \"candidatNom\": \"Jean Dupont\",\n  \"offreTitre\": \"Développeur Java Senior\",\n  \"recruteurId\": \"RECRUTEUR_ID_ICI\",\n  \"dateHeure\": \"2026-06-15T14:30:00\",\n  \"type\": \"VISIO\",\n  \"lieu\": null,\n  \"lienVisio\": \"https://meet.google.com/abc-defg-hij\",\n  \"notesInternes\": \"Candidat prometteur, évaluer les compétences Spring Boot\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entretien_url}}/entretiens",
+              "host": ["{{entretien_url}}"],
+              "path": ["entretiens"]
+            },
+            "description": "Planifie un entretien pour une candidature.\n\n**type :** PRESENTIEL | VISIO\n\n**Réponse :** `EntretienResponse`"
+          }
+        },
+        {
+          "name": "Entretiens d'une Candidature",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{entretien_url}}/entretiens/candidature/{{candidature_id}}",
+              "host": ["{{entretien_url}}"],
+              "path": ["entretiens", "candidature", "{{candidature_id}}"]
+            },
+            "description": "Récupère tous les entretiens associés à une candidature.\n\n**Réponse :** `List<EntretienResponse>`"
+          }
+        },
+        {
+          "name": "Entretiens du Recruteur",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{entretien_url}}/entretiens/recruteur/{{user_id}}",
+              "host": ["{{entretien_url}}"],
+              "path": ["entretiens", "recruteur", "{{user_id}}"]
+            },
+            "description": "Récupère tous les entretiens planifiés par un recruteur.\n\n**Réponse :** `List<EntretienResponse>`"
+          }
+        },
+        {
+          "name": "Entretiens du Candidat",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{entretien_url}}/entretiens/candidat/{{user_id}}",
+              "host": ["{{entretien_url}}"],
+              "path": ["entretiens", "candidat", "{{user_id}}"]
+            },
+            "description": "Récupère tous les entretiens d'un candidat.\n\n**Réponse :** `List<EntretienResponse>`"
+          }
+        },
+        {
+          "name": "Annuler un Entretien",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Recruteur-Id",
+                "value": "{{user_id}}",
+                "description": "Peut aussi être passé en query param"
+              }
+            ],
+            "url": {
+              "raw": "{{entretien_url}}/entretiens/{{entretien_id}}?recruteurId={{user_id}}",
+              "host": ["{{entretien_url}}"],
+              "path": ["entretiens", "{{entretien_id}}"],
+              "query": [
+                {
+                  "key": "recruteurId",
+                  "value": "{{user_id}}",
+                  "description": "Optionnel si header X-Recruteur-Id fourni"
+                }
+              ]
+            },
+            "description": "Annule un entretien planifié.\n\n**Réponse :** `EntretienResponse`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📧 Email Service",
+      "description": "Service de notifications par email (Port 8093)",
+      "item": [
+        {
+          "name": "Confirmation de Candidature",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{candidature_id}}\",\n  \"candidatId\": \"{{user_id}}\",\n  \"offreId\": \"{{offre_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{email_url}}/notification-service/notifications/candidature-confirmation",
+              "host": ["{{email_url}}"],
+              "path": ["notification-service", "notifications", "candidature-confirmation"]
+            },
+            "description": "Envoie un email de confirmation de candidature au candidat.\n\n**Réponse :** `204 No Content`"
+          }
+        },
+        {
+          "name": "Notification Changement de Statut",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"candidatureId\": \"{{candidature_id}}\",\n  \"candidatEmail\": \"candidat@example.com\",\n  \"candidatName\": \"Jean Dupont\",\n  \"offreTitle\": \"Développeur Java Senior\",\n  \"ancienStatut\": \"SOUMISE\",\n  \"nouveauStatut\": \"EN_COURS\",\n  \"commentaire\": \"Votre candidature est en cours d'examen\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{email_url}}/notification-service/notifications/statut-changed",
+              "host": ["{{email_url}}"],
+              "path": ["notification-service", "notifications", "statut-changed"]
+            },
+            "description": "Envoie un email de notification lors d'un changement de statut d'une candidature.\n\n**Réponse :** `204 No Content`"
+          }
+        },
+        {
+          "name": "Notification Planification Entretien",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"candidatureId\": \"{{candidature_id}}\",\n  \"candidatEmail\": \"candidat@example.com\",\n  \"candidatName\": \"Jean Dupont\",\n  \"offreTitle\": \"Développeur Java Senior\",\n  \"dateEntretien\": \"2026-06-15\",\n  \"heureEntretien\": \"14:30\",\n  \"lieuEntretien\": \"En ligne - Google Meet\",\n  \"interviewerName\": \"Marie Martin\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{email_url}}/notification-service/notifications/entretien-planification",
+              "host": ["{{email_url}}"],
+              "path": ["notification-service", "notifications", "entretien-planification"]
+            },
+            "description": "Envoie un email de confirmation de planification d'entretien au candidat.\n\n**Réponse :** `204 No Content`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 Event Service",
+      "description": "Service de logs d'événements et audit (Port 8084)",
+      "item": [
+        {
+          "name": "Lister Tous les Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{event_url}}/api/event-logs",
+              "host": ["{{event_url}}"],
+              "path": ["api", "event-logs"]
+            },
+            "description": "Récupère tous les logs d'événements.\n\n**Réponse :** `List<EventAudit>`"
+          }
+        },
+        {
+          "name": "Obtenir un Log par ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{event_url}}/api/event-logs/{{event_log_id}}",
+              "host": ["{{event_url}}"],
+              "path": ["api", "event-logs", "{{event_log_id}}"]
+            },
+            "description": "Récupère un log d'événement par son ID.\n\n**Réponse :** `EventAudit`"
+          }
+        },
+        {
+          "name": "Logs par Type d'Événement",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{event_url}}/api/event-logs/by-type/CANDIDATURE_CREATED",
+              "host": ["{{event_url}}"],
+              "path": ["api", "event-logs", "by-type", "CANDIDATURE_CREATED"]
+            },
+            "description": "Récupère les logs filtrés par type d'événement.\n\n**Exemples :** CANDIDATURE_CREATED, OFFRE_PUBLISHED, ENTRETIEN_SCHEDULED\n\n**Réponse :** `List<EventAudit>`"
+          }
+        },
+        {
+          "name": "Logs par Service Source",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{event_url}}/api/event-logs/by-source/candidature-service",
+              "host": ["{{event_url}}"],
+              "path": ["api", "event-logs", "by-source", "candidature-service"]
+            },
+            "description": "Récupère les logs filtrés par service source.\n\n**Réponse :** `List<EventAudit>`"
+          }
+        },
+        {
+          "name": "Logs par Service Destination",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{event_url}}/api/event-logs/by-destination/email-service",
+              "host": ["{{event_url}}"],
+              "path": ["api", "event-logs", "by-destination", "email-service"]
+            },
+            "description": "Récupère les logs filtrés par service destination.\n\n**Réponse :** `List<EventAudit>`"
+          }
+        },
+        {
+          "name": "Logs par Statut",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{event_url}}/api/event-logs/by-status/SUCCESS",
+              "host": ["{{event_url}}"],
+              "path": ["api", "event-logs", "by-status", "SUCCESS"]
+            },
+            "description": "Récupère les logs filtrés par statut.\n\n**Statuts :** SUCCESS, FAILED, PENDING\n\n**Réponse :** `List<EventAudit>`"
+          }
+        },
+        {
+          "name": "Filtrer les Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{event_url}}/api/event-logs/filter?eventType=CANDIDATURE_CREATED&status=SUCCESS",
+              "host": ["{{event_url}}"],
+              "path": ["api", "event-logs", "filter"],
+              "query": [
+                {
+                  "key": "eventType",
+                  "value": "CANDIDATURE_CREATED"
+                },
+                {
+                  "key": "status",
+                  "value": "SUCCESS"
+                }
+              ]
+            },
+            "description": "Filtre les logs par type d'événement ET statut.\n\n**Réponse :** `List<EventAudit>`"
+          }
+        },
+        {
+          "name": "Créer un Log",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"CUSTOM_EVENT\",\n  \"sourceService\": \"mon-service\",\n  \"destinationService\": \"email-service\",\n  \"status\": \"SUCCESS\",\n  \"payload\": \"{\\\"key\\\": \\\"value\\\"}\",\n  \"errorMessage\": null\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{event_url}}/api/event-logs",
+              "host": ["{{event_url}}"],
+              "path": ["api", "event-logs"]
+            },
+            "description": "Crée un nouveau log d'événement manuellement.\n\n**Réponse :** `EventAudit`"
+          }
+        },
+        {
+          "name": "Mettre à Jour un Log",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"CUSTOM_EVENT\",\n  \"sourceService\": \"mon-service\",\n  \"destinationService\": \"email-service\",\n  \"status\": \"FAILED\",\n  \"payload\": \"{\\\"key\\\": \\\"value\\\"}\",\n  \"errorMessage\": \"Erreur de connexion\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{event_url}}/api/event-logs/{{event_log_id}}",
+              "host": ["{{event_url}}"],
+              "path": ["api", "event-logs", "{{event_log_id}}"]
+            },
+            "description": "Met à jour un log d'événement existant.\n\n**Réponse :** `EventAudit`"
+          }
+        },
+        {
+          "name": "Supprimer un Log",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{event_url}}/api/event-logs/{{event_log_id}}",
+              "host": ["{{event_url}}"],
+              "path": ["api", "event-logs", "{{event_log_id}}"]
+            },
+            "description": "Supprime un log d'événement.\n\n**Réponse :** `204 No Content`"
+          }
+        },
+        {
+          "name": "Statistiques des Événements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{event_url}}/api/event-logs/statistics",
+              "host": ["{{event_url}}"],
+              "path": ["api", "event-logs", "statistics"]
+            },
+            "description": "Récupère les statistiques agrégées des événements.\n\n**Réponse :** `Map<String, Long>` (counts par type/statut)"
+          }
+        },
+        {
+          "name": "Health Check Event Service",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{event_url}}/api/event-logs/health",
+              "host": ["{{event_url}}"],
+              "path": ["api", "event-logs", "health"]
+            },
+            "description": "Vérifie l'état de santé du service d'événements.\n\n**Réponse :** `{status, service, timestamp}`"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🚪 API Gateway",
+      "description": "Requêtes via l'API Gateway (Port 8089)",
+      "item": [
+        {
+          "name": "Via Gateway - Auth > Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.collectionVariables.set('jwt_token', data.accessToken);",
+                  "    console.log('Token JWT sauvegardé via Gateway:', data.accessToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{gateway_url}}/auth-service/api/v1/auth/login",
+              "host": ["{{gateway_url}}"],
+              "path": ["auth-service", "api", "v1", "auth", "login"]
+            },
+            "description": "Login via l'API Gateway (routing vers auth-service)."
+          }
+        },
+        {
+          "name": "Via Gateway - Offres Publiées",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/offre-service/api/offres?page=0&size=10",
+              "host": ["{{gateway_url}}"],
+              "path": ["offre-service", "api", "offres"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Liste les offres publiées via l'API Gateway."
+          }
+        },
+        {
+          "name": "Via Gateway - Mes Candidatures",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/candidature-service/candidatures/moi",
+              "host": ["{{gateway_url}}"],
+              "path": ["candidature-service", "candidatures", "moi"]
+            },
+            "description": "Récupère les candidatures du candidat connecté via l'API Gateway."
+          }
+        },
+        {
+          "name": "Via Gateway - Entretiens Candidat",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/entretien-service/entretiens/candidat/{{user_id}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["entretien-service", "entretiens", "candidat", "{{user_id}}"]
+            },
+            "description": "Récupère les entretiens d'un candidat via l'API Gateway."
+          }
+        },
+        {
+          "name": "Fallback - Offre Service",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/fallback/offre-service",
+              "host": ["{{gateway_url}}"],
+              "path": ["fallback", "offre-service"]
+            },
+            "description": "Endpoint de fallback du circuit breaker pour l'offre-service."
+          }
+        },
+        {
+          "name": "Fallback - Candidature Service",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/fallback/candidature-service",
+              "host": ["{{gateway_url}}"],
+              "path": ["fallback", "candidature-service"]
+            },
+            "description": "Endpoint de fallback du circuit breaker pour le candidature-service."
+          }
+        },
+        {
+          "name": "Fallback - Auth Service",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/fallback/auth-service",
+              "host": ["{{gateway_url}}"],
+              "path": ["fallback", "auth-service"]
+            },
+            "description": "Endpoint de fallback du circuit breaker pour l'auth-service."
+          }
+        },
+        {
+          "name": "Fallback - Entretien Service",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/fallback/entretien-service",
+              "host": ["{{gateway_url}}"],
+              "path": ["fallback", "entretien-service"]
+            },
+            "description": "Endpoint de fallback du circuit breaker pour l'entretien-service."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔄 Scénarios Complets",
+      "description": "Flux bout-en-bout pour tester les cas d'usage principaux",
+      "item": [
+        {
+          "name": "Flux Candidat - Étape 1 : Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const data = pm.response.json();",
+                  "    pm.collectionVariables.set('jwt_token', data.accessToken);",
+                  "    pm.test('Login réussi', () => pm.response.to.have.status(200));",
+                  "    pm.test('Token JWT présent', () => pm.expect(data.accessToken).to.not.be.empty);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"candidat@example.com\",\n  \"password\": \"password123\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{auth_url}}/api/v1/auth/login",
+              "host": ["{{auth_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "**Étape 1/4** - Login candidat. Le token est sauvegardé automatiquement."
+          }
+        },
+        {
+          "name": "Flux Candidat - Étape 2 : Voir les Offres",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Offres récupérées', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "if (data.content && data.content.length > 0) {",
+                  "    pm.collectionVariables.set('offre_id', data.content[0].id);",
+                  "    console.log('Offre ID sauvegardée:', data.content[0].id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{offre_url}}/api/offres?page=0&size=5",
+              "host": ["{{offre_url}}"],
+              "path": ["api", "offres"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "**Étape 2/4** - Liste les offres disponibles. L'ID de la première offre est sauvegardé automatiquement."
+          }
+        },
+        {
+          "name": "Flux Candidat - Étape 3 : Postuler",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Candidature soumise', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "if (data.id) {",
+                  "    pm.collectionVariables.set('candidature_id', data.id);",
+                  "    console.log('Candidature ID sauvegardée:', data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"offreId\": \"{{offre_id}}\",\n  \"candidatId\": \"{{user_id}}\",\n  \"cvPath\": \"uploads/cv/jean-dupont-cv.pdf\",\n  \"lettreMotivationPath\": \"uploads/lettres/jean-dupont-lettre.pdf\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{candidature_url}}/candidatures",
+              "host": ["{{candidature_url}}"],
+              "path": ["candidatures"]
+            },
+            "description": "**Étape 3/4** - Soumet une candidature. L'ID de la candidature est sauvegardé automatiquement."
+          }
+        },
+        {
+          "name": "Flux Candidat - Étape 4 : Voir mes Candidatures",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Candidatures récupérées', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test('Au moins une candidature', () => pm.expect(data.length).to.be.above(0));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{candidature_url}}/candidatures/moi",
+              "host": ["{{candidature_url}}"],
+              "path": ["candidatures", "moi"]
+            },
+            "description": "**Étape 4/4** - Vérifie que la candidature apparaît dans la liste du candidat."
+          }
+        },
+        {
+          "name": "Flux Recruteur - Créer et Publier une Offre",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Offre créée', () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "if (data.id) {",
+                  "    pm.collectionVariables.set('offre_id', data.id);",
+                  "    console.log('Nouvelle offre ID:', data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "X-User-Id",
+                "value": "{{user_id}}"
+              },
+              {
+                "key": "X-User-Email",
+                "value": "{{user_email}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titre\": \"Développeur Full-Stack React/Spring\",\n  \"description\": \"Rejoignez notre équipe dynamique ! Vous développerez des applications web modernes avec React côté front-end et Spring Boot côté back-end.\",\n  \"typeContrat\": \"CDI\",\n  \"ville\": \"Paris\",\n  \"salaire\": 55000.0,\n  \"dateExpiration\": \"2027-01-31T23:59:59\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{offre_url}}/api/offres",
+              "host": ["{{offre_url}}"],
+              "path": ["api", "offres"]
+            },
+            "description": "**Flux Recruteur 1/2** - Crée une offre. L'ID est sauvegardé automatiquement pour l'étape suivante."
+          }
+        },
+        {
+          "name": "Flux Recruteur - Planifier un Entretien",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"candidatureId\": \"{{candidature_id}}\",\n  \"candidatId\": \"CANDIDAT_ID_ICI\",\n  \"candidatEmail\": \"candidat@example.com\",\n  \"candidatNom\": \"Jean Dupont\",\n  \"offreTitre\": \"Développeur Full-Stack React/Spring\",\n  \"recruteurId\": \"{{user_id}}\",\n  \"dateHeure\": \"2026-07-10T10:00:00\",\n  \"type\": \"PRESENTIEL\",\n  \"lieu\": \"15 Rue de la Paix, 75001 Paris\",\n  \"lienVisio\": null,\n  \"notesInternes\": \"Préparer questions sur l'expérience React et architecture microservices\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{entretien_url}}/entretiens",
+              "host": ["{{entretien_url}}"],
+              "path": ["entretiens"]
+            },
+            "description": "**Flux Recruteur 2/2** - Planifie un entretien présentiel pour une candidature."
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏥 Health Checks",
+      "description": "Vérification de l'état des services",
+      "item": [
+        {
+          "name": "Health - API Gateway",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{gateway_url}}/actuator/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Vérifie l'état de santé de l'API Gateway (Spring Actuator)."
+          }
+        },
+        {
+          "name": "Health - Auth Service",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{auth_url}}/actuator/health",
+              "host": ["{{auth_url}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Vérifie l'état de santé du service d'authentification."
+          }
+        },
+        {
+          "name": "Health - Offre Service",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{offre_url}}/actuator/health",
+              "host": ["{{offre_url}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Vérifie l'état de santé du service d'offres."
+          }
+        },
+        {
+          "name": "Health - Candidature Service",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{candidature_url}}/actuator/health",
+              "host": ["{{candidature_url}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Vérifie l'état de santé du service de candidatures."
+          }
+        },
+        {
+          "name": "Health - Entretien Service",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{entretien_url}}/actuator/health",
+              "host": ["{{entretien_url}}"],
+              "path": ["actuator", "health"]
+            },
+            "description": "Vérifie l'état de santé du service d'entretiens."
+          }
+        },
+        {
+          "name": "Health - Event Service (Custom)",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{event_url}}/api/event-logs/health",
+              "host": ["{{event_url}}"],
+              "path": ["api", "event-logs", "health"]
+            },
+            "description": "Vérifie l'état de santé du service d'événements (endpoint custom)."
+          }
+        },
+        {
+          "name": "Eureka - Service Discovery",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8761/eureka/apps",
+              "raw": "http://localhost:8761/eureka/apps",
+              "host": ["localhost"],
+              "port": "8761",
+              "path": ["eureka", "apps"]
+            },
+            "description": "Liste tous les services enregistrés dans Eureka (Service Discovery)."
+          }
+        }
+      ]
+    }
+  ]
+}

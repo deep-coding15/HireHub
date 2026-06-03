@@ -2,8 +2,6 @@ package com.hirehub.gateway.controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -11,14 +9,13 @@ import java.util.Map;
 
 /**
  * Réponses de repli retournées par le Gateway quand un circuit breaker est OPEN.
- * Chaque endpoint correspond à un service backend surveillé.
+ * @RequestMapping sans méthode = répond à tous les verbes HTTP (GET, POST, PUT, DELETE, PATCH).
  */
 @RestController
 @RequestMapping("/fallback")
 public class FallbackController {
 
-    @GetMapping("/offre-service")
-    @PostMapping("/offre-service")
+    @RequestMapping("/offre-service")
     public ResponseEntity<Map<String, String>> offreFallback() {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(Map.of(
@@ -28,8 +25,7 @@ public class FallbackController {
                 ));
     }
 
-    @GetMapping("/candidature-service")
-    @PostMapping("/candidature-service")
+    @RequestMapping("/candidature-service")
     public ResponseEntity<Map<String, String>> candidatureFallback() {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(Map.of(
@@ -39,8 +35,7 @@ public class FallbackController {
                 ));
     }
 
-    @GetMapping("/auth-service")
-    @PostMapping("/auth-service")
+    @RequestMapping("/auth-service")
     public ResponseEntity<Map<String, String>> authFallback() {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(Map.of(
@@ -50,8 +45,7 @@ public class FallbackController {
                 ));
     }
 
-    @GetMapping("/entretien-service")
-    @PostMapping("/entretien-service")
+    @RequestMapping("/entretien-service")
     public ResponseEntity<Map<String, String>> entretienFallback() {
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(Map.of(

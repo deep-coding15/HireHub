@@ -49,13 +49,16 @@ spring:
     username: hirehub
     password: hirehub
     driver-class-name: org.postgresql.Driver
-    jpa:
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+    properties:
       hibernate:
-        ddl-auto: update
-      show-sql: true
-      properties:
-        hibernate:
-          dialect: org.hibernate.dialect.PostgreSQLDialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
 app:
   jwt:
     # Clé secrète générée aléatoirement (ici encodée en Base64 pour plus de propreté)
