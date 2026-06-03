@@ -15,11 +15,14 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Optional;
 
 @Service
@@ -27,12 +30,19 @@ public class OffreFrontendClient {
 
     private static final Logger log = LoggerFactory.getLogger(OffreFrontendClient.class);
 
-    private final RestTemplate restTemplate = new RestTemplate();
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final RestTemplate restTemplate;
+    private final HttpClient httpClient;
     private final String offreBaseUrl;
 
     public OffreFrontendClient(@Value("${hirehub.offre-service-base-url}") String offreBaseUrl) {
         this.offreBaseUrl = offreBaseUrl;
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(2000);
+        factory.setReadTimeout(8000);
+        this.restTemplate = new RestTemplate(factory);
+        this.httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(2))
+                .build();
     }
 
     public OffrePageResponse offresPubliees(String ville, String typeContrat, String motCle) {

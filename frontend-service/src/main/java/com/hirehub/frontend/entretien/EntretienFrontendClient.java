@@ -16,6 +16,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
@@ -35,11 +36,14 @@ public class EntretienFrontendClient {
 
     public EntretienFrontendClient(@Value("${hirehub.entretien-service-base-url}") String entretienBaseUrl) {
         this.entretienBaseUrl = entretienBaseUrl;
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(2000);
+        factory.setReadTimeout(8000);
         // RestTemplate configuré avec JavaTimeModule pour sérialiser LocalDateTime en ISO 8601
         ObjectMapper mapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        RestTemplate rt = new RestTemplate();
+        RestTemplate rt = new RestTemplate(factory);
         rt.getMessageConverters().removeIf(c -> c instanceof MappingJackson2HttpMessageConverter);
         rt.getMessageConverters().add(0, new MappingJackson2HttpMessageConverter(mapper));
         this.restTemplate = rt;

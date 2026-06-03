@@ -9,7 +9,10 @@ import org.springframework.web.bind.annotation.RequestParam;
  * Client Feign pour communiquer avec offre-service
  * Vérifie que les offres existent et sont publiées
  */
-@FeignClient(name = "offre-service")
+@FeignClient(
+        name = "offre-service",
+        fallback = IOffreServiceClientFallback.class
+)
 public interface IOffreServiceClient {
 
     /**

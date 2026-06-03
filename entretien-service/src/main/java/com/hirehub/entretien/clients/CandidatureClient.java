@@ -7,7 +7,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "candidature-service", path = "/candidatures")
+@FeignClient(
+        name = "candidature-service",
+        path = "/candidatures",
+        fallback = CandidatureClientFallback.class
+)
 public interface CandidatureClient {
 
     @GetMapping("/{candidatureId}")

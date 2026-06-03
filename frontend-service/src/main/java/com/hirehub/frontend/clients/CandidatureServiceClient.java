@@ -7,7 +7,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@FeignClient(name = "candidature-service")
+@FeignClient(
+        name = "candidature-service",
+        fallback = CandidatureServiceClientFallback.class
+)
 public interface CandidatureServiceClient {
 
     @GetMapping("/candidatures/moi")

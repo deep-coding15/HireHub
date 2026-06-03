@@ -45,3 +45,48 @@ springdoc:
     path: /swagger-ui.html
     operations-sorter: alpha
     tags-sorter: alpha
+
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 1000
+        read-timeout: 5000
+  circuitbreaker:
+    enabled: true
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      candidature-service:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        minimum-number-of-calls: 5
+        slow-call-duration-threshold: 3s
+        slow-call-rate-threshold: 80
+        register-health-indicator: true
+  retry:
+    instances:
+      candidature-service:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+  bulkhead:
+    instances:
+      candidature-service:
+        max-concurrent-calls: 8
+        max-wait-duration: 500ms
+
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health, metrics, circuitbreakers, circuitbreakerevents

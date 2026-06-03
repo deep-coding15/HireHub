@@ -78,3 +78,71 @@ eureka:
   client:
     service-url:
       defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 1000
+        read-timeout: 8000
+  circuitbreaker:
+    enabled: true
+
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 10s
+        minimum-number-of-calls: 5
+        slow-call-duration-threshold: 5s
+        slow-call-rate-threshold: 80
+        register-health-indicator: true
+    instances:
+      candidature-service:
+        base-config: default
+      offre-service:
+        base-config: default
+      entretien-service:
+        base-config: default
+  retry:
+    configs:
+      default:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        retry-exceptions:
+          - java.net.ConnectException
+          - java.net.SocketTimeoutException
+    instances:
+      candidature-service:
+        base-config: default
+      offre-service:
+        base-config: default
+      entretien-service:
+        base-config: default
+  bulkhead:
+    configs:
+      default:
+        max-concurrent-calls: 10
+        max-wait-duration: 500ms
+    instances:
+      candidature-service:
+        base-config: default
+      offre-service:
+        base-config: default
+      entretien-service:
+        base-config: default
+
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health, metrics, circuitbreakers, circuitbreakerevents

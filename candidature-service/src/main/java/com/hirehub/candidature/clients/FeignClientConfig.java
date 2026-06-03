@@ -6,14 +6,21 @@ import feign.RequestInterceptor;
 import org.slf4j.MDC;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 
 /**
  * Propage les headers X-User-* et X-Correlation-Id dans les appels Feign sortants.
  * L'identité est lue depuis UserContext (peuplé par UserContextHeaderFilter).
- * Plus de JWT Bearer — le service fait confiance au modèle gateway-trust.
+ * Plus de JWT Bearer : le service fait confiance au modèle gateway-trust.
  */
 @Configuration
 public class FeignClientConfig {
+
+    @Bean
+    @Profile("!sandbox")
+    public IOffreServiceClientFallback iOffreServiceClientFallback() {
+        return new IOffreServiceClientFallback();
+    }
 
     @Bean
     public RequestInterceptor requestInterceptor() {

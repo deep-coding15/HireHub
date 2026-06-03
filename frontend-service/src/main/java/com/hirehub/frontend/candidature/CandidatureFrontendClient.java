@@ -15,6 +15,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestClientException;
@@ -32,13 +33,17 @@ public class CandidatureFrontendClient {
 
     private static final Logger log = LoggerFactory.getLogger(CandidatureFrontendClient.class);
 
-    private final RestTemplate restTemplate = new RestTemplate();
+    private final RestTemplate restTemplate;
     private final String candidatureBaseUrl;
 
     public CandidatureFrontendClient(
             @Value("${hirehub.candidature-service-base-url}") String candidatureBaseUrl
     ) {
         this.candidatureBaseUrl = candidatureBaseUrl;
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(2000);
+        factory.setReadTimeout(8000);
+        this.restTemplate = new RestTemplate(factory);
     }
 
     public List<CandidatureDTO> getMyCandidatures() {
