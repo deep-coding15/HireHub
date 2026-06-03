@@ -133,4 +133,25 @@ public final class RabbitMQConstants {
 
     /// Queue ecoutee par service pour les evenements d'authentification
     public static final String QUEUE_NOTIFICATION_AUTHENTIFICATION = "notif.authentification.queue";
+
+
+    ///─── DEAD LETTER INFRASTRUCTURE ──────────────────────────────
+    //
+    ///L'exchange DLX reçoit les messages rejetés après épuisement des retry.
+    ///Chaque queue principale pointe vers cet exchange via x-dead-letter-exchange.
+    ///Le DLX route ensuite vers la DLQ correspondante via la routing key.
+
+    public static final String DEAD_LETTER_EXCHANGE = "hirehub.dlx";
+
+    ///─── DEAD LETTER QUEUES ────────────────────────────────────────
+
+    public static final String DLQ_NOTIFICATION_CANDIDATURE    = "dlq.notif.candidature.queue";
+    public static final String DLQ_AUDIT_CANDIDATURE           = "dlq.audit.candidature.queue";
+    public static final String DLQ_NOTIFICATION_STATUT         = "dlq.notif.statut.queue";
+    public static final String DLQ_NOTIFICATION_ENTRETIEN      = "dlq.notif.entretien.queue";
+    public static final String DLQ_NOTIFICATION_RECRUITER      = "dlq.notif.recruiter.queue";
+    public static final String DLQ_NOTIFICATION_ADMIN_USER     = "dlq.notif.admin.user.queue";
+    public static final String DLQ_NOTIFICATION_AUTHENTIFICATION = "dlq.notif.authentification.queue";
+    public static final String DLQ_VERIFICATION_RECRUITER      = "dlq.verification.recruiter.queue";
+    public static final String DLQ_AUTH_RECRUITER_VERIFIED     = "dlq.auth.recruiter.verified.queue";
 }

@@ -6,28 +6,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * ╔══════════════════════════════════════════════════════════════╗
- * ║           RabbitMQ Configuration - HireHub                    ║
- * ║                                                                ║
- * ║  Cette classe configure l'infrastructure RabbitMQ centralisée:║
- * ║  - L'exchange (aiguilleur central)                           ║
- * ║  - Les queues (boîtes aux lettres)                           ║
- * ║  - Les bindings (connexions entre exchange et queues)        ║
- * ║                                                                ║
- * ║  Place: hirehub-common pour que TOUS les services            ║
- * ║         utilisent exactement la même configuration           ║
- * ║                                                                ║
- * ║  Principe: Configuration = infrastructure                    ║
- * ║            Logic = dans chaque service consumer              ║
- * ╚══════════════════════════════════════════════════════════════╝
- */
 @Configuration
 @Slf4j
 public class RabbitMQConfig {
 
     // ═══════════════════════════════════════════════════════════════
-    // 1-) CONFIGURATION DE L'EXCHANGE (aiguilleur central)
+    // EXCHANGES
     // ═══════════════════════════════════════════════════════════════
 
     @Bean
@@ -40,8 +24,18 @@ public class RabbitMQConfig {
         );
     }
 
+    /**
+     * Dead Letter Exchange : reçoit les messages rejetés après épuisement des retry.
+     * Chaque queue principale pointe vers cet exchange via x-dead-letter-exchange.
+     */
+    @Bean
+    public DirectExchange deadLetterExchange() {
+        log.info("[EXCHANGE] Création du Dead Letter Exchange: {}", RabbitMQConstants.DEAD_LETTER_EXCHANGE);
+        return new DirectExchange(RabbitMQConstants.DEAD_LETTER_EXCHANGE, true, false);
+    }
+
     // ═══════════════════════════════════════════════════════════════
-    // 2-  CONFIGURATION DES QUEUES (boîtes aux lettres)
+    // QUEUES PRINCIPALES (avec pointeur DLX)
     // ═══════════════════════════════════════════════════════════════
 
     /**
@@ -52,23 +46,21 @@ public class RabbitMQConfig {
     @Bean
     public Queue notificationCandidatureQueue() {
         log.info("[QUEUE] Création: {}", RabbitMQConstants.QUEUE_NOTIFICATION_CANDIDATURE);
-        return new Queue(
-            RabbitMQConstants.QUEUE_NOTIFICATION_CANDIDATURE,
-            true,      // durable
-            false,     // exclusive
-            false      // autoDelete
-        );
+        return QueueBuilder
+                .durable(RabbitMQConstants.QUEUE_NOTIFICATION_CANDIDATURE)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DEAD_LETTER_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.DLQ_NOTIFICATION_CANDIDATURE)
+                .build();
     }
 
     @Bean
     public Queue auditCandidatureQueue() {
         log.info("[QUEUE] Création: {}", RabbitMQConstants.QUEUE_AUDIT_CANDIDATURE);
-        return new Queue(
-            RabbitMQConstants.QUEUE_AUDIT_CANDIDATURE,
-            true,
-                false,
-                false
-        );
+        return QueueBuilder
+                .durable(RabbitMQConstants.QUEUE_AUDIT_CANDIDATURE)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DEAD_LETTER_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.DLQ_AUDIT_CANDIDATURE)
+                .build();
     }
 
     /**
@@ -79,10 +71,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue notificationStatutQueue() {
         log.info("[QUEUE] Création: {}", RabbitMQConstants.QUEUE_NOTIFICATION_STATUT);
-        return new Queue(
-            RabbitMQConstants.QUEUE_NOTIFICATION_STATUT,
-            true, false, false
-        );
+        return QueueBuilder
+                .durable(RabbitMQConstants.QUEUE_NOTIFICATION_STATUT)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DEAD_LETTER_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.DLQ_NOTIFICATION_STATUT)
+                .build();
     }
 
     /**
@@ -93,10 +86,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue notificationEntretienQueue() {
         log.info("[QUEUE] Création: {}", RabbitMQConstants.QUEUE_NOTIFICATION_ENTRETIEN);
-        return new Queue(
-            RabbitMQConstants.QUEUE_NOTIFICATION_ENTRETIEN,
-            true, false, false
-        );
+        return QueueBuilder
+                .durable(RabbitMQConstants.QUEUE_NOTIFICATION_ENTRETIEN)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DEAD_LETTER_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.DLQ_NOTIFICATION_ENTRETIEN)
+                .build();
     }
 
     /**
@@ -107,10 +101,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue notificationRecruiterQueue() {
         log.info("[QUEUE] Création: {}", RabbitMQConstants.QUEUE_NOTIFICATION_RECRUITER);
-        return new Queue(
-            RabbitMQConstants.QUEUE_NOTIFICATION_RECRUITER,
-            true, false, false
-        );
+        return QueueBuilder
+                .durable(RabbitMQConstants.QUEUE_NOTIFICATION_RECRUITER)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DEAD_LETTER_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.DLQ_NOTIFICATION_RECRUITER)
+                .build();
     }
 
     /**
@@ -121,10 +116,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue notificationAdminUserQueue() {
         log.info("[QUEUE] Création: {}", RabbitMQConstants.QUEUE_NOTIFICATION_ADMIN_USER);
-        return new Queue(
-            RabbitMQConstants.QUEUE_NOTIFICATION_ADMIN_USER,
-            true, false, false
-        );
+        return QueueBuilder
+                .durable(RabbitMQConstants.QUEUE_NOTIFICATION_ADMIN_USER)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DEAD_LETTER_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.DLQ_NOTIFICATION_ADMIN_USER)
+                .build();
     }
 
     /**
@@ -135,10 +131,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue notificationAuthenticationQueue() {
         log.info("[QUEUE] Création: {}", RabbitMQConstants.QUEUE_NOTIFICATION_AUTHENTIFICATION);
-        return new Queue(
-            RabbitMQConstants.QUEUE_NOTIFICATION_AUTHENTIFICATION,
-            true, false, false
-        );
+        return QueueBuilder
+                .durable(RabbitMQConstants.QUEUE_NOTIFICATION_AUTHENTIFICATION)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DEAD_LETTER_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.DLQ_NOTIFICATION_AUTHENTIFICATION)
+                .build();
     }
 
     /**
@@ -149,10 +146,11 @@ public class RabbitMQConfig {
     @Bean
     public Queue verificationRecruiterQueue() {
         log.info("[QUEUE] Création: {}", RabbitMQConstants.QUEUE_VERIFICATION_RECRUITER);
-        return new Queue(
-            RabbitMQConstants.QUEUE_VERIFICATION_RECRUITER,
-            true, false, false
-        );
+        return QueueBuilder
+                .durable(RabbitMQConstants.QUEUE_VERIFICATION_RECRUITER)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DEAD_LETTER_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.DLQ_VERIFICATION_RECRUITER)
+                .build();
     }
 
     /**
@@ -163,197 +161,214 @@ public class RabbitMQConfig {
     @Bean
     public Queue authRecruiterVerifiedQueue() {
         log.info("[QUEUE] Création: {}", RabbitMQConstants.QUEUE_AUTH_RECRUITER_VERIFIED);
-        return new Queue(
-            RabbitMQConstants.QUEUE_AUTH_RECRUITER_VERIFIED,
-            true, false, false
-        );
+        return QueueBuilder
+                .durable(RabbitMQConstants.QUEUE_AUTH_RECRUITER_VERIFIED)
+                .withArgument("x-dead-letter-exchange", RabbitMQConstants.DEAD_LETTER_EXCHANGE)
+                .withArgument("x-dead-letter-routing-key", RabbitMQConstants.DLQ_AUTH_RECRUITER_VERIFIED)
+                .build();
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // 3-  CONFIGURATION DES BINDINGS
-    //     (connexions entre exchange et queues)
+    // DEAD LETTER QUEUES
+    // ═══════════════════════════════════════════════════════════════
+
+    @Bean
+    public Queue dlqNotificationCandidature() {
+        return QueueBuilder.durable(RabbitMQConstants.DLQ_NOTIFICATION_CANDIDATURE).build();
+    }
+
+    @Bean
+    public Queue dlqAuditCandidature() {
+        return QueueBuilder.durable(RabbitMQConstants.DLQ_AUDIT_CANDIDATURE).build();
+    }
+
+    @Bean
+    public Queue dlqNotificationStatut() {
+        return QueueBuilder.durable(RabbitMQConstants.DLQ_NOTIFICATION_STATUT).build();
+    }
+
+    @Bean
+    public Queue dlqNotificationEntretien() {
+        return QueueBuilder.durable(RabbitMQConstants.DLQ_NOTIFICATION_ENTRETIEN).build();
+    }
+
+    @Bean
+    public Queue dlqNotificationRecruiter() {
+        return QueueBuilder.durable(RabbitMQConstants.DLQ_NOTIFICATION_RECRUITER).build();
+    }
+
+    @Bean
+    public Queue dlqNotificationAdminUser() {
+        return QueueBuilder.durable(RabbitMQConstants.DLQ_NOTIFICATION_ADMIN_USER).build();
+    }
+
+    @Bean
+    public Queue dlqNotificationAuthentification() {
+        return QueueBuilder.durable(RabbitMQConstants.DLQ_NOTIFICATION_AUTHENTIFICATION).build();
+    }
+
+    @Bean
+    public Queue dlqVerificationRecruiter() {
+        return QueueBuilder.durable(RabbitMQConstants.DLQ_VERIFICATION_RECRUITER).build();
+    }
+
+    @Bean
+    public Queue dlqAuthRecruiterVerified() {
+        return QueueBuilder.durable(RabbitMQConstants.DLQ_AUTH_RECRUITER_VERIFIED).build();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // BINDINGS DLX → DLQ
+    // ═══════════════════════════════════════════════════════════════
+
+    @Bean
+    public Binding dlqNotificationCandidatureBinding() {
+        return BindingBuilder
+                .bind(dlqNotificationCandidature())
+                .to(deadLetterExchange())
+                .with(RabbitMQConstants.DLQ_NOTIFICATION_CANDIDATURE);
+    }
+
+    @Bean
+    public Binding dlqAuditCandidatureBinding() {
+        return BindingBuilder.bind(dlqAuditCandidature()).to(deadLetterExchange())
+                .with(RabbitMQConstants.DLQ_AUDIT_CANDIDATURE);
+    }
+
+    @Bean
+    public Binding dlqNotificationStatutBinding() {
+        return BindingBuilder.bind(dlqNotificationStatut()).to(deadLetterExchange())
+                .with(RabbitMQConstants.DLQ_NOTIFICATION_STATUT);
+    }
+
+    @Bean
+    public Binding dlqNotificationEntretienBinding() {
+        return BindingBuilder.bind(dlqNotificationEntretien()).to(deadLetterExchange())
+                .with(RabbitMQConstants.DLQ_NOTIFICATION_ENTRETIEN);
+    }
+
+    @Bean
+    public Binding dlqNotificationRecruiterBinding() {
+        return BindingBuilder.bind(dlqNotificationRecruiter()).to(deadLetterExchange())
+                .with(RabbitMQConstants.DLQ_NOTIFICATION_RECRUITER);
+    }
+
+    @Bean
+    public Binding dlqNotificationAdminUserBinding() {
+        return BindingBuilder.bind(dlqNotificationAdminUser()).to(deadLetterExchange())
+                .with(RabbitMQConstants.DLQ_NOTIFICATION_ADMIN_USER);
+    }
+
+    @Bean
+    public Binding dlqNotificationAuthentificationBinding() {
+        return BindingBuilder.bind(dlqNotificationAuthentification()).to(deadLetterExchange())
+                .with(RabbitMQConstants.DLQ_NOTIFICATION_AUTHENTIFICATION);
+    }
+
+    @Bean
+    public Binding dlqVerificationRecruiterBinding() {
+        return BindingBuilder.bind(dlqVerificationRecruiter()).to(deadLetterExchange())
+                .with(RabbitMQConstants.DLQ_VERIFICATION_RECRUITER);
+    }
+
+    @Bean
+    public Binding dlqAuthRecruiterVerifiedBinding() {
+        return BindingBuilder.bind(dlqAuthRecruiterVerified()).to(deadLetterExchange())
+                .with(RabbitMQConstants.DLQ_AUTH_RECRUITER_VERIFIED);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // BINDINGS QUEUES PRINCIPALES
     // ═══════════════════════════════════════════════════════════════
 
     @Bean
     public Binding bindingCandidatureCreated(
             @Qualifier("notificationCandidatureQueue") Queue queue,
-            TopicExchange exchange
-    ) {
-        log.info("[BINDING] {} -> {}",
-            RabbitMQConstants.ROUTING_CANDIDATURE_CREATED,
-            RabbitMQConstants.QUEUE_NOTIFICATION_CANDIDATURE);
-        return BindingBuilder
-            .bind(queue)
-            .to(exchange)
-            .with(RabbitMQConstants.ROUTING_CANDIDATURE_CREATED);
+            TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMQConstants.ROUTING_CANDIDATURE_CREATED);
     }
 
     @Bean
     public Binding bindingCandidatureCreatedAudit(
             @Qualifier("auditCandidatureQueue") Queue queue,
-            TopicExchange exchange
-    ) {
-        log.info("[BINDING] {} -> {}",
-                RabbitMQConstants.ROUTING_CANDIDATURE_CREATED,
-                RabbitMQConstants.QUEUE_AUDIT_CANDIDATURE);
-        return BindingBuilder
-                .bind(queue)
-                .to(exchange)
-                .with(RabbitMQConstants.ROUTING_CANDIDATURE_CREATED);
+            TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMQConstants.ROUTING_CANDIDATURE_CREATED);
     }
 
     @Bean
     public Binding bindingStatutChanged(
             @Qualifier("notificationStatutQueue") Queue queue,
-            TopicExchange exchange
-    ) {
-        log.info("[BINDING] {} -> {}",
-            RabbitMQConstants.ROUTING_CANDIDATURE_STATUT_CHANGED,
-            RabbitMQConstants.QUEUE_NOTIFICATION_STATUT);
-        return BindingBuilder
-            .bind(queue)
-            .to(exchange)
-            .with(RabbitMQConstants.ROUTING_CANDIDATURE_STATUT_CHANGED);
+            TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMQConstants.ROUTING_CANDIDATURE_STATUT_CHANGED);
     }
 
     @Bean
     public Binding bindingEntretienPlanifie(
             @Qualifier("notificationEntretienQueue") Queue queue,
-            TopicExchange exchange
-    ) {
-        log.info("[BINDING] {} -> {}",
-            RabbitMQConstants.ROUTING_ENTRETIEN_PLANIFIE,
-            RabbitMQConstants.QUEUE_NOTIFICATION_ENTRETIEN);
-        return BindingBuilder
-            .bind(queue)
-            .to(exchange)
-            .with(RabbitMQConstants.ROUTING_ENTRETIEN_PLANIFIE);
+            TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMQConstants.ROUTING_ENTRETIEN_PLANIFIE);
     }
 
     @Bean
     public Binding bindingRecruiterApproved(
             @Qualifier("notificationRecruiterQueue") Queue queue,
-            TopicExchange exchange
-    ) {
-        log.info("[BINDING] {} -> {}",
-            RabbitMQConstants.ROUTING_RECRUITER_APPROVED,
-            RabbitMQConstants.QUEUE_NOTIFICATION_RECRUITER);
-        return BindingBuilder
-            .bind(queue)
-            .to(exchange)
-            .with(RabbitMQConstants.ROUTING_RECRUITER_APPROVED);
+            TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMQConstants.ROUTING_RECRUITER_APPROVED);
     }
 
     @Bean
     public Binding bindingRecruiterRejected(
             @Qualifier("notificationRecruiterQueue") Queue queue,
-            TopicExchange exchange
-    ) {
-        log.info("[BINDING] {} -> {}",
-            RabbitMQConstants.ROUTING_RECRUITER_REJECTED,
-            RabbitMQConstants.QUEUE_NOTIFICATION_RECRUITER);
-        return BindingBuilder
-            .bind(queue)
-            .to(exchange)
-            .with(RabbitMQConstants.ROUTING_RECRUITER_REJECTED);
+            TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMQConstants.ROUTING_RECRUITER_REJECTED);
     }
 
     @Bean
     public Binding bindingUserBlocked(
             @Qualifier("notificationAdminUserQueue") Queue queue,
-            TopicExchange exchange
-    ) {
-        log.info("[BINDING] {} -> {}",
-            RabbitMQConstants.ROUTING_USER_BLOCKED,
-            RabbitMQConstants.QUEUE_NOTIFICATION_ADMIN_USER);
-        return BindingBuilder
-            .bind(queue)
-            .to(exchange)
-            .with(RabbitMQConstants.ROUTING_USER_BLOCKED);
+            TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMQConstants.ROUTING_USER_BLOCKED);
     }
 
     @Bean
     public Binding bindingUserDeleted(
             @Qualifier("notificationAdminUserQueue") Queue queue,
-            TopicExchange exchange
-    ) {
-        log.info("[BINDING] {} -> {}",
-            RabbitMQConstants.ROUTING_USER_DELETED,
-            RabbitMQConstants.QUEUE_NOTIFICATION_ADMIN_USER);
-        return BindingBuilder
-            .bind(queue)
-            .to(exchange)
-            .with(RabbitMQConstants.ROUTING_USER_DELETED);
+            TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMQConstants.ROUTING_USER_DELETED);
     }
 
     @Bean
     public Binding bindingAuthenticationRegister(
             @Qualifier("notificationAuthenticationQueue") Queue queue,
-            TopicExchange exchange
-    ) {
-        log.info("[BINDING] {} -> {}",
-            RabbitMQConstants.ROUTING_USER_AUTHENTIFICATION_REGISTER,
-            RabbitMQConstants.QUEUE_NOTIFICATION_AUTHENTIFICATION);
-        return BindingBuilder
-            .bind(queue)
-            .to(exchange)
-            .with(RabbitMQConstants.ROUTING_USER_AUTHENTIFICATION_REGISTER);
+            TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMQConstants.ROUTING_USER_AUTHENTIFICATION_REGISTER);
     }
 
     @Bean
     public Binding bindingAuthenticationLogin(
             @Qualifier("notificationAuthenticationQueue") Queue queue,
-            TopicExchange exchange
-    ) {
-        log.info("[BINDING] {} -> {}",
-            RabbitMQConstants.ROUTING_USER_AUTHENTIFICATION_LOGIN,
-            RabbitMQConstants.QUEUE_NOTIFICATION_AUTHENTIFICATION);
-        return BindingBuilder
-            .bind(queue)
-            .to(exchange)
-            .with(RabbitMQConstants.ROUTING_USER_AUTHENTIFICATION_LOGIN);
+            TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMQConstants.ROUTING_USER_AUTHENTIFICATION_LOGIN);
     }
 
     @Bean
     public Binding bindingAuthenticationLogout(
             @Qualifier("notificationAuthenticationQueue") Queue queue,
-            TopicExchange exchange
-    ) {
-        log.info("[BINDING] {} -> {}",
-            RabbitMQConstants.ROUTING_USER_AUTHENTIFICATION_LOGOUT,
-            RabbitMQConstants.QUEUE_NOTIFICATION_AUTHENTIFICATION);
-        return BindingBuilder
-            .bind(queue)
-            .to(exchange)
-            .with(RabbitMQConstants.ROUTING_USER_AUTHENTIFICATION_LOGOUT);
+            TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMQConstants.ROUTING_USER_AUTHENTIFICATION_LOGOUT);
     }
 
     @Bean
     public Binding bindingRecruiterRegistered(
             @Qualifier("verificationRecruiterQueue") Queue queue,
-            TopicExchange exchange
-    ) {
-        log.info("[BINDING] {} -> {}",
-            RabbitMQConstants.ROUTING_RECRUITER_REGISTERED,
-            RabbitMQConstants.QUEUE_VERIFICATION_RECRUITER);
-        return BindingBuilder
-            .bind(queue)
-            .to(exchange)
-            .with(RabbitMQConstants.ROUTING_RECRUITER_REGISTERED);
+            TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMQConstants.ROUTING_RECRUITER_REGISTERED);
     }
 
     @Bean
     public Binding bindingRecruiterVerified(
             @Qualifier("authRecruiterVerifiedQueue") Queue queue,
-            TopicExchange exchange
-    ) {
-        log.info("[BINDING] {} -> {}",
-            RabbitMQConstants.ROUTING_RECRUITER_VERIFIED,
-            RabbitMQConstants.QUEUE_AUTH_RECRUITER_VERIFIED);
-        return BindingBuilder
-            .bind(queue)
-            .to(exchange)
-            .with(RabbitMQConstants.ROUTING_RECRUITER_VERIFIED);
+            TopicExchange exchange) {
+        return BindingBuilder.bind(queue).to(exchange).with(RabbitMQConstants.ROUTING_RECRUITER_VERIFIED);
     }
 }
-

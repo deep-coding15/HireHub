@@ -19,12 +19,13 @@ spring:
     listener:
       simple:
         prefetch: 1
-        default-requeue-rejected: true
+        default-requeue-rejected: false
         retry:
           enabled: true
           initial-interval: 1000
           max-attempts: 3
-          multiplier: 1.0
+          multiplier: 2.0
+          max-interval: 10000
 
   mail:
     host: ${MAIL_HOST}

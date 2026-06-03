@@ -11,6 +11,80 @@ spring:
           enabled: true
           lower-case-service-id: true
 
+      # Timeouts globaux pour tous les appels vers les services backend
+      httpclient:
+        connect-timeout: 2000      # 2s pour établir la connexion TCP
+        response-timeout: 10s      # 10s pour recevoir la réponse complète
+
+      # Filtres appliqués à toutes les routes
+      default-filters:
+        # Retry automatique sur erreurs serveur pour les GET uniquement (idempotent)
+        - name: Retry
+          args:
+            retries: 2
+            statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE, GATEWAY_TIMEOUT
+            methods: GET
+            backoff:
+              firstBackoff: 500ms
+              maxBackoff: 3s
+              factor: 2
+              basedOnPreviousValue: false
+        - RemoveRequestHeader=Cookie
+        - RemoveRequestHeader=Set-Cookie
+
+      # Circuit breakers par service critique
+      routes:
+        - id: offre-service
+          uri: lb://offre-service
+          predicates:
+            - Path=/offre-service/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: offre-service-cb
+                fallbackUri: forward:/fallback/offre-service
+
+        - id: candidature-service
+          uri: lb://candidature-service
+          predicates:
+            - Path=/candidature-service/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: candidature-service-cb
+                fallbackUri: forward:/fallback/candidature-service
+
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/auth-service/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: auth-service-cb
+                fallbackUri: forward:/fallback/auth-service
+
+        - id: entretien-service
+          uri: lb://entretien-service
+          predicates:
+            - Path=/entretien-service/**
+          filters:
+            - StripPrefix=1
+            - name: CircuitBreaker
+              args:
+                name: entretien-service-cb
+                fallbackUri: forward:/fallback/entretien-service
+
+        - id: frontend-service
+          uri: lb://frontend-service
+          predicates:
+            - Path=/frontend-service/**
+          filters:
+            - StripPrefix=1
+
 eureka:
   client:
     service-url:
@@ -20,7 +94,35 @@ hirehub:
   jwt:
     secret: ${HIREHUB_JWT_SECRET:hirehub-local-dev-jwt-secret-change-me-32b}
 
-# Routes explicites : la découverte Eureka suffit pour le développement.
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 15s
+        minimum-number-of-calls: 5
+        slow-call-duration-threshold: 5s
+        slow-call-rate-threshold: 80
+        register-health-indicator: true
+    instances:
+      offre-service-cb:
+        base-config: default
+      candidature-service-cb:
+        base-config: default
+      auth-service-cb:
+        base-config: default
+      entretien-service-cb:
+        base-config: default
+
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health, metrics, circuitbreakers, circuitbreakerevents
 
 springdoc:
   api-docs:

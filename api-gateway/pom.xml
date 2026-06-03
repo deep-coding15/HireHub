@@ -50,6 +50,12 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- Circuit Breaker réactif pour Spring Cloud Gateway -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-circuitbreaker-reactor-resilience4j</artifactId>
+        </dependency>
+
     </dependencies>
 
     <build>
