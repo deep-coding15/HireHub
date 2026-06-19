@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hirehub
+
+---
+# Secret : stocke les mots de passe de façon sécurisée (base64)
+# Equivalent de la section .env pour Kubernetes
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-secret
+  namespace: hirehub
+type: Opaque
+stringData:
+  username: hirehub
+  password: hirehub
+
+---
+# PersistentVolumeClaim : réserve de l'espace disque pour les données
+# Equivalent de "volumes: hirehub-pg-data" dans docker-compose
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+  namespace: hirehub
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+# Deployment : dit à Kubernetes comment lancer postgres
+# Equivalent de "image: postgres:17-alpine" dans docker-compose
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: hirehub
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:17-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: password
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "hirehub"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-pvc
+
+---
+# Service : donne une adresse fixe à postgres dans le cluster
+# Les autres services utilisent "postgres:5432" pour se connecter
+# Equivalent de l'hostname "postgres" dans docker-compose
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: hirehub
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
