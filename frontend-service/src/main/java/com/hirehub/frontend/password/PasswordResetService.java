@@ -5,6 +5,7 @@ import com.hirehub.frontend.auth.FrontendUserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,18 +32,21 @@ public class PasswordResetService {
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final ObjectProvider<JavaMailSender> mailSender;
+    private final String mailFrom;
     private final SecureRandom random = new SecureRandom();
 
     public PasswordResetService(
             FrontendUserRepository userRepository,
             PasswordResetTokenRepository tokenRepository,
             PasswordEncoder passwordEncoder,
-            ObjectProvider<JavaMailSender> mailSender
+            ObjectProvider<JavaMailSender> mailSender,
+            @Value("${hirehub.mail-from:noreply@hirehub.com}") String mailFrom
     ) {
         this.userRepository = userRepository;
         this.tokenRepository = tokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.mailSender = mailSender;
+        this.mailFrom = mailFrom;
     }
 
     /**
@@ -77,6 +81,7 @@ public class PasswordResetService {
         if (sender != null) {
             try {
                 SimpleMailMessage msg = new SimpleMailMessage();
+                msg.setFrom(mailFrom);
                 msg.setTo(user.getEmail());
                 msg.setSubject("HireHub - reinitialisation du mot de passe");
                 String body = "Bonjour,\n\n"

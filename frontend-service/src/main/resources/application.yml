@@ -37,16 +37,12 @@ spring:
     username: hirehub
     password: hirehub
 
-  # Google OAuth : variables d'environnement ou fichier application-local.yml (non versionne)
+  # Google OAuth : a configurer dans application-local.yml (dev) ou via env vars (docker/prod)
   # URI redirection Console : http://localhost:8086/login/oauth2/code/google
-  security:
-    oauth2:
-      client:
-        registration:
-          google:
-            client-id: ${GOOGLE_OAUTH_CLIENT_ID:}
-            client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:}
-            scope: openid, profile, email
+  # Env vars : SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID=xxx
+  #            SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET=xxx
+  # NE PAS definir ce bloc ici avec des valeurs vides — OAuth2ClientProperties rejette
+  # toute registration dont client-id est vide et fait crasher le contexte Spring.
 
   # SMTP : definir MAIL_HOST, MAIL_PORT, MAIL_USERNAME, MAIL_PASSWORD ou application-local.yml
   mail:
@@ -57,11 +53,12 @@ spring:
     properties:
       mail:
         smtp:
-          auth: true
+          auth: ${MAIL_SMTP_AUTH:true}
           starttls:
-            enable: true
+            enable: ${MAIL_SMTP_STARTTLS:true}
 
 hirehub:
+  mail-from: ${MAIL_FROM:noreply@hirehub.com}
   api-base-url: http://localhost:8081
   offre-service-base-url: http://localhost:8089/offre-service
   candidature-service-base-url: http://localhost:8089/candidature-service

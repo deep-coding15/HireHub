@@ -28,10 +28,10 @@ import org.springframework.util.StringUtils;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Value("${spring.security.oauth2.client.registration.google.client-id:}")
+    @Value("${GOOGLE_OAUTH_CLIENT_ID:}")
     private String googleOAuthClientId;
 
-    @Value("${spring.security.oauth2.client.registration.google.client-secret:}")
+    @Value("${GOOGLE_OAUTH_CLIENT_SECRET:}")
     private String googleOAuthClientSecret;
 
     /**

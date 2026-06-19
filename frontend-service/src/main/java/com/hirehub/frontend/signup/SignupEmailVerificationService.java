@@ -4,6 +4,7 @@ import com.hirehub.frontend.auth.FrontendUserRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
@@ -31,16 +32,19 @@ public class SignupEmailVerificationService {
     private final SignupEmailChallengeRepository challengeRepository;
     private final FrontendUserRepository userRepository;
     private final ObjectProvider<JavaMailSender> mailSender;
+    private final String mailFrom;
     private final SecureRandom random = new SecureRandom();
 
     public SignupEmailVerificationService(
             SignupEmailChallengeRepository challengeRepository,
             FrontendUserRepository userRepository,
-            ObjectProvider<JavaMailSender> mailSender
+            ObjectProvider<JavaMailSender> mailSender,
+            @Value("${hirehub.mail-from:noreply@hirehub.com}") String mailFrom
     ) {
         this.challengeRepository = challengeRepository;
         this.userRepository = userRepository;
         this.mailSender = mailSender;
+        this.mailFrom = mailFrom;
     }
 
     /**
@@ -92,6 +96,7 @@ public class SignupEmailVerificationService {
         if (sender != null) {
             try {
                 SimpleMailMessage msg = new SimpleMailMessage();
+                msg.setFrom(mailFrom);
                 msg.setTo(email);
                 msg.setSubject(subject);
                 msg.setText(body);

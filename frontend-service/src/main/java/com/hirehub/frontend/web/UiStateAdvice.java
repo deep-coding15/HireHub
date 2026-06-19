@@ -24,7 +24,7 @@ public class UiStateAdvice {
     @Value("${hirehub.recaptcha.site-key:}")
     private String recaptchaSiteKey;
 
-    @Value("${spring.security.oauth2.client.registration.google.client-id:}")
+    @Value("${GOOGLE_OAUTH_CLIENT_ID:}")
     private String googleOAuthClientId;
 
     @ModelAttribute

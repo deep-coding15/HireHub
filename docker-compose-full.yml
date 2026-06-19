@@ -487,7 +487,9 @@ services:
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://eureka-server:8761/eureka/
       EUREKA_INSTANCE_PREFERIPADDRESS: "true"
       HIREHUB_JWT_SECRET: ${HIREHUB_JWT_SECRET:-hirehub-local-dev-jwt-secret-change-me-32b}
-      HIREHUB_API_BASE_URL: http://api-gateway:8089
+      # URL accessible depuis le navigateur (port exposé de l'api-gateway sur l'hôte)
+      HIREHUB_API_BASE_URL: http://localhost:8089
+      # URLs internes Docker pour les appels serveur-à-serveur (RestTemplate/Feign)
       HIREHUB_OFFRE_SERVICE_BASE_URL: http://api-gateway:8089/offre-service
       HIREHUB_CANDIDATURE_SERVICE_BASE_URL: http://api-gateway:8089/candidature-service
       HIREHUB_ENTRETIEN_SERVICE_BASE_URL: http://api-gateway:8089/entretien-service
@@ -495,10 +497,14 @@ services:
       HIREHUB_UPLOAD_DIR: /app/uploads
       GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
       GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      # SMTP — désactiver auth/TLS car Mailpit ne les supporte pas
       MAIL_HOST: ${MAIL_HOST:-mailpit}
       MAIL_PORT: ${MAIL_PORT:-1025}
       MAIL_USERNAME: ${MAIL_USERNAME:-}
       MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_FROM: ${MAIL_FROM:-noreply@hirehub.com}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "false"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
     volumes:
       - frontend-uploads:/app/uploads
     healthcheck:
@@ -517,6 +523,8 @@ services:
       config-server:
         condition: service_healthy
       api-gateway:
+        condition: service_healthy
+      auth-service:
         condition: service_healthy
 
 # ── Volumes ──────────────────────────────────────────────────────────────────
